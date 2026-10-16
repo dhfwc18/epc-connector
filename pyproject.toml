@@ -41,3 +41,9 @@ known-first-party = ["epc_connector"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+typeCheckingMode = "standard"
+reportDeprecated = "error"
+deprecateTypingAliases = true

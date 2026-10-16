@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from epc_connector import ingest
-from tests.fakes import quarterly_members, write_7z
+from tests.fakes import write_7z, yearly_members
 
 
 @pytest.fixture(autouse=True)
@@ -17,6 +17,6 @@ def no_retry_delay(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def quarterly_archive(tmp_path: Path) -> Path:
-    """A 7z archive of three out-of-order quarterly CSVs plus a PDF note."""
-    return write_7z(tmp_path / "quarterly.7z", quarterly_members())
+def yearly_archive(tmp_path: Path) -> Path:
+    """A 7z archive of three out-of-order yearly CSVs plus a PDF note."""
+    return write_7z(tmp_path / "yearly.7z", yearly_members())

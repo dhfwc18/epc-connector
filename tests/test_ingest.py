@@ -16,10 +16,10 @@ from tests.fakes import (
     SOURCE_URL,
     FakeServer,
     abc_schema,
-    quarterly_members,
     scottish_csv,
     write_7z,
     write_zip,
+    yearly_members,
 )
 
 
@@ -84,17 +84,13 @@ class TestDownloadFile:
 
 class TestExtractFiles:
     def test_7z_archive_extracts_only_matching_files(
-        self, quarterly_archive: Path, tmp_path: Path
+        self, yearly_archive: Path, tmp_path: Path
     ) -> None:
         destination = tmp_path / "out"
 
-        paths = ingest.extract_files(quarterly_archive, destination)
+        paths = ingest.extract_files(yearly_archive, destination)
 
-        assert sorted(p.name for p in paths) == [
-            "Q1 2017.csv",
-            "Q3 2016.csv",
-            "Q4 2016.csv",
-        ]
+        assert sorted(p.name for p in paths) == ["2015.csv", "2016.csv", "2017.csv"]
         assert all(p.is_file() for p in paths)
         assert not list(destination.glob("*.pdf"))
 
@@ -120,20 +116,20 @@ class TestExtractFiles:
             ingest.extract_files(not_an_archive, tmp_path / "out")
 
     def test_corrupt_7z_raises_decompression_error(
-        self, quarterly_archive: Path, tmp_path: Path
+        self, yearly_archive: Path, tmp_path: Path
     ) -> None:
-        damaged = bytearray(quarterly_archive.read_bytes())
+        damaged = bytearray(yearly_archive.read_bytes())
         damaged[100] ^= 0xFF  # inside the compressed stream, after the headers
-        quarterly_archive.write_bytes(bytes(damaged))
+        yearly_archive.write_bytes(bytes(damaged))
 
         with pytest.raises((lzma.LZMAError, CrcError)):
-            ingest.extract_files(quarterly_archive, tmp_path / "out")
+            ingest.extract_files(yearly_archive, tmp_path / "out")
 
 
 class TestMergeCsvsToParquet:
     def test_values_are_kept_as_published_strings(self, tmp_path: Path) -> None:
-        csvs = write_csvs(tmp_path, quarterly_members())
-        ordered = [csvs["Q3 2016.csv"], csvs["Q4 2016.csv"], csvs["Q1 2017.csv"]]
+        csvs = write_csvs(tmp_path, yearly_members())
+        ordered = [csvs["2015.csv"], csvs["2016.csv"], csvs["2017.csv"]]
         output = tmp_path / "merged.parquet"
 
         row_count = ingest.merge_csvs_to_parquet(
@@ -148,8 +144,8 @@ class TestMergeCsvsToParquet:
         assert frame["C"].to_list() == ["x", "y", "z", ""]
 
     def test_rows_follow_input_file_order(self, tmp_path: Path) -> None:
-        csvs = write_csvs(tmp_path, quarterly_members())
-        ordered = [csvs["Q3 2016.csv"], csvs["Q4 2016.csv"], csvs["Q1 2017.csv"]]
+        csvs = write_csvs(tmp_path, yearly_members())
+        ordered = [csvs["2015.csv"], csvs["2016.csv"], csvs["2017.csv"]]
         output = tmp_path / "merged.parquet"
 
         ingest.merge_csvs_to_parquet(ordered, output, skip_rows_after_header=1)
@@ -191,7 +187,7 @@ class TestMergeCsvsToParquet:
 
 class TestMergeCsvsToParquetWithSchema:
     def test_valid_data_is_written(self, tmp_path: Path) -> None:
-        csvs = write_csvs(tmp_path, quarterly_members())
+        csvs = write_csvs(tmp_path, yearly_members())
         output = tmp_path / "merged.parquet"
 
         row_count = ingest.merge_csvs_to_parquet(

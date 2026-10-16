@@ -14,7 +14,7 @@ import logging
 import re
 import time
 import zipfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Final
 
@@ -116,7 +116,11 @@ def _total_bytes(response: httpx.Response, already_written: int) -> int | None:
 
 
 def extract_files(
-    archive_path: Path, destination: Path, *, suffix: str = ".csv"
+    archive_path: Path,
+    destination: Path,
+    *,
+    suffix: str = ".csv",
+    include: Callable[[str], bool] | None = None,
 ) -> list[Path]:
     """
     Extract the files whose names end with ``suffix`` from a 7z or zip archive.
@@ -129,6 +133,9 @@ def extract_files(
         Directory to extract into; created if missing.
     suffix
         File name ending to select, compared case-insensitively.
+    include
+        Optional extra filter on member names; only names it accepts are
+        extracted.
 
     Returns
     -------
@@ -143,12 +150,12 @@ def extract_files(
     destination.mkdir(parents=True, exist_ok=True)
     if py7zr.is_7zfile(archive_path):
         with py7zr.SevenZipFile(archive_path) as archive:
-            names = _with_suffix(archive.getnames(), suffix)
+            names = _select(archive.getnames(), suffix, include)
             if names:
                 archive.extract(path=destination, targets=names)
     elif zipfile.is_zipfile(archive_path):
         with zipfile.ZipFile(archive_path) as archive:
-            names = _with_suffix(archive.namelist(), suffix)
+            names = _select(archive.namelist(), suffix, include)
             for name in names:
                 archive.extract(name, destination)
     else:
@@ -158,8 +165,14 @@ def extract_files(
     return [destination / name for name in names]
 
 
-def _with_suffix(names: list[str], suffix: str) -> list[str]:
-    return [name for name in names if name.lower().endswith(suffix.lower())]
+def _select(
+    names: list[str], suffix: str, include: Callable[[str], bool] | None
+) -> list[str]:
+    return [
+        name
+        for name in names
+        if name.lower().endswith(suffix.lower()) and (include is None or include(name))
+    ]
 
 
 def merge_csvs_to_parquet(
@@ -170,6 +183,7 @@ def merge_csvs_to_parquet(
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
     schema: Mapping[str, Any] | None = None,
+    metadata: Mapping[str, str] | None = None,
 ) -> int:
     """
     Stream CSV files with the same header into one Parquet file.
@@ -197,6 +211,8 @@ def merge_csvs_to_parquet(
         Rows per Parquet row group, i.e. rows buffered before each write.
     schema
         Source JSON Schema describing one row (see ``epc_connector.validation``).
+    metadata
+        Key-value pairs stored in the Parquet file's metadata.
 
     Returns
     -------
@@ -235,7 +251,10 @@ def merge_csvs_to_parquet(
     ]
     with pl.Config(streaming_chunk_size=chunk_rows):
         pl.concat(frames).sink_parquet(
-            output_path, compression="zstd", row_group_size=row_group_rows
+            output_path,
+            compression="zstd",
+            row_group_size=row_group_rows,
+            metadata=dict(metadata) if metadata else None,
         )
         if schema is not None:
             written = pl.scan_parquet(output_path, low_memory=True)
