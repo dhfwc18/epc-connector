@@ -107,3 +107,20 @@ class FakeServer:
 def _drop(body: bytes, cut: int) -> Iterator[bytes]:
     yield body[:cut]
     raise httpx.ReadError("connection dropped")
+
+
+def abc_schema() -> dict:
+    """Return a source schema for the A,B,C test CSVs; A must be an integer."""
+    missing = {"$ref": "#/$defs/missing"}
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "$defs": {"missing": {"enum": ["", "Data removed"]}},
+        "properties": {
+            "A": {"type": "string", "anyOf": [missing, {"pattern": "^[0-9]+$"}]},
+            "B": {"title": "Label B", "type": "string"},
+            "C": {"type": "string", "anyOf": [missing, {"enum": ["x", "y", "z"]}]},
+        },
+        "required": ["A", "B", "C"],
+        "additionalProperties": False,
+    }

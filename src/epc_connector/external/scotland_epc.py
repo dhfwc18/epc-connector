@@ -27,6 +27,7 @@ from epc_connector.ingest import (
     extract_files,
     merge_csvs_to_parquet,
 )
+from epc_connector.validation import load_schema
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,9 @@ PARQUET_NAMES: Final[dict[ScotlandEpcDataset, str]] = {
     ScotlandEpcDataset.NON_DOMESTIC: "non_domestic_epc_certificate_scotland.parquet",
 }
 
+# Repository ``schemas/`` directory (src/epc_connector/external -> repo root).
+DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[3] / "schemas"
+
 _PERIOD: Final = re.compile(r"^(?:Q([1-4]) )?(\d{4})$")
 
 
@@ -76,12 +80,16 @@ def download_scotland_epc(
     staging_dir: Path | str = ".staging",
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
+    schemas_dir: Path | str = DEFAULT_SCHEMAS_DIR,
     client: httpx.Client | None = None,
 ) -> Path:
     """
     Download a Scottish EPC series and merge it into one Parquet file.
 
-    An existing file for the series is replaced once the new one is complete.
+    The data is checked against ``schemas/source/scotland/<series>.schema.json``
+    while the Parquet file is compiled: column names before writing, every value
+    before the file is moved into ``data_dir``. An existing file for the series
+    is replaced only once the new one is complete and valid.
 
     Parameters
     ----------
@@ -93,6 +101,8 @@ def download_scotland_epc(
         Directory for the archive and extracted CSVs; emptied afterwards.
     chunk_rows, row_group_rows
         Memory limits for the merge; see ``merge_csvs_to_parquet``.
+    schemas_dir
+        Directory holding ``source/scotland/<series>.schema.json``.
     client
         HTTP client to use; a temporary one is created if omitted.
 
@@ -105,6 +115,9 @@ def download_scotland_epc(
     dataset = ScotlandEpcDataset(dataset)
     data_dir, staging_dir = Path(data_dir), Path(staging_dir)
     parquet_path = data_dir / PARQUET_NAMES[dataset]
+    schema = load_schema(
+        Path(schemas_dir) / "source" / "scotland" / f"{dataset}.schema.json"
+    )
 
     staging_dir.mkdir(parents=True, exist_ok=True)
     run_dir = Path(tempfile.mkdtemp(prefix=f"{dataset}-", dir=staging_dir))
@@ -122,6 +135,7 @@ def download_scotland_epc(
             skip_rows_after_header=1,  # descriptive label row
             chunk_rows=chunk_rows,
             row_group_rows=row_group_rows,
+            schema=schema,
         )
 
         data_dir.mkdir(parents=True, exist_ok=True)

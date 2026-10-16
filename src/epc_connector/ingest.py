@@ -14,13 +14,15 @@ import logging
 import re
 import time
 import zipfile
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 import httpx
 import polars as pl
 import py7zr
+
+from epc_connector import validation
 
 logger = logging.getLogger(__name__)
 
@@ -167,9 +169,14 @@ def merge_csvs_to_parquet(
     skip_rows_after_header: int = 0,
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
+    schema: Mapping[str, Any] | None = None,
 ) -> int:
     """
     Stream CSV files with the same header into one Parquet file.
+
+    With ``schema``, the header must match the schema's columns before
+    anything is written, and every value is checked against the schema once
+    the file is written; a file that fails is deleted.
 
     Values are kept as published: every column is a string and empty fields
     stay empty strings. Rows are written in the order of ``csv_paths``. Peak
@@ -188,6 +195,8 @@ def merge_csvs_to_parquet(
         Rows each thread processes at a time.
     row_group_rows
         Rows per Parquet row group, i.e. rows buffered before each write.
+    schema
+        Source JSON Schema describing one row (see ``epc_connector.validation``).
 
     Returns
     -------
@@ -197,7 +206,8 @@ def merge_csvs_to_parquet(
     Raises
     ------
     IngestError
-        If there are no files or their headers differ.
+        If there are no files, their headers differ, or the data breaks
+        ``schema``.
     """
     if not csv_paths:
         raise IngestError("no CSV files to merge")
@@ -207,6 +217,11 @@ def merge_csvs_to_parquet(
             raise IngestError(
                 f"{csv_path.name} header differs from {csv_paths[0].name}"
             )
+    if schema is not None:
+        try:
+            validation.check_header(header, schema)
+        except ValueError as error:
+            raise IngestError(f"{csv_paths[0].name}: {error}") from error
 
     frames = [
         pl.scan_csv(
@@ -222,6 +237,15 @@ def merge_csvs_to_parquet(
         pl.concat(frames).sink_parquet(
             output_path, compression="zstd", row_group_size=row_group_rows
         )
+        if schema is not None:
+            written = pl.scan_parquet(output_path, low_memory=True)
+            violations = validation.find_violations(written, schema)
+            if violations:
+                output_path.unlink()
+                raise IngestError(
+                    "data breaks the schema:\n"
+                    + validation.format_violations(violations)
+                )
     return pl.scan_parquet(output_path).select(pl.len()).collect().item()
 
 

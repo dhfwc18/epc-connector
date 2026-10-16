@@ -2,6 +2,7 @@
 Tests for ``epc_connector.external.scotland_epc``.
 """
 
+import json
 import re
 from collections.abc import Callable
 from pathlib import Path
@@ -9,10 +10,11 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from epc_connector import validation
 from epc_connector.external import scotland_epc
 from epc_connector.external.scotland_epc import ScotlandEpcDataset
 from epc_connector.ingest import IngestError
-from tests.fakes import SOURCE_URL, FakeServer, write_7z
+from tests.fakes import SOURCE_URL, FakeServer, abc_schema, scottish_csv, write_7z
 
 type DownloadDomestic = Callable[[FakeServer], Path]
 
@@ -31,12 +33,18 @@ def download_domestic(
         scotland_epc.SOURCE_URLS, ScotlandEpcDataset.DOMESTIC, SOURCE_URL
     )
 
+    schemas_dir = tmp_path / "schemas"
+    schema_path = schemas_dir / "source" / "scotland" / "domestic.schema.json"
+    schema_path.parent.mkdir(parents=True)
+    schema_path.write_text(json.dumps(abc_schema()))
+
     def run(server: FakeServer) -> Path:
         with server.client() as client:
             return scotland_epc.download_scotland_epc(
                 "domestic",
                 data_dir=tmp_path / "data",
                 staging_dir=tmp_path / ".staging",
+                schemas_dir=schemas_dir,
                 client=client,
             )
 
@@ -115,3 +123,66 @@ class TestDownloadScotlandEpc:
     def test_unknown_series_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="not-a-series"):
             scotland_epc.download_scotland_epc("not-a-series")
+
+    def test_data_breaking_the_schema_is_not_published(
+        self, download_domestic: DownloadDomestic, tmp_path: Path
+    ) -> None:
+        archive = write_7z(tmp_path / "bad.7z", {"2024.csv": scottish_csv(["one,b,x"])})
+
+        with pytest.raises(IngestError, match="A: 1 invalid"):
+            download_domestic(FakeServer(archive.read_bytes()))
+
+        assert not (tmp_path / "data").exists()
+        assert not (tmp_path / ".staging").exists()
+
+    def test_repository_schemas_exist_for_every_series(self) -> None:
+        for dataset in ScotlandEpcDataset:
+            schema_path = (
+                scotland_epc.DEFAULT_SCHEMAS_DIR
+                / "source"
+                / "scotland"
+                / f"{dataset}.schema.json"
+            )
+            assert schema_path.is_file()
+
+
+@pytest.fixture(scope="module")
+def domestic_rules() -> dict[str, pl.Expr]:
+    """Polars rules for the repository's domestic schema."""
+    path = scotland_epc.DEFAULT_SCHEMAS_DIR / "source/scotland/domestic.schema.json"
+    return validation.column_rules(validation.load_schema(path))
+
+
+class TestDomesticSchema:
+    """Value rules of the repository schema for the domestic series."""
+
+    @pytest.mark.parametrize(
+        ("column", "value"),
+        [
+            ("FLOOR_HEIGHT", "2.4"),
+            ("FLOOR_HEIGHT", "3"),
+            ("FLOOR_HEIGHT", ".30"),
+            ("UNHEATED_CORRIDOR_LENGTH", "11."),
+            ("SOLAR_WATER_HEATING_FLAG", "Y"),
+            ("SOLAR_WATER_HEATING_FLAG", "false"),
+            ("SOLAR_WATER_HEATING_FLAG", ""),
+        ],
+    )
+    def test_published_value_is_valid(
+        self, domestic_rules: dict[str, pl.Expr], column: str, value: str
+    ) -> None:
+        assert pl.DataFrame({column: [value]}).select(domestic_rules[column]).item()
+
+    @pytest.mark.parametrize(
+        ("column", "value"),
+        [
+            ("FLOOR_HEIGHT", "."),
+            ("FLOOR_HEIGHT", "abc"),
+            ("FLOOR_HEIGHT", "1.2.3"),
+            ("SOLAR_WATER_HEATING_FLAG", "TRUE"),
+        ],
+    )
+    def test_malformed_value_is_invalid(
+        self, domestic_rules: dict[str, pl.Expr], column: str, value: str
+    ) -> None:
+        assert not pl.DataFrame({column: [value]}).select(domestic_rules[column]).item()

@@ -15,6 +15,7 @@ from epc_connector.ingest import IngestError
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,
+    abc_schema,
     quarterly_members,
     scottish_csv,
     write_7z,
@@ -186,6 +187,45 @@ class TestMergeCsvsToParquet:
     def test_empty_input_raises_ingest_error(self, tmp_path: Path) -> None:
         with pytest.raises(IngestError, match="no CSV"):
             ingest.merge_csvs_to_parquet([], tmp_path / "merged.parquet")
+
+
+class TestMergeCsvsToParquetWithSchema:
+    def test_valid_data_is_written(self, tmp_path: Path) -> None:
+        csvs = write_csvs(tmp_path, quarterly_members())
+        output = tmp_path / "merged.parquet"
+
+        row_count = ingest.merge_csvs_to_parquet(
+            list(csvs.values()), output, skip_rows_after_header=1, schema=abc_schema()
+        )
+
+        assert row_count == 4
+        assert output.is_file()
+
+    def test_header_mismatch_raises_before_writing(self, tmp_path: Path) -> None:
+        csvs = write_csvs(tmp_path, {"2024.csv": scottish_csv(["1,2,3"], "A,B,D")})
+        output = tmp_path / "merged.parquet"
+
+        with pytest.raises(IngestError, match="header mismatch"):
+            ingest.merge_csvs_to_parquet(
+                list(csvs.values()), output, schema=abc_schema()
+            )
+
+        assert not output.exists()
+
+    def test_invalid_values_raise_and_remove_output(self, tmp_path: Path) -> None:
+        csvs = write_csvs(tmp_path, {"2024.csv": scottish_csv(["one,b,w"])})
+        output = tmp_path / "merged.parquet"
+
+        with pytest.raises(IngestError, match=r"A: 1 invalid") as error:
+            ingest.merge_csvs_to_parquet(
+                list(csvs.values()),
+                output,
+                skip_rows_after_header=1,
+                schema=abc_schema(),
+            )
+
+        assert "C: 1 invalid" in str(error.value)
+        assert not output.exists()
 
 
 class TestReadCsvHeader:
