@@ -1,14 +1,34 @@
 [project]
 name = "epc-connector"
 version = "0.1.0"
-description = "Add your description here"
+description = "Download, standardise and merge UK domestic Energy Performance Certificate (EPC) data"
 readme = "README.md"
-authors = [
-    { name = "David Huang", email = "dh.fwc18@gmail.com" }
-]
 requires-python = ">=3.14"
+authors = [{ name = "David Huang", email = "dh.fwc18@gmail.com" }]
 dependencies = []
+
+[dependency-groups]
+dev = [
+  "black>=26.10.1",
+  "check-jsonschema>=0.38.2",
+  "ruff>=0.17.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.10,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.black]
+line-length = 88
+target-version = ["py314"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["epc_connector"]
