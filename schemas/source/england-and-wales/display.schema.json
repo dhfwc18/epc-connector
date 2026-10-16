@@ -1,0 +1,490 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:epc-connector:schemas:source:england-and-wales:display",
+  "title": "England and Wales Display Energy Certificates (DECs): certificates row",
+  "description": "One row of the England and Wales Display Energy Certificate (DEC) CSV published by Get energy performance of buildings data (https://get-energy-performance-data.communities.gov.uk/), as an object of raw string values keyed by column name.",
+  "type": "object",
+  "$defs": {
+    "missing": {
+      "description": "Empty value or the source's missing-value marker.",
+      "enum": ["", "NO DATA!", "INVALID!", "N/A"]
+    }
+  },
+  "properties": {
+    "CERTIFICATE_NUMBER": {
+      "description": "The unique reference number for the EPC. This number is generated when the certificate is lodged and can be used to retrieve the record from the EPB data API and the EPC register.",
+      "type": "string"
+    },
+    "ADDRESS1": {
+      "description": "The first line of the property's address, usually the building number and/or name and street name.",
+      "type": "string"
+    },
+    "ADDRESS2": {
+      "description": "The second line of the property's address, usually the village town or city.",
+      "type": "string"
+    },
+    "ADDRESS3": {
+      "description": "The third line of the property's address, usually the county; not always used.",
+      "type": "string"
+    },
+    "POSTCODE": {
+      "description": "The postcode of the property. Each postcode consists of five to seven alphanumeric characters which was created by Royal Mail. A full postcode designates an area with multiple addresses or a single delivery point.",
+      "type": "string"
+    },
+    "CURRENT_OPERATIONAL_RATING": {
+      "description": "Current Operational Rating (OR) for this building. A numeric indicator of the amount of energy consumed during the occupation of the building over a period of 12 months. An OR is a measure of the annual (CO2) emission per unit of area of the building caused by its consumption of energy, compared to a value that would be considered typical for the particular type of building. The numbers do not represent actual units of energy consumed; they represent comparative energy efficiency.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR1_OPERATIONAL_RATING": {
+      "description": "Operational Ratings from previous years (CO2).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR2_OPERATIONAL_RATING": {
+      "description": "Operational Ratings from previous years (CO2).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "OPERATIONAL_RATING_BAND": {
+      "description": "Current Operational Rating converted into an energy band/grade into a linear 'A to G' scale (where A is the most energy efficient and G the least energy efficient).",
+      "type": "string"
+    },
+    "ELECTRIC_CO2": {
+      "description": "Total CO2 emissions from electricity. The energy used by the building is converted into an amount of carbon dioxide (CO2). Different types of fuel emit different amounts of CO2. Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "HEATING_CO2": {
+      "description": "Total CO2 emissions from heating. The energy used by the building is converted into an amount of carbon dioxide (CO2). Different types of fuel emit different amounts of CO2. Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "RENEWABLES_CO2": {
+      "description": "Total CO2 emissions from Renewable sources. On-Site Renewables (OSR) include technologies that generate heat or electricity from ambient sources and have zero (or near zero) CO2 emissions. The energy they deliver reduces CO2 emissions from the building.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "PROPERTY_TYPE": {
+      "description": "Describes the kind of property such as house, flat or maisonette.",
+      "type": "string"
+    },
+    "INSPECTION_DATE": {
+      "description": "The date when information about the building was collected to prepare the EPC.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "format": "date"
+        }
+      ]
+    },
+    "LOCAL_AUTHORITY": {
+      "description": "The local authority the building is in. Uses the official ONS (Office for National Statistics) code for that local area.",
+      "type": "string"
+    },
+    "CONSTITUENCY": {
+      "description": "The UK parliamentary constituency the building is in. Uses the official ONS (Office for National Statistics) code for that area.",
+      "type": "string"
+    },
+    "LODGEMENT_DATE": {
+      "description": "The date the energy certificate was added to the Energy Performance of Buildings Register. This is called 'Lodgement'.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "format": "date"
+        }
+      ]
+    },
+    "MAIN_BENCHMARK": {
+      "description": "The benchmark is the average energy performance for a building of this type, under a number of standardised conditions for temperature, occupancy and proportion of non-electrical energy used. Under certain circumstances, these benchmarks may be adjusted according to location, occupancy and the ratio of non-electrical energy used.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "MAIN_HEATING_FUEL": {
+      "description": "This indicates the main type of fuel used to heat the building.",
+      "type": "string"
+    },
+    "OTHER_FUEL": {
+      "description": "Text description of unspecified fuel type if 'Other' is selected for Main-Heating-Fuel.",
+      "type": "string"
+    },
+    "SPECIAL_ENERGY_USES": {
+      "description": "Separable energy uses. The aim of the Operational Rating is to compare the annual energy consumption of the building with that of a building typical of its type. In some cases the building may include activities that consume energy and which are not considered typical of that building type. It may be reasonable to subtract these separable energy uses in certain circumstances. In order to be able to isolate and remove the annual separable energy consumption from the total, any separable energy uses must be separately metered. This only appears on the Recommendations Report.",
+      "type": "string"
+    },
+    "RENEWABLE_SOURCES": {
+      "description": "On-site renewable energy sources. This only appears on the Recommendations Report.",
+      "type": "string"
+    },
+    "TOTAL_FLOOR_AREA": {
+      "description": "The total enclosed floor area of the property, measured to the internal face of the external walls. The measurement follows recognised professional standards (issued by the Royal Institution of Chartered Surveyors or any successor organisation). Given in square metres (m2).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "ANNUAL_THERMAL_FUEL_USAGE": {
+      "description": "Annual Energy Use (kWh/m2/year) for heating",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "TYPICAL_THERMAL_FUEL_USAGE": {
+      "description": "Typical Energy Use (kWh/m2/year) for heating",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "ANNUAL_ELECTRICAL_FUEL_USAGE": {
+      "description": "Annual Energy Use (kWh/m2/year) for electricity",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "TYPICAL_ELECTRICAL_FUEL_USAGE": {
+      "description": "Typical Energy Use (kWh/m2/year) for electricity",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "RENEWABLES_FUEL_THERMAL": {
+      "description": "Percentage of energy obtained from on-site renewable sources for heating (if any)",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "RENEWABLES_ELECTRICAL": {
+      "description": "Percentage of energy obtained from on-site renewable sources for electricity (if any).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR1_ELECTRICITY_CO2": {
+      "description": "CO2 emissions from electricity in previous reporting year (if any). Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR2_ELECTRICITY_CO2": {
+      "description": "CO2 emissions from electricity in previous reporting year (if any). Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR1_HEATING_CO2": {
+      "description": "CO2 emissions from heating in previous reporting year (if any). Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR2_HEATING_CO2": {
+      "description": "CO2 emissions from heating in previous reporting year (if any). Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR1_RENEWABLES_CO2": {
+      "description": "CO2 emissions from renewable sources in previous reporting year (if any). Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "YR2_RENEWABLES_CO2": {
+      "description": "CO2 emissions from renewable sources in previous reporting year (if any). Total CO2 emissions in tonnes per year of CO2.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "AIRCON_PRESENT": {
+      "description": "Air Conditioning System. Does the building have an air conditioning system?",
+      "type": "string"
+    },
+    "AIRCON_KW_RATING": {
+      "description": "Air conditioning System. Rating in kW",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "ESTIMATED_AIRCON_KW_RATING": {
+      "description": "Air Conditioning System. If exact rating unknown, what is the estimated total effective output rating of the air conditioning system in kW.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        }
+      ]
+    },
+    "AC_INSPECTION_COMMISSIONED": {
+      "description": "One of:1=Yes, inspection completed; 2=Yes, inspection commissioned; 3=No inspection completed or commissioned; 4=Not relevant; 5=Don't know",
+      "type": "string"
+    },
+    "BUILDING_ENVIRONMENT": {
+      "description": "Building environment which is taken as the servicing strategy that contributes the largest proportion of the building's CO2 emissions.",
+      "type": "string"
+    },
+    "BUILDING_CATEGORY": {
+      "description": "Building category codes. This data field may contain multiple benchmark categories. Where a building has a mix of uses that would place parts of the building in a different benchmark category, it is possible to construct a composite benchmark, e.g. a school with a swimming pool.",
+      "type": "string"
+    },
+    "ADDRESS": {
+      "description": "Provides the address of the property, combining up to three address lines (address1, address2, and address3). The postcode is recorded separately and not included here.",
+      "type": "string"
+    },
+    "LOCAL_AUTHORITY_LABEL": {
+      "description": "The name of the local authority area where the property is located. This is for general information only. For reliable identification and analysis, use the Local Authority ONS code.",
+      "type": "string"
+    },
+    "CONSTITUENCY_LABEL": {
+      "description": "The name of the UK parliamentary constituency where the property is located. This is for general information only. For reliable identification and analysis, use the Constituency ONS code.",
+      "type": "string"
+    },
+    "POSTTOWN": {
+      "description": "The post town of the property based on the Royal Mail address database. Used for mail delivery and address matching. May differ from local authority or constituency boundaries.",
+      "type": "string"
+    },
+    "NOMINATED_DATE": {
+      "description": "The default nominated date is the assessment date. The assessor can select an alternative nominated date no later than three months after the end of the assessment period.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "format": "date"
+        }
+      ]
+    },
+    "OR_ASSESSMENT_END_DATE": {
+      "description": "Specified end date of the assessment period.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "format": "date"
+        }
+      ]
+    },
+    "LODGEMENT_DATETIME": {
+      "description": "The date and time the EPC was officially lodged on the Energy Performance of Buildings Register. This timestamp determines when the certificate becomes valid.",
+      "type": "string"
+    },
+    "OCCUPANCY_LEVEL": {
+      "description": "Occupancy during the hours of operation of the building.",
+      "type": "string"
+    },
+    "UPRN": {
+      "description": "The Unique Property Reference Number is a 12-digit code that identifies the property, flat, building, or plot of land being assessed.",
+      "type": "string"
+    },
+    "UPRN_SOURCE": {
+      "description": "The method of which the Unique Property Reference Number (UPRN) was added to the record. It will either say \"Energy Assessor\" if it was entered during the assessment, or \"Address Matched\" if it was added later using the government's address-matching system. In some cases, this field may be blank or contain legacy values where UPRNs were not available or matched at the time.",
+      "type": "string"
+    },
+    "REPORT_TYPE": {
+      "description": "Type of assessment carried out on the building. 1: Display Energy Certificate (DEC) Operational Rating assessment specifically carried out on larger properties occupied by public authorities and frequently visited by the public.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "CERTIFICATE_NUMBER",
+    "ADDRESS1",
+    "ADDRESS2",
+    "ADDRESS3",
+    "POSTCODE",
+    "CURRENT_OPERATIONAL_RATING",
+    "YR1_OPERATIONAL_RATING",
+    "YR2_OPERATIONAL_RATING",
+    "OPERATIONAL_RATING_BAND",
+    "ELECTRIC_CO2",
+    "HEATING_CO2",
+    "RENEWABLES_CO2",
+    "PROPERTY_TYPE",
+    "INSPECTION_DATE",
+    "LOCAL_AUTHORITY",
+    "CONSTITUENCY",
+    "LODGEMENT_DATE",
+    "MAIN_BENCHMARK",
+    "MAIN_HEATING_FUEL",
+    "OTHER_FUEL",
+    "SPECIAL_ENERGY_USES",
+    "RENEWABLE_SOURCES",
+    "TOTAL_FLOOR_AREA",
+    "ANNUAL_THERMAL_FUEL_USAGE",
+    "TYPICAL_THERMAL_FUEL_USAGE",
+    "ANNUAL_ELECTRICAL_FUEL_USAGE",
+    "TYPICAL_ELECTRICAL_FUEL_USAGE",
+    "RENEWABLES_FUEL_THERMAL",
+    "RENEWABLES_ELECTRICAL",
+    "YR1_ELECTRICITY_CO2",
+    "YR2_ELECTRICITY_CO2",
+    "YR1_HEATING_CO2",
+    "YR2_HEATING_CO2",
+    "YR1_RENEWABLES_CO2",
+    "YR2_RENEWABLES_CO2",
+    "AIRCON_PRESENT",
+    "AIRCON_KW_RATING",
+    "ESTIMATED_AIRCON_KW_RATING",
+    "AC_INSPECTION_COMMISSIONED",
+    "BUILDING_ENVIRONMENT",
+    "BUILDING_CATEGORY",
+    "ADDRESS",
+    "LOCAL_AUTHORITY_LABEL",
+    "CONSTITUENCY_LABEL",
+    "POSTTOWN",
+    "NOMINATED_DATE",
+    "OR_ASSESSMENT_END_DATE",
+    "LODGEMENT_DATETIME",
+    "OCCUPANCY_LEVEL",
+    "UPRN",
+    "UPRN_SOURCE",
+    "REPORT_TYPE"
+  ],
+  "additionalProperties": false
+}
