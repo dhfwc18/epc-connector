@@ -389,8 +389,8 @@
       "steps": [
         {
           "op": "boolean",
-          "true": ["Y"],
-          "false": ["N"]
+          "true": ["Y", "true"],
+          "false": ["N", "false"]
         }
       ]
     },
