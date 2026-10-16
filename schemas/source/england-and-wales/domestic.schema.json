@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:epc-connector:schemas:source:england-and-wales:domestic",
   "title": "England and Wales Domestic EPCs: certificates row",
-  "description": "One row of the England and Wales domestic EPC CSV published by Get energy performance of buildings data (https://get-energy-performance-data.communities.gov.uk/), as an object of raw string values keyed by column name.",
+  "description": "One row of the England and Wales domestic EPC CSV published by Get energy performance of buildings data (https://get-energy-performance-data.communities.gov.uk/), as an object of raw string values keyed by the CSV's (lowercase) column names.",
   "type": "object",
   "$defs": {
     "missing": {
@@ -11,51 +11,95 @@
     }
   },
   "properties": {
-    "CERTIFICATE_NUMBER": {
+    "certificate_number": {
       "description": "The unique reference number for the EPC. This number is generated when the certificate is lodged and can be used to retrieve the record from the EPB data API and the EPC register.",
       "type": "string"
     },
-    "ADDRESS1": {
+    "address1": {
       "description": "The first line of the property's address, usually the building number and/or name and street name.",
       "type": "string"
     },
-    "ADDRESS2": {
+    "address2": {
       "description": "The second line of the property's address, usually the village town or city.",
       "type": "string"
     },
-    "ADDRESS3": {
+    "address3": {
       "description": "The third line of the property's address, usually the county; not always used.",
       "type": "string"
     },
-    "POSTCODE": {
+    "postcode": {
       "description": "The postcode of the property. Each postcode consists of five to seven alphanumeric characters which was created by Royal Mail. A full postcode designates an area with multiple addresses or a single delivery point.",
       "type": "string"
     },
-    "CURRENT_ENERGY_RATING": {
-      "description": "How energy efficient the property was at the time of the assessment based on its structure, heating and lighting. Rated from A to G, where A is best.",
+    "posttown": {
+      "description": "The post town of the property based on the Royal Mail address database. Used for mail delivery and address matching. May differ from local authority or constituency boundaries.",
+      "type": "string"
+    },
+    "address": {
+      "description": "Provides the address of the property, combining up to three address lines (address1, address2, and address3). The postcode is recorded separately and not included here.",
+      "type": "string"
+    },
+    "constituency": {
+      "description": "The UK parliamentary constituency the building is in. Uses the official ONS (Office for National Statistics) code for that area.",
+      "type": "string"
+    },
+    "constituency_label": {
+      "description": "The name of the UK parliamentary constituency where the property is located. This is for general information only. For reliable identification and analysis, use the Constituency ONS code.",
+      "type": "string"
+    },
+    "local_authority": {
+      "description": "The local authority the building is in. Uses the official ONS (Office for National Statistics) code for that local area.",
+      "type": "string"
+    },
+    "local_authority_label": {
+      "description": "The name of the local authority area where the property is located. This is for general information only. For reliable identification and analysis, use the Local Authority ONS code.",
+      "type": "string"
+    },
+    "built_form": {
+      "description": "Describes how the property is joined to other buildings such as detached, semi-detached, terraced, or part of a block.",
+      "type": "string"
+    },
+    "co2_emiss_curr_per_floor_area": {
+      "description": "An estimate of current cardon dioxide (CO2) emissions from energy use per square metre of floor area per year. Based on the building's energy use Measured in kilograms per square metre per year (kg/m2/year).",
       "type": "string",
       "anyOf": [
         {
           "$ref": "#/$defs/missing"
         },
         {
-          "enum": ["A", "B", "C", "D", "E", "F", "G"]
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
         }
       ]
     },
-    "POTENTIAL_ENERGY_RATING": {
-      "description": "How energy efficient the property could be after making recommended improvements. Rated from A to G, where A is best.",
+    "co2_emissions_current": {
+      "description": "An estimate of current carbon dioxide (CO2) emissions each year based on the building's energy use. Measured in tonnes/yr.",
       "type": "string",
       "anyOf": [
         {
           "$ref": "#/$defs/missing"
         },
         {
-          "enum": ["A", "B", "C", "D", "E", "F", "G"]
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
         }
       ]
     },
-    "CURRENT_ENERGY_EFFICIENCY": {
+    "co2_emissions_potential": {
+      "description": "An estimate of the total carbon dioxide (CO2) emissions per year if recommended improvements are made. Based on the building's energy use Measured in tonnes/yr",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "construction_age_band": {
+      "description": "Describes the period when the building (or each part of it) was originally constructed. If the property has been extended, different age bands may apply to different parts",
+      "type": "string"
+    },
+    "current_energy_efficiency": {
       "description": "The estimated current annual energy cost for heating, hot water and lighting. Measured in pounds per square metre per year (\u00a3/m2/year).",
       "type": "string",
       "anyOf": [
@@ -67,8 +111,48 @@
         }
       ]
     },
-    "POTENTIAL_ENERGY_EFFICIENCY": {
-      "description": "The estimated annual energy cost for heating, hot water and lighting if recommended improvements are made. Measured in pounds per square metre per year (\u00a3/m2/year).",
+    "current_energy_rating": {
+      "description": "How energy efficient the property was at the time of the assessment based on its structure, heating and lighting. Rated from A to G, where A is best.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "enum": ["A", "B", "C", "D", "E", "F", "G"]
+        }
+      ]
+    },
+    "energy_consumption_current": {
+      "description": "An estimate of the energy currently used to heat, light, and provide hot water over a year. Measured in kilowatt hours per square metre per year (kWh/m2/year).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "energy_consumption_potential": {
+      "description": "An estimate of energy the property would use each year if recommended improvements are made. Measured in kilowatt hours per square metre per year (kWh/m2/year).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "energy_tariff": {
+      "description": "The electricity tariff used in the property. Common types include single-rate, dual-rate and time-of-use tariffs. It does not refer to tariffs for gas or other fuels. The tariff type is based on information provided or observed during the assessment.",
+      "type": "string"
+    },
+    "environment_impact_current": {
+      "description": "An estimate of current carbon dioxide (CO2) emissions related to heating, lighting and hot water use. Rated on a scale of 1-92+. The higher the rating, the lower the emissions. The ratings are grouped into bands A-G where A is best and G is worst.",
       "type": "string",
       "anyOf": [
         {
@@ -79,15 +163,155 @@
         }
       ]
     },
-    "PROPERTY_TYPE": {
-      "description": "Describes the kind of property such as house, flat or maisonette.",
+    "environment_impact_potential": {
+      "description": "An estimate of carbon dioxide (CO2) emissions related to heating, lighting and hot water use, if recommended improvements are made. Rated on a scale of 1-92+. The higher the rating, the lower the emissions. The ratings are grouped into bands A-G where A is best and G is worst.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "extension_count": {
+      "description": "Number of extensions that have been added to the property, as observed during the energy assessment. Maximum of 4. Each extension is entered separately in the EPC calculation, as its walls, roof, and floor may have different levels of insulation or construction. Part of a building may count as extension if the construction differs from the main part of the building.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "fixed_lighting_outlets_count": {
+      "description": "The number of fixed light fittings (for example ceiling or wall mounted) in the property using incandescent or halogen bulbs.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "flat_storey_count": {
+      "description": "The total number of floors in the apartment block, including the ground floor and any basement levels.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "flat_top_storey": {
+      "description": "Whether the flat is on the top floor of a building.",
       "type": "string"
     },
-    "BUILT_FORM": {
-      "description": "Describes how the property is joined to other buildings such as detached, semi-detached, terraced, or part of a block.",
+    "floor_description": {
+      "description": "Describes the construction of the property's lowest exposed floor - for example, solid concrete or suspended timber. This usually refers to the ground floor in houses and ground-floor flats. If the floor is above another heated space (such as a mid-floor flat), no floor description is shown.",
       "type": "string"
     },
-    "INSPECTION_DATE": {
+    "floor_energy_eff": {
+      "description": "How well the floor(s) retain heat, based on the construction of the floor. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "floor_height": {
+      "description": "The average height of the storey in metres. Measured from finished floor level to the ceiling for each storey of the property.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "floor_level": {
+      "description": "Applies to flats and maisonettes only. Shows which floor the flat or maisonette is on, using numbers that start from the lowest level of the building. If there is no basement, the ground floor is level 0. If there is a basement, the basement is level 0 and the ground floor is level 1. Floors above are numbered from 2 upwards.",
+      "type": "string"
+    },
+    "glazed_area": {
+      "description": "An estimate of glazing compared to glazing in a typical building of a similar type. The assessor selects a band - Typical, More than Typical, Less than typical, Much more than Typical, Much Less than typical.",
+      "type": "string"
+    },
+    "glazed_type": {
+      "description": "The type of glazing used in the property's windows. Either single, double or triple glazing. It can be based on the assessor's observation or from evidence of glazing performance from the British Fenestration Rating Council or the window manufacturer (if available).",
+      "type": "string"
+    },
+    "heat_loss_corridor": {
+      "description": "An internal common corridor leading to a flat or maisonette only. Either no corridor, heated corridor or unheated.",
+      "type": "string"
+    },
+    "heating_cost_current": {
+      "description": "An estimate of current energy costs for heating each year. Measured in pounds per year (\u00a3/yr).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "heating_cost_potential": {
+      "description": "An estimate of energy costs for heating each year, if recommended improvements are made. Measured in pounds per year (GBP).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "hot_water_cost_current": {
+      "description": "An estimate of current cost of hot water each year. Measured in pounds per year (\u00a3/yr).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "hot_water_cost_potential": {
+      "description": "An estimate of the cost of hot water each year, if recommended improvements are made. Measured in pounds per year (\u00a3/yr).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "hot_water_energy_eff": {
+      "description": "Rates how efficiently the hot water system uses energy. One of: very good, good, average, poor, or very poor.",
+      "type": "string"
+    },
+    "hot_water_env_eff": {
+      "description": "How the hot water system contributes to carbon dioxide (CO2) emissions. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "hotwater_description": {
+      "description": "Describes how the property heats its hot water such as a gas boiler, electric immersion heater, or solar system.",
+      "type": "string"
+    },
+    "inspection_date": {
       "description": "The date when information about the building was collected to prepare the EPC.",
       "type": "string",
       "anyOf": [
@@ -100,15 +324,43 @@
         }
       ]
     },
-    "LOCAL_AUTHORITY": {
-      "description": "The local authority the building is in. Uses the official ONS (Office for National Statistics) code for that local area.",
+    "lighting_cost_current": {
+      "description": "An estimate of the current cost of electricity used for lighting each year. Measured in pounds per year (\u00a3/yr).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "lighting_cost_potential": {
+      "description": "An estimate of the cost of electricity used for lighting each year, if recommended improvements are made. Measured in pounds per year (\u00a3/yr).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "lighting_description": {
+      "description": "Describes the type of fixed lighting in the property, based on the number and type of light fittings. The assessment includes only fixed lights (not plug-in lamps), and focuses on whether they use low-energy bulbs such as LEDs or compact fluorescents.",
       "type": "string"
     },
-    "CONSTITUENCY": {
-      "description": "The UK parliamentary constituency the building is in. Uses the official ONS (Office for National Statistics) code for that area.",
+    "lighting_energy_eff": {
+      "description": "Shows how efficiently the property's fixed lighting uses energy, based on the number of low-energy fittings. Rated from very poor to very good.",
       "type": "string"
     },
-    "LODGEMENT_DATE": {
+    "lighting_env_eff": {
+      "description": "How the fixed lighting contributes to estimated carbon dioxide (CO2) emissions, based on carbon emissions from electricity use. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "lodgement_date": {
       "description": "The date the energy certificate was added to the Energy Performance of Buildings Register. This is called 'Lodgement'.",
       "type": "string",
       "anyOf": [
@@ -121,267 +373,11 @@
         }
       ]
     },
-    "TRANSACTION_TYPE": {
-      "description": "States why the energy certificate was produced. This could be for a sale, rental, new build, Green Deal, ECO assessment, or another reason. If the assessor does not know the reason, it's recorded as 'none of the above'.",
+    "lodgement_datetime": {
+      "description": "The date and time the EPC was officially lodged on the Energy Performance of Buildings Register. This timestamp determines when the certificate becomes valid.",
       "type": "string"
     },
-    "ENVIRONMENT_IMPACT_CURRENT": {
-      "description": "An estimate of current carbon dioxide (CO2) emissions related to heating, lighting and hot water use. Rated on a scale of 1-92+. The higher the rating, the lower the emissions. The ratings are grouped into bands A-G where A is best and G is worst.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "ENVIRONMENT_IMPACT_POTENTIAL": {
-      "description": "An estimate of carbon dioxide (CO2) emissions related to heating, lighting and hot water use, if recommended improvements are made. Rated on a scale of 1-92+. The higher the rating, the lower the emissions. The ratings are grouped into bands A-G where A is best and G is worst.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "ENERGY_CONSUMPTION_CURRENT": {
-      "description": "An estimate of the energy currently used to heat, light, and provide hot water over a year. Measured in kilowatt hours per square metre per year (kWh/m2/year).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "ENERGY_CONSUMPTION_POTENTIAL": {
-      "description": "An estimate of energy the property would use each year if recommended improvements are made. Measured in kilowatt hours per square metre per year (kWh/m2/year).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "CO2_EMISSIONS_CURRENT": {
-      "description": "An estimate of current carbon dioxide (CO2) emissions each year based on the building's energy use. Measured in tonnes/yr.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "CO2_EMISS_CURR_PER_FLOOR_AREA": {
-      "description": "An estimate of current cardon dioxide (CO2) emissions from energy use per square metre of floor area per year. Based on the building's energy use Measured in kilograms per square metre per year (kg/m2/year).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "CO2_EMISSIONS_POTENTIAL": {
-      "description": "An estimate of the total carbon dioxide (CO2) emissions per year if recommended improvements are made. Based on the building's energy use Measured in tonnes/yr",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "LIGHTING_COST_CURRENT": {
-      "description": "An estimate of the current cost of electricity used for lighting each year. Measured in pounds per year (\u00a3/yr).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "LIGHTING_COST_POTENTIAL": {
-      "description": "An estimate of the cost of electricity used for lighting each year, if recommended improvements are made. Measured in pounds per year (\u00a3/yr).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "HEATING_COST_CURRENT": {
-      "description": "An estimate of current energy costs for heating each year. Measured in pounds per year (\u00a3/yr).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "HEATING_COST_POTENTIAL": {
-      "description": "An estimate of energy costs for heating each year, if recommended improvements are made. Measured in pounds per year (GBP).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "HOT_WATER_COST_CURRENT": {
-      "description": "An estimate of current cost of hot water each year. Measured in pounds per year (\u00a3/yr).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "HOT_WATER_COST_POTENTIAL": {
-      "description": "An estimate of the cost of hot water each year, if recommended improvements are made. Measured in pounds per year (\u00a3/yr).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "TOTAL_FLOOR_AREA": {
-      "description": "The total enclosed floor area of the property, measured to the internal face of the external walls. The measurement follows recognised professional standards (issued by the Royal Institution of Chartered Surveyors or any successor organisation). Given in square metres (m2).",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "ENERGY_TARIFF": {
-      "description": "The electricity tariff used in the property. Common types include single-rate, dual-rate and time-of-use tariffs. It does not refer to tariffs for gas or other fuels. The tariff type is based on information provided or observed during the assessment.",
-      "type": "string"
-    },
-    "MAINS_GAS_FLAG": {
-      "description": "Yes/No field recorded by the assessor to show whether mains gas is actively used in the property. \"Yes\" is selected if a gas meter is present and supplying at least one gas-burning appliance (such as a boiler, cooker or fire). A capped, disconnected, or unused gas supply (even if a meter is present) is a \"No\".",
-      "type": "string"
-    },
-    "FLOOR_LEVEL": {
-      "description": "Applies to flats and maisonettes only. Shows which floor the flat or maisonette is on, using numbers that start from the lowest level of the building. If there is no basement, the ground floor is level 0. If there is a basement, the basement is level 0 and the ground floor is level 1. Floors above are numbered from 2 upwards.",
-      "type": "string"
-    },
-    "FLAT_TOP_STOREY": {
-      "description": "Whether the flat is on the top floor of a building.",
-      "type": "string"
-    },
-    "FLAT_STOREY_COUNT": {
-      "description": "The total number of floors in the apartment block, including the ground floor and any basement levels.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "MAIN_HEATING_CONTROLS": {
-      "description": "The type of heating controls used for the main heating system(s). If there are two main systems, both are included.",
-      "type": "string"
-    },
-    "MULTI_GLAZE_PROPORTION": {
-      "description": "An estimate of the proportion of the property's total window area that is double or triple-glazed. The assessor places the property into one of twelve bands, based on how much of the glazing is multiple glazed. For example, 10%-20%.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "GLAZED_TYPE": {
-      "description": "The type of glazing used in the property's windows. Either single, double or triple glazing. It can be based on the assessor's observation or from evidence of glazing performance from the British Fenestration Rating Council or the window manufacturer (if available).",
-      "type": "string"
-    },
-    "GLAZED_AREA": {
-      "description": "An estimate of glazing compared to glazing in a typical building of a similar type. The assessor selects a band - Typical, More than Typical, Less than typical, Much more than Typical, Much Less than typical.",
-      "type": "string"
-    },
-    "EXTENSION_COUNT": {
-      "description": "Number of extensions that have been added to the property, as observed during the energy assessment. Maximum of 4. Each extension is entered separately in the EPC calculation, as its walls, roof, and floor may have different levels of insulation or construction. Part of a building may count as extension if the construction differs from the main part of the building.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "NUMBER_HABITABLE_ROOMS": {
-      "description": "Number of habitable rooms, includes any living room, sitting room, dining room, bedroom, study and similar and non-separated conservatories. Non-habitable rooms are ancillary rooms and include hallways, stairs & landings, kitchens, utility rooms, bathrooms, cloakrooms, large storage cupboards, WCs, en-suites and any habitable room not having access to natural daylight.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "NUMBER_HEATED_ROOMS": {
-      "description": "Number of heated habitable rooms. These are rooms with a fixed heat emitter present. This could be a hot water radiator or under floor heating on a heating circuit, a storage heater, a gas fire, a solid fuel burner, a fixed electric fire or a solid fuel fireplace",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "LOW_ENERGY_LIGHTING": {
+    "low_energy_lighting": {
       "description": "The proportion of fixed light fittings in the home that use low-energy bulbs (such as LEDs or compact fluorescents). Given as a percentage of all fixed lights. A value of 0% means none of the fixed lights use low-energy bulbs. Does not include portable lamps or external lights.",
       "type": "string",
       "anyOf": [
@@ -393,223 +389,7 @@
         }
       ]
     },
-    "NUMBER_OPEN_FIREPLACES": {
-      "description": "Number of open fireplaces in the property. Open fireplaces allow air to flow directly between the inside of the home and the outside - for example, through an open chimney or flue.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "HOTWATER_DESCRIPTION": {
-      "description": "Describes how the property heats its hot water such as a gas boiler, electric immersion heater, or solar system.",
-      "type": "string"
-    },
-    "HOT_WATER_ENERGY_EFF": {
-      "description": "Rates how efficiently the hot water system uses energy. One of: very good, good, average, poor, or very poor.",
-      "type": "string"
-    },
-    "HOT_WATER_ENV_EFF": {
-      "description": "How the hot water system contributes to carbon dioxide (CO2) emissions. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "FLOOR_DESCRIPTION": {
-      "description": "Describes the construction of the property's lowest exposed floor - for example, solid concrete or suspended timber. This usually refers to the ground floor in houses and ground-floor flats. If the floor is above another heated space (such as a mid-floor flat), no floor description is shown.",
-      "type": "string"
-    },
-    "FLOOR_ENERGY_EFF": {
-      "description": "How well the floor(s) retain heat, based on the construction of the floor. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "FLOOR_ENV_EFF": {
-      "description": "How the floor(s) contribute to carbon dioxide (CO2) emissions, based on the construction of the floor. Rated from very poor to very good. Floors rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
-      "type": "string"
-    },
-    "WINDOWS_DESCRIPTION": {
-      "description": "Describes the windows in the property including whether they are single, double, or triple glazed. The description may also include features like special coatings or gas-filled spaces between panes that help reduce heat loss.",
-      "type": "string"
-    },
-    "WINDOWS_ENERGY_EFF": {
-      "description": "How well windows retain heat. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "WINDOWS_ENV_EFF": {
-      "description": "How the windows contribute to carbon dioxide (CO2)emissions. Rated from very poor to very good. Windows rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
-      "type": "string"
-    },
-    "WALLS_DESCRIPTION": {
-      "description": "Describes the construction of the external walls. For example, solid brick, a cavity wall, or timber frame. Includes whether the walls are insulated, and whether the insultation was installed at the time of construction or added later.",
-      "type": "string"
-    },
-    "WALLS_ENERGY_EFF": {
-      "description": "How well the walls retain heat. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "WALLS_ENV_EFF": {
-      "description": "How the walls contribute to carbon dioxide (CO2) emissions, based on the construction of the walls. Rated from very poor to very good. Walls rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
-      "type": "string"
-    },
-    "SECONDHEAT_DESCRIPTION": {
-      "description": "Describes the type of secondary heating system in the property, such as a gas fire or electric room heater. A secondary heating system is an additional or backup heat source, often used to heat specific rooms or areas. It is assessed separately from the main heating system.",
-      "type": "string"
-    },
-    "SHEATING_ENERGY_EFF": {
-      "description": "The energy efficiency of the secondary heating system, based on how much energy it uses to provide heat. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "SHEATING_ENV_EFF": {
-      "description": "How the secondary heating system contributes to carbon dioxide (CO2) emissions. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "ROOF_DESCRIPTION": {
-      "description": "Describes the construction of the roof. For example, pitched with tiles, flat with felt, or thatched. Includes any roof-level insulation observed or assumed in the assessment.",
-      "type": "string"
-    },
-    "ROOF_ENERGY_EFF": {
-      "description": "How well the roof retains heat. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "ROOF_ENV_EFF": {
-      "description": "How the roof contributes to estimated carbon dioxide (CO2) emissions, based on the roof's construction. Rated from very poor to very good. Roofs rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
-      "type": "string"
-    },
-    "MAINHEAT_DESCRIPTION": {
-      "description": "Describes the property's main heating system such as a gas boiler with radiators, electric storage heaters, or a heat pump. If the home has more than one main system, both are included.",
-      "type": "string"
-    },
-    "MAINHEAT_ENERGY_EFF": {
-      "description": "The energy efficiency rating of the main heating system. Rated from very poor to very good. Systems rated very good use less energy to produce the same amount of heat.",
-      "type": "string"
-    },
-    "MAINHEAT_ENV_EFF": {
-      "description": "How the main heating system contributes to estimated carbon dioxide (CO2) emissions. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "MAINHEATCONT_DESCRIPTION": {
-      "description": "Describes the type of control(s) used for the main heating system(s) - for example, programmer, room thermostat, or smart control. If the property has two main heating systems, both are included.",
-      "type": "string"
-    },
-    "MAINHEATC_ENERGY_EFF": {
-      "description": "The energy efficiency of the main heating system. Rated from very poor to very good. Determined by the assessor (for example the type and model of boiler from a national database). If the main heating system cannot be identified, a default value is used.",
-      "type": "string"
-    },
-    "MAINHEATC_ENV_EFF": {
-      "description": "How the main heating controls contribute to carbon dioxide (CO2) emissions, based on how the controls can reduce energy use. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "LIGHTING_DESCRIPTION": {
-      "description": "Describes the type of fixed lighting in the property, based on the number and type of light fittings. The assessment includes only fixed lights (not plug-in lamps), and focuses on whether they use low-energy bulbs such as LEDs or compact fluorescents.",
-      "type": "string"
-    },
-    "LIGHTING_ENERGY_EFF": {
-      "description": "Shows how efficiently the property's fixed lighting uses energy, based on the number of low-energy fittings. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "LIGHTING_ENV_EFF": {
-      "description": "How the fixed lighting contributes to estimated carbon dioxide (CO2) emissions, based on carbon emissions from electricity use. Rated from very poor to very good.",
-      "type": "string"
-    },
-    "MAIN_FUEL": {
-      "description": "Describes the fuel used to power the property's main heating system - for example, mains gas, electricity, heating oil, or solid fuels (such as wood).",
-      "type": "string"
-    },
-    "WIND_TURBINE_COUNT": {
-      "description": "The number of wind turbines on the property.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "HEAT_LOSS_CORRIDOR": {
-      "description": "An internal common corridor leading to a flat or maisonette only. Either no corridor, heated corridor or unheated.",
-      "type": "string"
-    },
-    "UNHEATED_CORRIDOR_LENGTH": {
-      "description": "For flats and maisonettes only. Shows the length of wall in metres between the flat or maisonette and an unheated corridor. Only applies to properties with an unheated corridor. More wall length exposed to the corridor increases heat loss, raising energy demand and potentially lowering the EPC score.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "FLOOR_HEIGHT": {
-      "description": "The average height of the storey in metres. Measured from finished floor level to the ceiling for each storey of the property.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
-        }
-      ]
-    },
-    "PHOTO_SUPPLY": {
-      "description": "Whether the property generates electricity from solar panels. The proportion of the roof area (%) covered by solar panels is assessed. 0% means that the property does not have solar panels.",
-      "type": "string"
-    },
-    "SOLAR_WATER_HEATING_FLAG": {
-      "description": "Whether the property uses solar panels to help heat its water. Either a yes or no.",
-      "type": "string"
-    },
-    "MECHANICAL_VENTILATION": {
-      "description": "Describes the type of mechanical ventilation in the property, such as an extractor fan, positive input ventilation, or mechanical ventilation with heat recovery.",
-      "type": "string"
-    },
-    "ADDRESS": {
-      "description": "Provides the address of the property, combining up to three address lines (address1, address2, and address3). The postcode is recorded separately and not included here.",
-      "type": "string"
-    },
-    "LOCAL_AUTHORITY_LABEL": {
-      "description": "The name of the local authority area where the property is located. This is for general information only. For reliable identification and analysis, use the Local Authority ONS code.",
-      "type": "string"
-    },
-    "CONSTITUENCY_LABEL": {
-      "description": "The name of the UK parliamentary constituency where the property is located. This is for general information only. For reliable identification and analysis, use the Constituency ONS code.",
-      "type": "string"
-    },
-    "POSTTOWN": {
-      "description": "The post town of the property based on the Royal Mail address database. Used for mail delivery and address matching. May differ from local authority or constituency boundaries.",
-      "type": "string"
-    },
-    "CONSTRUCTION_AGE_BAND": {
-      "description": "Describes the period when the building (or each part of it) was originally constructed. If the property has been extended, different age bands may apply to different parts",
-      "type": "string"
-    },
-    "LODGEMENT_DATETIME": {
-      "description": "The date and time the EPC was officially lodged on the Energy Performance of Buildings Register. This timestamp determines when the certificate becomes valid.",
-      "type": "string"
-    },
-    "TENURE": {
-      "description": "Describes the tenure type of the property. One of: owner-occupied; rented (social); rented (private). This field is used in statistical analysis and policy research but does not affect the EPC calculation.",
-      "type": "string"
-    },
-    "FIXED_LIGHTING_OUTLETS_COUNT": {
-      "description": "The number of fixed light fittings (for example ceiling or wall mounted) in the property using incandescent or halogen bulbs.",
-      "type": "string",
-      "anyOf": [
-        {
-          "$ref": "#/$defs/missing"
-        },
-        {
-          "pattern": "^-?[0-9]+$"
-        }
-      ]
-    },
-    "LOW_ENERGY_FIXED_LIGHT_COUNT": {
+    "low_energy_fixed_lighting_outlets_count": {
       "description": "The number of fixed light fittings (for example ceiling or wall mounted) in the property using low energy bulbs.",
       "type": "string",
       "anyOf": [
@@ -621,111 +401,339 @@
         }
       ]
     },
-    "UPRN": {
+    "main_fuel": {
+      "description": "Describes the fuel used to power the property's main heating system - for example, mains gas, electricity, heating oil, or solid fuels (such as wood).",
+      "type": "string"
+    },
+    "mainheat_description": {
+      "description": "Describes the property's main heating system such as a gas boiler with radiators, electric storage heaters, or a heat pump. If the home has more than one main system, both are included.",
+      "type": "string"
+    },
+    "mainheat_energy_eff": {
+      "description": "The energy efficiency rating of the main heating system. Rated from very poor to very good. Systems rated very good use less energy to produce the same amount of heat.",
+      "type": "string"
+    },
+    "mainheat_env_eff": {
+      "description": "How the main heating system contributes to estimated carbon dioxide (CO2) emissions. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "mainheatc_energy_eff": {
+      "description": "The energy efficiency of the main heating system. Rated from very poor to very good. Determined by the assessor (for example the type and model of boiler from a national database). If the main heating system cannot be identified, a default value is used.",
+      "type": "string"
+    },
+    "mainheatc_env_eff": {
+      "description": "How the main heating controls contribute to carbon dioxide (CO2) emissions, based on how the controls can reduce energy use. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "mainheatcont_description": {
+      "description": "Describes the type of control(s) used for the main heating system(s) - for example, programmer, room thermostat, or smart control. If the property has two main heating systems, both are included.",
+      "type": "string"
+    },
+    "main_heating_controls": {
+      "description": "The type of heating controls used for the main heating system(s). If there are two main systems, both are included.",
+      "type": "string"
+    },
+    "mains_gas_flag": {
+      "description": "Yes/No field recorded by the assessor to show whether mains gas is actively used in the property. \"Yes\" is selected if a gas meter is present and supplying at least one gas-burning appliance (such as a boiler, cooker or fire). A capped, disconnected, or unused gas supply (even if a meter is present) is a \"No\".",
+      "type": "string"
+    },
+    "mechanical_ventilation": {
+      "description": "Describes the type of mechanical ventilation in the property, such as an extractor fan, positive input ventilation, or mechanical ventilation with heat recovery.",
+      "type": "string"
+    },
+    "multi_glaze_proportion": {
+      "description": "An estimate of the proportion of the property's total window area that is double or triple-glazed. The assessor places the property into one of twelve bands, based on how much of the glazing is multiple glazed. For example, 10%-20%.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "number_habitable_rooms": {
+      "description": "Number of habitable rooms, includes any living room, sitting room, dining room, bedroom, study and similar and non-separated conservatories. Non-habitable rooms are ancillary rooms and include hallways, stairs & landings, kitchens, utility rooms, bathrooms, cloakrooms, large storage cupboards, WCs, en-suites and any habitable room not having access to natural daylight.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "number_heated_rooms": {
+      "description": "Number of heated habitable rooms. These are rooms with a fixed heat emitter present. This could be a hot water radiator or under floor heating on a heating circuit, a storage heater, a gas fire, a solid fuel burner, a fixed electric fire or a solid fuel fireplace",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "number_open_fireplaces": {
+      "description": "Number of open fireplaces in the property. Open fireplaces allow air to flow directly between the inside of the home and the outside - for example, through an open chimney or flue.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "photo_supply": {
+      "description": "Whether the property generates electricity from solar panels. The proportion of the roof area (%) covered by solar panels is assessed. 0% means that the property does not have solar panels.",
+      "type": "string"
+    },
+    "potential_energy_efficiency": {
+      "description": "The estimated annual energy cost for heating, hot water and lighting if recommended improvements are made. Measured in pounds per square metre per year (\u00a3/m2/year).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "potential_energy_rating": {
+      "description": "How energy efficient the property could be after making recommended improvements. Rated from A to G, where A is best.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "enum": ["A", "B", "C", "D", "E", "F", "G"]
+        }
+      ]
+    },
+    "property_type": {
+      "description": "Describes the kind of property such as house, flat or maisonette.",
+      "type": "string"
+    },
+    "report_type": {
+      "description": "Describes the type of energy assessment used to produce the report. 2: Reduced Standard Assessment Procedure (RdSAP), used for existing homes; 3: Standard Assessment Procedure (SAP), used for new homes or conversions. This field helps distinguish between assessments for new builds and those for existing buildings.",
+      "type": "string"
+    },
+    "roof_description": {
+      "description": "Describes the construction of the roof. For example, pitched with tiles, flat with felt, or thatched. Includes any roof-level insulation observed or assumed in the assessment.",
+      "type": "string"
+    },
+    "roof_energy_eff": {
+      "description": "How well the roof retains heat. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "roof_env_eff": {
+      "description": "How the roof contributes to estimated carbon dioxide (CO2) emissions, based on the roof's construction. Rated from very poor to very good. Roofs rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
+      "type": "string"
+    },
+    "secondheat_description": {
+      "description": "Describes the type of secondary heating system in the property, such as a gas fire or electric room heater. A secondary heating system is an additional or backup heat source, often used to heat specific rooms or areas. It is assessed separately from the main heating system.",
+      "type": "string"
+    },
+    "sheating_energy_eff": {
+      "description": "The energy efficiency of the secondary heating system, based on how much energy it uses to provide heat. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "sheating_env_eff": {
+      "description": "How the secondary heating system contributes to carbon dioxide (CO2) emissions. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "solar_water_heating_flag": {
+      "description": "Whether the property uses solar panels to help heat its water. Either a yes or no.",
+      "type": "string"
+    },
+    "tenure": {
+      "description": "Describes the tenure type of the property. One of: owner-occupied; rented (social); rented (private). This field is used in statistical analysis and policy research but does not affect the EPC calculation.",
+      "type": "string"
+    },
+    "total_floor_area": {
+      "description": "The total enclosed floor area of the property, measured to the internal face of the external walls. The measurement follows recognised professional standards (issued by the Royal Institution of Chartered Surveyors or any successor organisation). Given in square metres (m2).",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "transaction_type": {
+      "description": "States why the energy certificate was produced. This could be for a sale, rental, new build, Green Deal, ECO assessment, or another reason. If the assessor does not know the reason, it's recorded as 'none of the above'.",
+      "type": "string"
+    },
+    "unheated_corridor_length": {
+      "description": "For flats and maisonettes only. Shows the length of wall in metres between the flat or maisonette and an unheated corridor. Only applies to properties with an unheated corridor. More wall length exposed to the corridor increases heat loss, raising energy demand and potentially lowering the EPC score.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)$"
+        }
+      ]
+    },
+    "walls_description": {
+      "description": "Describes the construction of the external walls. For example, solid brick, a cavity wall, or timber frame. Includes whether the walls are insulated, and whether the insultation was installed at the time of construction or added later.",
+      "type": "string"
+    },
+    "walls_energy_eff": {
+      "description": "How well the walls retain heat. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "walls_env_eff": {
+      "description": "How the walls contribute to carbon dioxide (CO2) emissions, based on the construction of the walls. Rated from very poor to very good. Walls rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
+      "type": "string"
+    },
+    "wind_turbine_count": {
+      "description": "The number of wind turbines on the property.",
+      "type": "string",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/missing"
+        },
+        {
+          "pattern": "^-?[0-9]+$"
+        }
+      ]
+    },
+    "windows_description": {
+      "description": "Describes the windows in the property including whether they are single, double, or triple glazed. The description may also include features like special coatings or gas-filled spaces between panes that help reduce heat loss.",
+      "type": "string"
+    },
+    "windows_energy_eff": {
+      "description": "How well windows retain heat. Rated from very poor to very good.",
+      "type": "string"
+    },
+    "windows_env_eff": {
+      "description": "How the windows contribute to carbon dioxide (CO2)emissions. Rated from very poor to very good. Windows rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
+      "type": "string"
+    },
+    "floor_env_eff": {
+      "description": "How the floor(s) contribute to carbon dioxide (CO2) emissions, based on the construction of the floor. Rated from very poor to very good. Floors rated very good retain more heat and so contribute less to carbon dioxide (CO2) emissions.",
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "uprn": {
       "description": "The Unique Property Reference Number is a 12-digit code that identifies the property, flat, building, or plot of land being assessed.",
       "type": "string"
     },
-    "UPRN_SOURCE": {
+    "uprn_source": {
       "description": "The method of which the Unique Property Reference Number (UPRN) was added to the record. It will either say \"Energy Assessor\" if it was entered during the assessment, or \"Address Matched\" if it was added later using the government's address-matching system. In some cases, this field may be blank or contain legacy values where UPRNs were not available or matched at the time.",
-      "type": "string"
-    },
-    "REPORT_TYPE": {
-      "description": "Describes the type of energy assessment used to produce the report. 2: Reduced Standard Assessment Procedure (RdSAP), used for existing homes; 3: Standard Assessment Procedure (SAP), used for new homes or conversions. This field helps distinguish between assessments for new builds and those for existing buildings.",
       "type": "string"
     }
   },
   "required": [
-    "CERTIFICATE_NUMBER",
-    "ADDRESS1",
-    "ADDRESS2",
-    "ADDRESS3",
-    "POSTCODE",
-    "CURRENT_ENERGY_RATING",
-    "POTENTIAL_ENERGY_RATING",
-    "CURRENT_ENERGY_EFFICIENCY",
-    "POTENTIAL_ENERGY_EFFICIENCY",
-    "PROPERTY_TYPE",
-    "BUILT_FORM",
-    "INSPECTION_DATE",
-    "LOCAL_AUTHORITY",
-    "CONSTITUENCY",
-    "LODGEMENT_DATE",
-    "TRANSACTION_TYPE",
-    "ENVIRONMENT_IMPACT_CURRENT",
-    "ENVIRONMENT_IMPACT_POTENTIAL",
-    "ENERGY_CONSUMPTION_CURRENT",
-    "ENERGY_CONSUMPTION_POTENTIAL",
-    "CO2_EMISSIONS_CURRENT",
-    "CO2_EMISS_CURR_PER_FLOOR_AREA",
-    "CO2_EMISSIONS_POTENTIAL",
-    "LIGHTING_COST_CURRENT",
-    "LIGHTING_COST_POTENTIAL",
-    "HEATING_COST_CURRENT",
-    "HEATING_COST_POTENTIAL",
-    "HOT_WATER_COST_CURRENT",
-    "HOT_WATER_COST_POTENTIAL",
-    "TOTAL_FLOOR_AREA",
-    "ENERGY_TARIFF",
-    "MAINS_GAS_FLAG",
-    "FLOOR_LEVEL",
-    "FLAT_TOP_STOREY",
-    "FLAT_STOREY_COUNT",
-    "MAIN_HEATING_CONTROLS",
-    "MULTI_GLAZE_PROPORTION",
-    "GLAZED_TYPE",
-    "GLAZED_AREA",
-    "EXTENSION_COUNT",
-    "NUMBER_HABITABLE_ROOMS",
-    "NUMBER_HEATED_ROOMS",
-    "LOW_ENERGY_LIGHTING",
-    "NUMBER_OPEN_FIREPLACES",
-    "HOTWATER_DESCRIPTION",
-    "HOT_WATER_ENERGY_EFF",
-    "HOT_WATER_ENV_EFF",
-    "FLOOR_DESCRIPTION",
-    "FLOOR_ENERGY_EFF",
-    "FLOOR_ENV_EFF",
-    "WINDOWS_DESCRIPTION",
-    "WINDOWS_ENERGY_EFF",
-    "WINDOWS_ENV_EFF",
-    "WALLS_DESCRIPTION",
-    "WALLS_ENERGY_EFF",
-    "WALLS_ENV_EFF",
-    "SECONDHEAT_DESCRIPTION",
-    "SHEATING_ENERGY_EFF",
-    "SHEATING_ENV_EFF",
-    "ROOF_DESCRIPTION",
-    "ROOF_ENERGY_EFF",
-    "ROOF_ENV_EFF",
-    "MAINHEAT_DESCRIPTION",
-    "MAINHEAT_ENERGY_EFF",
-    "MAINHEAT_ENV_EFF",
-    "MAINHEATCONT_DESCRIPTION",
-    "MAINHEATC_ENERGY_EFF",
-    "MAINHEATC_ENV_EFF",
-    "LIGHTING_DESCRIPTION",
-    "LIGHTING_ENERGY_EFF",
-    "LIGHTING_ENV_EFF",
-    "MAIN_FUEL",
-    "WIND_TURBINE_COUNT",
-    "HEAT_LOSS_CORRIDOR",
-    "UNHEATED_CORRIDOR_LENGTH",
-    "FLOOR_HEIGHT",
-    "PHOTO_SUPPLY",
-    "SOLAR_WATER_HEATING_FLAG",
-    "MECHANICAL_VENTILATION",
-    "ADDRESS",
-    "LOCAL_AUTHORITY_LABEL",
-    "CONSTITUENCY_LABEL",
-    "POSTTOWN",
-    "CONSTRUCTION_AGE_BAND",
-    "LODGEMENT_DATETIME",
-    "TENURE",
-    "FIXED_LIGHTING_OUTLETS_COUNT",
-    "LOW_ENERGY_FIXED_LIGHT_COUNT",
-    "UPRN",
-    "UPRN_SOURCE",
-    "REPORT_TYPE"
+    "certificate_number",
+    "address1",
+    "address2",
+    "address3",
+    "postcode",
+    "posttown",
+    "address",
+    "constituency",
+    "constituency_label",
+    "local_authority",
+    "local_authority_label",
+    "built_form",
+    "co2_emiss_curr_per_floor_area",
+    "co2_emissions_current",
+    "co2_emissions_potential",
+    "construction_age_band",
+    "current_energy_efficiency",
+    "current_energy_rating",
+    "energy_consumption_current",
+    "energy_consumption_potential",
+    "energy_tariff",
+    "environment_impact_current",
+    "environment_impact_potential",
+    "extension_count",
+    "fixed_lighting_outlets_count",
+    "flat_storey_count",
+    "flat_top_storey",
+    "floor_description",
+    "floor_energy_eff",
+    "floor_height",
+    "floor_level",
+    "glazed_area",
+    "glazed_type",
+    "heat_loss_corridor",
+    "heating_cost_current",
+    "heating_cost_potential",
+    "hot_water_cost_current",
+    "hot_water_cost_potential",
+    "hot_water_energy_eff",
+    "hot_water_env_eff",
+    "hotwater_description",
+    "inspection_date",
+    "lighting_cost_current",
+    "lighting_cost_potential",
+    "lighting_description",
+    "lighting_energy_eff",
+    "lighting_env_eff",
+    "lodgement_date",
+    "lodgement_datetime",
+    "low_energy_lighting",
+    "low_energy_fixed_lighting_outlets_count",
+    "main_fuel",
+    "mainheat_description",
+    "mainheat_energy_eff",
+    "mainheat_env_eff",
+    "mainheatc_energy_eff",
+    "mainheatc_env_eff",
+    "mainheatcont_description",
+    "main_heating_controls",
+    "mains_gas_flag",
+    "mechanical_ventilation",
+    "multi_glaze_proportion",
+    "number_habitable_rooms",
+    "number_heated_rooms",
+    "number_open_fireplaces",
+    "photo_supply",
+    "potential_energy_efficiency",
+    "potential_energy_rating",
+    "property_type",
+    "report_type",
+    "roof_description",
+    "roof_energy_eff",
+    "roof_env_eff",
+    "secondheat_description",
+    "sheating_energy_eff",
+    "sheating_env_eff",
+    "solar_water_heating_flag",
+    "tenure",
+    "total_floor_area",
+    "transaction_type",
+    "unheated_corridor_length",
+    "walls_description",
+    "walls_energy_eff",
+    "walls_env_eff",
+    "wind_turbine_count",
+    "windows_description",
+    "windows_energy_eff",
+    "windows_env_eff",
+    "floor_env_eff",
+    "region",
+    "country",
+    "uprn",
+    "uprn_source"
   ],
   "additionalProperties": false
 }

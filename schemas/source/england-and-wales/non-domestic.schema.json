@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:epc-connector:schemas:source:england-and-wales:non-domestic",
   "title": "England and Wales Non-domestic EPCs: certificates row",
-  "description": "One row of the England and Wales non-domestic EPC CSV published by Get energy performance of buildings data (https://get-energy-performance-data.communities.gov.uk/), as an object of raw string values keyed by column name.",
+  "description": "One row of the England and Wales non-domestic EPC CSV published by Get energy performance of buildings data (https://get-energy-performance-data.communities.gov.uk/), as an object of raw string values keyed by the CSV's (lowercase) column names.",
   "type": "object",
   "$defs": {
     "missing": {
@@ -11,27 +11,51 @@
     }
   },
   "properties": {
-    "CERTIFICATE_NUMBER": {
+    "certificate_number": {
       "description": "The unique reference number for the EPC. This number is generated when the certificate is lodged and can be used to retrieve the record from the EPB data API and the EPC register.",
       "type": "string"
     },
-    "ADDRESS1": {
+    "address1": {
       "description": "The first line of the property's address, usually the building number and/or name and street name.",
       "type": "string"
     },
-    "ADDRESS2": {
+    "address2": {
       "description": "The second line of the property's address, usually the village town or city.",
       "type": "string"
     },
-    "ADDRESS3": {
+    "address3": {
       "description": "The third line of the property's address, usually the county; not always used.",
       "type": "string"
     },
-    "POSTCODE": {
+    "posttown": {
+      "description": "The post town of the property based on the Royal Mail address database. Used for mail delivery and address matching. May differ from local authority or constituency boundaries.",
+      "type": "string"
+    },
+    "postcode": {
       "description": "The postcode of the property. Each postcode consists of five to seven alphanumeric characters which was created by Royal Mail. A full postcode designates an area with multiple addresses or a single delivery point.",
       "type": "string"
     },
-    "ASSET_RATING": {
+    "address": {
+      "description": "Provides the address of the property, combining up to three address lines (address1, address2, and address3). The postcode is recorded separately and not included here.",
+      "type": "string"
+    },
+    "constituency": {
+      "description": "The UK parliamentary constituency the building is in. Uses the official ONS (Office for National Statistics) code for that area.",
+      "type": "string"
+    },
+    "constituency_label": {
+      "description": "The name of the UK parliamentary constituency where the property is located. This is for general information only. For reliable identification and analysis, use the Constituency ONS code.",
+      "type": "string"
+    },
+    "local_authority": {
+      "description": "The local authority the building is in. Uses the official ONS (Office for National Statistics) code for that local area.",
+      "type": "string"
+    },
+    "local_authority_label": {
+      "description": "The name of the local authority area where the property is located. This is for general information only. For reliable identification and analysis, use the Local Authority ONS code.",
+      "type": "string"
+    },
+    "asset_rating": {
       "description": "Energy Performance Asset Rating. The CO2 emissions from the actual building in comparison to a Standard Emission Rate. (kg CO2/m2)",
       "type": "string",
       "anyOf": [
@@ -43,15 +67,15 @@
         }
       ]
     },
-    "ASSET_RATING_BAND": {
+    "asset_rating_band": {
       "description": "Energy Performance Asset Rating converted into an energy band/grade into a linear 'A+ to G' scale (where A+ is the most energy efficient and G the least energy efficient)",
       "type": "string"
     },
-    "PROPERTY_TYPE": {
+    "property_type": {
       "description": "Describes the type of building that is being inspected. Based on planning use class.",
       "type": "string"
     },
-    "INSPECTION_DATE": {
+    "inspection_date": {
       "description": "The date when information about the building was collected to prepare the EPC.",
       "type": "string",
       "anyOf": [
@@ -64,15 +88,7 @@
         }
       ]
     },
-    "LOCAL_AUTHORITY": {
-      "description": "The local authority the building is in. Uses the official ONS (Office for National Statistics) code for that local area.",
-      "type": "string"
-    },
-    "CONSTITUENCY": {
-      "description": "The UK parliamentary constituency the building is in. Uses the official ONS (Office for National Statistics) code for that area.",
-      "type": "string"
-    },
-    "LODGEMENT_DATE": {
+    "lodgement_date": {
       "description": "The date the energy certificate was added to the Energy Performance of Buildings Register. This is called 'Lodgement'.",
       "type": "string",
       "anyOf": [
@@ -85,11 +101,15 @@
         }
       ]
     },
-    "TRANSACTION_TYPE": {
+    "lodgement_datetime": {
+      "description": "The date and time the EPC was officially lodged on the Energy Performance of Buildings Register. This timestamp determines when the certificate becomes valid.",
+      "type": "string"
+    },
+    "transaction_type": {
       "description": "States why the energy certificate was produced. This could be for a sale, rental, new build, Green Deal, ECO assessment, or another reason. If the assessor does not know the reason, it's recorded as 'none of the above'.",
       "type": "string"
     },
-    "NEW_BUILD_BENCHMARK": {
+    "new_build_benchmark": {
       "type": "string",
       "anyOf": [
         {
@@ -100,7 +120,7 @@
         }
       ]
     },
-    "EXISTING_STOCK_BENCHMARK": {
+    "existing_stock_benchmark": {
       "description": "The Benchmark value of existing stock for this type of building",
       "type": "string",
       "anyOf": [
@@ -112,27 +132,27 @@
         }
       ]
     },
-    "BUILDING_LEVEL": {
+    "building_level": {
       "description": "Building Complexity Level based on Energy Assessor National Occupation Standards",
       "type": "string"
     },
-    "MAIN_HEATING_FUEL": {
+    "main_heating_fuel": {
       "description": "Main Heating fuel for the building is taken as the fuel which delivers the greatest total thermal output for space or water heating",
       "type": "string"
     },
-    "OTHER_FUEL_DESC": {
+    "other_fuel_desc": {
       "description": "Text description of unspecified fuel type if 'Other' is selected for Main Heating Fuel",
       "type": "string"
     },
-    "SPECIAL_ENERGY_USES": {
+    "special_energy_uses": {
       "description": "Special energy uses discounted. This only appears on the Recommendations Report.",
       "type": "string"
     },
-    "RENEWABLE_SOURCES": {
+    "renewable_sources": {
       "description": "On-site renewable energy sources. This only appears on the Advisory Report.",
       "type": "string"
     },
-    "FLOOR_AREA": {
+    "floor_area": {
       "description": "The total useful floor area is the total of all enclosed spaces measured to the internal face of the external walls, i.e. the gross floor area as measured in accordance with the guidance issued from time to time by the Royal Institute of Chartered Surveyors or by a body replacing that institution. (m2)",
       "type": "string",
       "anyOf": [
@@ -144,7 +164,7 @@
         }
       ]
     },
-    "STANDARD_EMISSIONS": {
+    "standard_emissions": {
       "description": "Standard Emission Rate is determined by applying a fixed improvement factor to the emissions from a reference building. (kg CO2/m2/year).",
       "type": "string",
       "anyOf": [
@@ -156,7 +176,7 @@
         }
       ]
     },
-    "TARGET_EMISSIONS": {
+    "target_emissions": {
       "description": "Standard Emission Rate is determined by applying a fixed improvement factor to the emissions from a reference building. (kg CO2/m2/year).",
       "type": "string",
       "anyOf": [
@@ -168,7 +188,7 @@
         }
       ]
     },
-    "TYPICAL_EMISSIONS": {
+    "typical_emissions": {
       "description": "Typical Emission Rate.",
       "type": "string",
       "anyOf": [
@@ -180,7 +200,7 @@
         }
       ]
     },
-    "BUILDING_EMISSIONS": {
+    "building_emissions": {
       "description": "Building Emissions Rate. Annual CO2 emissions from the building. Decimal (kg CO2/m2)",
       "type": "string",
       "anyOf": [
@@ -192,11 +212,11 @@
         }
       ]
     },
-    "AIRCON_PRESENT": {
+    "aircon_present": {
       "description": "Air Conditioning System. Does the building have an air conditioning system?",
       "type": "string"
     },
-    "AIRCON_KW_RATING": {
+    "aircon_kw_rating": {
       "description": "Air conditioning System. Rating in kW",
       "type": "string",
       "anyOf": [
@@ -208,7 +228,7 @@
         }
       ]
     },
-    "ESTIMATED_AIRCON_KW_RATING": {
+    "estimated_aircon_kw_rating": {
       "description": "Air Conditioning System. If exact rating unknown, what is the estimated total effective output rating of the air conditioning system",
       "type": "string",
       "anyOf": [
@@ -220,35 +240,19 @@
         }
       ]
     },
-    "AC_INSPECTION_COMMISSIONED": {
+    "ac_inspection_commissioned": {
       "description": "One of:1=Yes, inspection completed; 2=Yes, inspection commissioned; 3=No inspection completed or commissioned; 4=Not relevant; 5=Don't know",
       "type": "string"
     },
-    "BUILDING_ENVIRONMENT": {
+    "building_environment": {
       "description": "Building environment which is taken as the servicing strategy that contributes the largest proportion of the building's CO2 emissions.",
       "type": "string"
     },
-    "ADDRESS": {
-      "description": "Provides the address of the property, combining up to three address lines (address1, address2, and address3). The postcode is recorded separately and not included here.",
+    "report_type": {
+      "description": "Type of assessment carried out of the building. 3: assessment using the SBEM (Simplified Building Energy Model) tool for non-domestic (non-residential) buildings.",
       "type": "string"
     },
-    "LOCAL_AUTHORITY_LABEL": {
-      "description": "The name of the local authority area where the property is located. This is for general information only. For reliable identification and analysis, use the Local Authority ONS code.",
-      "type": "string"
-    },
-    "CONSTITUENCY_LABEL": {
-      "description": "The name of the UK parliamentary constituency where the property is located. This is for general information only. For reliable identification and analysis, use the Constituency ONS code.",
-      "type": "string"
-    },
-    "POSTTOWN": {
-      "description": "The post town of the property based on the Royal Mail address database. Used for mail delivery and address matching. May differ from local authority or constituency boundaries.",
-      "type": "string"
-    },
-    "LODGEMENT_DATETIME": {
-      "description": "The date and time the EPC was officially lodged on the Energy Performance of Buildings Register. This timestamp determines when the certificate becomes valid.",
-      "type": "string"
-    },
-    "PRIMARY_ENERGY_VALUE": {
+    "primary_energy_value": {
       "description": "Displayed on the non-domestic EPC as primary energy use (kWh/m2 per year)",
       "type": "string",
       "anyOf": [
@@ -260,59 +264,55 @@
         }
       ]
     },
-    "UPRN": {
+    "uprn": {
       "description": "The Unique Property Reference Number is a 12-digit code that identifies the property, flat, building, or plot of land being assessed.",
       "type": "string"
     },
-    "UPRN_SOURCE": {
+    "uprn_source": {
       "description": "The method of which the Unique Property Reference Number (UPRN) was added to the record. It will either say \"Energy Assessor\" if it was entered during the assessment, or \"Address Matched\" if it was added later using the government's address-matching system. In some cases, this field may be blank or contain legacy values where UPRNs were not available or matched at the time.",
-      "type": "string"
-    },
-    "REPORT_TYPE": {
-      "description": "Type of assessment carried out of the building. 3: assessment using the SBEM (Simplified Building Energy Model) tool for non-domestic (non-residential) buildings.",
       "type": "string"
     }
   },
   "required": [
-    "CERTIFICATE_NUMBER",
-    "ADDRESS1",
-    "ADDRESS2",
-    "ADDRESS3",
-    "POSTCODE",
-    "ASSET_RATING",
-    "ASSET_RATING_BAND",
-    "PROPERTY_TYPE",
-    "INSPECTION_DATE",
-    "LOCAL_AUTHORITY",
-    "CONSTITUENCY",
-    "LODGEMENT_DATE",
-    "TRANSACTION_TYPE",
-    "NEW_BUILD_BENCHMARK",
-    "EXISTING_STOCK_BENCHMARK",
-    "BUILDING_LEVEL",
-    "MAIN_HEATING_FUEL",
-    "OTHER_FUEL_DESC",
-    "SPECIAL_ENERGY_USES",
-    "RENEWABLE_SOURCES",
-    "FLOOR_AREA",
-    "STANDARD_EMISSIONS",
-    "TARGET_EMISSIONS",
-    "TYPICAL_EMISSIONS",
-    "BUILDING_EMISSIONS",
-    "AIRCON_PRESENT",
-    "AIRCON_KW_RATING",
-    "ESTIMATED_AIRCON_KW_RATING",
-    "AC_INSPECTION_COMMISSIONED",
-    "BUILDING_ENVIRONMENT",
-    "ADDRESS",
-    "LOCAL_AUTHORITY_LABEL",
-    "CONSTITUENCY_LABEL",
-    "POSTTOWN",
-    "LODGEMENT_DATETIME",
-    "PRIMARY_ENERGY_VALUE",
-    "UPRN",
-    "UPRN_SOURCE",
-    "REPORT_TYPE"
+    "certificate_number",
+    "address1",
+    "address2",
+    "address3",
+    "posttown",
+    "postcode",
+    "address",
+    "constituency",
+    "constituency_label",
+    "local_authority",
+    "local_authority_label",
+    "asset_rating",
+    "asset_rating_band",
+    "property_type",
+    "inspection_date",
+    "lodgement_date",
+    "lodgement_datetime",
+    "transaction_type",
+    "new_build_benchmark",
+    "existing_stock_benchmark",
+    "building_level",
+    "main_heating_fuel",
+    "other_fuel_desc",
+    "special_energy_uses",
+    "renewable_sources",
+    "floor_area",
+    "standard_emissions",
+    "target_emissions",
+    "typical_emissions",
+    "building_emissions",
+    "aircon_present",
+    "aircon_kw_rating",
+    "estimated_aircon_kw_rating",
+    "ac_inspection_commissioned",
+    "building_environment",
+    "report_type",
+    "primary_energy_value",
+    "uprn",
+    "uprn_source"
   ],
   "additionalProperties": false
 }

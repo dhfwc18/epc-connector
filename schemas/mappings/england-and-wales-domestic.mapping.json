@@ -9,7 +9,7 @@
       "const": "england-and-wales/domestic"
     },
     "country": {
-      "from": "LOCAL_AUTHORITY",
+      "from": "local_authority",
       "steps": [
         {
           "op": "regex_extract",
@@ -28,10 +28,10 @@
       "note": "ONS local authority codes start with E (England) or W (Wales)."
     },
     "certificate_id": {
-      "from": "CERTIFICATE_NUMBER"
+      "from": "certificate_number"
     },
     "uprn": {
-      "from": "UPRN",
+      "from": "uprn",
       "steps": [
         {
           "op": "cast",
@@ -40,7 +40,7 @@
       ]
     },
     "inspection_date": {
-      "from": "INSPECTION_DATE",
+      "from": "inspection_date",
       "steps": [
         {
           "op": "cast",
@@ -50,7 +50,7 @@
       ]
     },
     "lodgement_date": {
-      "from": "LODGEMENT_DATE",
+      "from": "lodgement_date",
       "steps": [
         {
           "op": "cast",
@@ -60,39 +60,39 @@
       ]
     },
     "lodged_at": {
-      "from": "LODGEMENT_DATETIME",
+      "from": "lodgement_datetime",
       "steps": [
         {
           "op": "cast",
           "to": "datetime"
         }
       ],
-      "note": "LODGEMENT_DATETIME is read as an ISO 8601 date-time."
+      "note": "lodgement_datetime is read as an ISO 8601 date-time."
     },
     "superseded": {
       "const": null,
       "note": "England and Wales do not flag superseded certificates."
     },
     "address_line_1": {
-      "from": "ADDRESS1"
+      "from": "address1"
     },
     "address_line_2": {
-      "from": "ADDRESS2"
+      "from": "address2"
     },
     "post_town": {
-      "from": "POSTTOWN"
+      "from": "posttown"
     },
     "postcode": {
-      "from": "POSTCODE"
+      "from": "postcode"
     },
     "local_authority_name": {
-      "from": "LOCAL_AUTHORITY_LABEL"
+      "from": "local_authority_label"
     },
     "current_energy_rating": {
-      "from": "CURRENT_ENERGY_RATING"
+      "from": "current_energy_rating"
     },
     "current_energy_efficiency": {
-      "from": "CURRENT_ENERGY_EFFICIENCY",
+      "from": "current_energy_efficiency",
       "steps": [
         {
           "op": "cast",
@@ -101,10 +101,10 @@
       ]
     },
     "potential_energy_rating": {
-      "from": "POTENTIAL_ENERGY_RATING"
+      "from": "potential_energy_rating"
     },
     "potential_energy_efficiency": {
-      "from": "POTENTIAL_ENERGY_EFFICIENCY",
+      "from": "potential_energy_efficiency",
       "steps": [
         {
           "op": "cast",
@@ -113,7 +113,7 @@
       ]
     },
     "property_type": {
-      "from": "PROPERTY_TYPE",
+      "from": "property_type",
       "steps": [
         {
           "op": "lower"
@@ -121,7 +121,7 @@
       ]
     },
     "built_form": {
-      "from": "BUILT_FORM",
+      "from": "built_form",
       "steps": [
         {
           "op": "lower"
@@ -133,7 +133,7 @@
       ]
     },
     "tenure": {
-      "from": "TENURE",
+      "from": "tenure",
       "steps": [
         {
           "op": "lower"
@@ -150,7 +150,7 @@
       ]
     },
     "construction_age_band": {
-      "from": "CONSTRUCTION_AGE_BAND",
+      "from": "construction_age_band",
       "steps": [
         {
           "op": "strip_prefix",
@@ -163,7 +163,7 @@
       ]
     },
     "construction_year_min": {
-      "from": "CONSTRUCTION_AGE_BAND",
+      "from": "construction_age_band",
       "steps": [
         {
           "op": "strip_prefix",
@@ -202,7 +202,7 @@
       "note": "Unmapped values must be a single year (new-build lodgements), otherwise the cast fails."
     },
     "construction_year_max": {
-      "from": "CONSTRUCTION_AGE_BAND",
+      "from": "construction_age_band",
       "steps": [
         {
           "op": "strip_prefix",
@@ -241,7 +241,7 @@
       "note": "Unmapped values must be a single year (new-build lodgements), otherwise the cast fails."
     },
     "total_floor_area": {
-      "from": "TOTAL_FLOOR_AREA",
+      "from": "total_floor_area",
       "steps": [
         {
           "op": "cast",
@@ -255,13 +255,13 @@
       "note": "A floor area of 0 is not a real measurement."
     },
     "main_fuel": {
-      "from": "MAIN_FUEL"
+      "from": "main_fuel"
     },
     "glazed_type": {
-      "from": "GLAZED_TYPE"
+      "from": "glazed_type"
     },
     "main_heating_description": {
-      "from": "MAINHEAT_DESCRIPTION",
+      "from": "mainheat_description",
       "steps": [
         {
           "op": "first_part",
@@ -270,7 +270,7 @@
       ]
     },
     "main_heating_energy_efficiency": {
-      "from": "MAINHEAT_ENERGY_EFF",
+      "from": "mainheat_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -283,7 +283,7 @@
       ]
     },
     "main_heating_controls_description": {
-      "from": "MAINHEATCONT_DESCRIPTION",
+      "from": "mainheatcont_description",
       "steps": [
         {
           "op": "first_part",
@@ -292,7 +292,7 @@
       ]
     },
     "main_heating_controls_energy_efficiency": {
-      "from": "MAINHEATC_ENERGY_EFF",
+      "from": "mainheatc_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -305,7 +305,7 @@
       ]
     },
     "hot_water_description": {
-      "from": "HOTWATER_DESCRIPTION",
+      "from": "hotwater_description",
       "steps": [
         {
           "op": "first_part",
@@ -314,7 +314,7 @@
       ]
     },
     "hot_water_energy_efficiency": {
-      "from": "HOT_WATER_ENERGY_EFF",
+      "from": "hot_water_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -327,7 +327,7 @@
       ]
     },
     "walls_description": {
-      "from": "WALLS_DESCRIPTION",
+      "from": "walls_description",
       "steps": [
         {
           "op": "first_part",
@@ -336,7 +336,7 @@
       ]
     },
     "walls_energy_efficiency": {
-      "from": "WALLS_ENERGY_EFF",
+      "from": "walls_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -349,7 +349,7 @@
       ]
     },
     "roof_description": {
-      "from": "ROOF_DESCRIPTION",
+      "from": "roof_description",
       "steps": [
         {
           "op": "first_part",
@@ -358,7 +358,7 @@
       ]
     },
     "roof_energy_efficiency": {
-      "from": "ROOF_ENERGY_EFF",
+      "from": "roof_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -371,7 +371,7 @@
       ]
     },
     "floor_description": {
-      "from": "FLOOR_DESCRIPTION",
+      "from": "floor_description",
       "steps": [
         {
           "op": "first_part",
@@ -380,7 +380,7 @@
       ]
     },
     "floor_energy_efficiency": {
-      "from": "FLOOR_ENERGY_EFF",
+      "from": "floor_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -393,7 +393,7 @@
       ]
     },
     "windows_description": {
-      "from": "WINDOWS_DESCRIPTION",
+      "from": "windows_description",
       "steps": [
         {
           "op": "first_part",
@@ -402,7 +402,7 @@
       ]
     },
     "windows_energy_efficiency": {
-      "from": "WINDOWS_ENERGY_EFF",
+      "from": "windows_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -415,7 +415,7 @@
       ]
     },
     "lighting_energy_efficiency": {
-      "from": "LIGHTING_ENERGY_EFF",
+      "from": "lighting_energy_eff",
       "steps": [
         {
           "op": "first_part",
@@ -428,7 +428,7 @@
       ]
     },
     "has_solar_pv": {
-      "from": "PHOTO_SUPPLY",
+      "from": "photo_supply",
       "steps": [
         {
           "op": "cast",
@@ -439,10 +439,10 @@
           "value": 0
         }
       ],
-      "note": "PHOTO_SUPPLY is the percentage of roof area covered by PV."
+      "note": "photo_supply is the percentage of roof area covered by PV."
     },
     "has_solar_water_heating": {
-      "from": "SOLAR_WATER_HEATING_FLAG",
+      "from": "solar_water_heating_flag",
       "steps": [
         {
           "op": "boolean",
@@ -452,7 +452,7 @@
       ]
     },
     "co2_emissions_current": {
-      "from": "CO2_EMISSIONS_CURRENT",
+      "from": "co2_emissions_current",
       "steps": [
         {
           "op": "cast",
@@ -461,7 +461,7 @@
       ]
     },
     "heating_cost_current": {
-      "from": "HEATING_COST_CURRENT",
+      "from": "heating_cost_current",
       "steps": [
         {
           "op": "cast",
@@ -470,7 +470,7 @@
       ]
     },
     "hot_water_cost_current": {
-      "from": "HOT_WATER_COST_CURRENT",
+      "from": "hot_water_cost_current",
       "steps": [
         {
           "op": "cast",
@@ -479,7 +479,7 @@
       ]
     },
     "lighting_cost_current": {
-      "from": "LIGHTING_COST_CURRENT",
+      "from": "lighting_cost_current",
       "steps": [
         {
           "op": "cast",
