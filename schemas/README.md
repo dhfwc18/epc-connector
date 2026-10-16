@@ -9,6 +9,7 @@ schemas/
     scotland/            domestic, non-domestic (every certificate ever lodged; superseded ones flagged)
   canonical/    the typed GB domestic record every source is mapped to
   mappings/     declarative source -> canonical mappings, plus the schema that defines the mapping format
+  vocabularies/ rules that turn free-text building descriptions into structured facets
 ```
 
 See the README in each directory for details.

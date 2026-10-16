@@ -1,0 +1,83 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "floor",
+  "prefix": "floor",
+  "description": "Floor type and insulation of the main floor.",
+  "fields": {
+    "type": {
+      "type": "string",
+      "values": {
+        "solid": ["solid", "solet"],
+        "suspended": ["suspended", "crog"],
+        "to unheated space": ["to unheated space", "above unheated space", "i ofod heb ei wresogi"],
+        "to external air": ["to external air", "fully exposed", "i'r awyr y tu allan"],
+        "another dwelling below": ["(another dwelling below)", "(anheddiad arall islaw)"],
+        "other premises below": ["(other premises below)", "other premises below", "(eiddo arall islaw)"],
+        "same dwelling below": ["(same dwelling below) insulated (assumed)"],
+        "basement": ["basement"],
+        "conservatory": ["conservatory"]
+      }
+    },
+    "insulation": {
+      "type": "string",
+      "values": {
+        "none": [
+          "no insulation (assumed)",
+          "uninsulated (assumed)",
+          "dim inswleiddio (rhagdybiaeth)",
+          "heb ei inswleiddio (rhagdybiaeth)"
+        ],
+        "limited": ["limited insulation (assumed)", "inswleiddio cyfyngedig (rhagdybiaeth)"],
+        "insulated": [
+          "(same dwelling below) insulated (assumed)",
+          "insulated (assumed)",
+          "insulated",
+          "i inswleiddio (rhagdybiaeth)",
+          "wedi'i inswleiddio",
+          "wedi'i inswleiddio (rhagdybiaeth)",
+          "\u2019i inswleiddio",
+          "\u2019i inswleiddio (rhagdybiaeth)"
+        ]
+      }
+    },
+    "insulation_assumed": {
+      "type": "boolean",
+      "description": "True if the insulation is the assessor's default for the age and type, not observed.",
+      "values": {
+        "true": [
+          "(same dwelling below) insulated (assumed)",
+          "no insulation (assumed)",
+          "uninsulated (assumed)",
+          "limited insulation (assumed)",
+          "insulated (assumed)",
+          "dim inswleiddio (rhagdybiaeth)",
+          "heb ei inswleiddio (rhagdybiaeth)",
+          "i inswleiddio (rhagdybiaeth)",
+          "inswleiddio cyfyngedig (rhagdybiaeth)",
+          "wedi'i inswleiddio (rhagdybiaeth)",
+          "\u2019i inswleiddio (rhagdybiaeth)"
+        ],
+        "false": ["insulated", "wedi'i inswleiddio", "\u2019i inswleiddio"]
+      }
+    },
+    "u_value": {
+      "type": "number",
+      "description": "Average thermal transmittance in W/m2K.",
+      "number_from": [
+        "average thermal transmittance # w/m'k",
+        "average thermal transmittance # w/m\u00b2k",
+        "average thermal transmittance # w/m2k",
+        "average thermal transmittance # w/m??k",
+        "average thermal transmittance # w/m\u00e2\u00b2k",
+        "average thermal transmittance = # w/m'k",
+        "trawsyriannedd thermol cyfartalog # w/m\u00b2k",
+        "trawsyriannedd thermol cyfartalog # w/m\u00e2\u00b2k"
+      ]
+    }
+  },
+  "discard": {
+    "placeholder text": ["sap05:floor"],
+    "truncated U-value": ["\u00e2\u00b2k", "\u00b2k"],
+    "two descriptions run together": ["limited insulation (assumed)insulated"]
+  }
+}

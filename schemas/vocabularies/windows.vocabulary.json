@@ -1,0 +1,150 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "windows",
+  "prefix": "windows",
+  "description": "Glazing type and how much of the dwelling has it.",
+  "split_phrases": false,
+  "fields": {
+    "glazing": {
+      "type": "string",
+      "values": {
+        "single": [
+          "single glazed",
+          "single glazedsingle glazing",
+          "partial single glazing",
+          "some single glazing",
+          "gwydrau sengl"
+        ],
+        "double": [
+          "fully double glazed",
+          "fully double glazing",
+          "double glazing",
+          "partial double glazing",
+          "partial double glazed",
+          "mostly double glazing",
+          "some double glazing",
+          "single glazeddouble glazing",
+          "partial double glazingdouble glazing",
+          "fully double glazeddouble glazing",
+          "partial multiple glazingdouble glazing",
+          "some multiple glazingdouble glazing",
+          "multiple glazing throughout double glazing",
+          "gwydrau dwbl gan mwyaf",
+          "gwydrau dwbl llawn",
+          "gwydrau dwbl rhannol",
+          "rhai gwydrau dwbl"
+        ],
+        "triple": [
+          "fully triple glazed",
+          "full triple glazing",
+          "full triple glazed",
+          "fully triple glazing",
+          "mostly triple glazing",
+          "partial triple glazing",
+          "some triple glazing",
+          "single glazedtriple glazing",
+          "multiple glazing throughout triple glazing",
+          "gwydrau triphlyg gan mwyaf",
+          "gwydrau triphlyg llawn"
+        ],
+        "secondary": [
+          "full secondary glazing",
+          "fully secondary glazing",
+          "fully secondary glazed",
+          "secondary glazing",
+          "mostly secondary glazing",
+          "partial secondary glazing",
+          "some secondary glazing",
+          "single glazedsecondary glazing",
+          "some multiple glazingsecondary glazing",
+          "gwydrau eilaidd llawn"
+        ],
+        "multiple": [
+          "multiple glazing throughout",
+          "multiple glazing throught",
+          "mostly multiple glazing",
+          "partial multiple glazing",
+          "some multiple glazing",
+          "single and multiple glazing",
+          "gwydrau lluosog ym mhobman"
+        ],
+        "high performance": ["high performance glazing", "ffenestri perfformiad uchel"]
+      }
+    },
+    "coverage": {
+      "type": "string",
+      "values": {
+        "full": [
+          "fully double glazed",
+          "fully double glazing",
+          "single glazed",
+          "single glazedsingle glazing",
+          "fully triple glazed",
+          "full triple glazing",
+          "full triple glazed",
+          "fully triple glazing",
+          "full secondary glazing",
+          "fully secondary glazing",
+          "fully secondary glazed",
+          "multiple glazing throughout",
+          "multiple glazing throught",
+          "fully",
+          "fully double glazeddouble glazing",
+          "multiple glazing throughout double glazing",
+          "multiple glazing throughout triple glazing",
+          "gwydrau dwbl llawn",
+          "gwydrau eilaidd llawn",
+          "gwydrau lluosog ym mhobman",
+          "gwydrau sengl",
+          "gwydrau triphlyg llawn"
+        ],
+        "mostly": [
+          "mostly double glazing",
+          "mostly triple glazing",
+          "mostly secondary glazing",
+          "mostly multiple glazing",
+          "mostly",
+          "gwydrau dwbl gan mwyaf",
+          "gwydrau triphlyg gan mwyaf"
+        ],
+        "partial": [
+          "partial double glazing",
+          "partial double glazed",
+          "partial single glazing",
+          "partial triple glazing",
+          "partial secondary glazing",
+          "partial multiple glazing",
+          "single and multiple glazing",
+          "single glazeddouble glazing",
+          "single glazedsecondary glazing",
+          "single glazedtriple glazing",
+          "partial double glazingdouble glazing",
+          "partial multiple glazingdouble glazing",
+          "gwydrau dwbl rhannol"
+        ],
+        "some": [
+          "some double glazing",
+          "some single glazing",
+          "some triple glazing",
+          "some secondary glazing",
+          "some multiple glazing",
+          "some",
+          "some multiple glazingdouble glazing",
+          "some multiple glazingsecondary glazing",
+          "rhai gwydrau dwbl"
+        ]
+      }
+    }
+  },
+  "ignore": {
+    "no glazing detail": ["unknown complex glazing regime"]
+  },
+  "discard": {
+    "placeholder text": ["sap05:windows"],
+    "floor description in the windows field": [
+      "solid, no insulation (assumed)",
+      "suspended, no insulation (assumed)",
+      "(other premises below)"
+    ]
+  }
+}

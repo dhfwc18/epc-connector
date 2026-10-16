@@ -1,0 +1,124 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "main-fuel",
+  "prefix": "main_fuel",
+  "description": "Main heating fuel and whether it is supplied through a community scheme.",
+  "split_phrases": false,
+  "fields": {
+    "type": {
+      "type": "string",
+      "values": {
+        "anthracite": ["anthracite", "solid fuel: anthracite"],
+        "b30d": ["b30d (community)"],
+        "b30k": ["b30k", "b30k (not community)"],
+        "biodiesel (any biomass)": [
+          "biodiesel from any biomass source",
+          "heat from boilers using biodiesel from any biomass source (community)"
+        ],
+        "biodiesel (used cooking oil)": ["biodiesel from used cooking oil only"],
+        "biodiesel (vegetable oil)": [
+          "biodiesel from vegetable oil only",
+          "biodiesel from vegetable oil only (community)",
+          "biodiesel from vegetable oil only (not community)"
+        ],
+        "bioethanol": ["bioethanol"],
+        "biogas": ["biogas", "gas: biogas", "biogas (community)", "biogas (not community)"],
+        "biomass": ["biomass", "biomass (community)", "community heating schemes: heat from boilers - biomass"],
+        "bottled lpg": ["bottled lpg", "gas: bottled lpg"],
+        "bulk lpg": ["gas: bulk lpg"],
+        "coal": ["coal (community)"],
+        "dual fuel (mineral and wood)": [
+          "dual fuel - mineral + wood",
+          "solid fuel: dual fuel appliance (mineral and wood)"
+        ],
+        "electricity": [
+          "electricity",
+          "electricity: electricity, unspecified tariff",
+          "electricity (not community)",
+          "electricity (community)",
+          "electricity: electricity displaced from grid",
+          "electricity: electricity sold to grid"
+        ],
+        "heat network": ["from heat network data (community)"],
+        "heat pump": [
+          "community heating schemes: heat from electric heat pump",
+          "community heating schemes: heat from heat pump"
+        ],
+        "house coal": ["house coal", "solid fuel: house coal", "house coal (not community)", "house coal (community)"],
+        "landfill biogas": ["biogas - landfill"],
+        "lng": ["lng"],
+        "lpg": ["lpg", "lpg (not community)", "lpg (community)"],
+        "lpg special condition": ["lpg special condition", "lpg subject to special condition 18"],
+        "mains gas": [
+          "mains gas",
+          "gas: mains gas",
+          "mains gas (not community)",
+          "mains gas (community)",
+          "community heating schemes: heat from mains gas"
+        ],
+        "mineral oil or liquid biofuel": [
+          "appliances able to use mineral oil or liquid biofuel",
+          "heat from boilers that can use mineral oil or biodiesel (community)"
+        ],
+        "no heating or hot water system": ["to be used only when there is no heating/hot-water system"],
+        "no system or community network": [
+          "to be used only when there is no heating/hot-water system or data is from a community network",
+          "no heating/hot-water system or data is from a community network"
+        ],
+        "oil": ["oil", "oil: heating oil", "oil (not community)", "oil (community)"],
+        "rapeseed oil": ["rapeseed oil"],
+        "smokeless fuel": ["smokeless coal", "solid fuel: manufactured smokeless fuel"],
+        "waste combustion": [
+          "waste combustion",
+          "waste combustion (community)",
+          "waste combustion - this is for backwards compatibility only and should not be used"
+        ],
+        "waste heat from power stations": ["community heating schemes: waste heat from power stations"],
+        "wood chips": ["wood chips", "solid fuel: wood chips"],
+        "wood logs": ["wood logs", "solid fuel: wood logs"],
+        "wood pellets (bags)": [
+          "wood pellets in bags for secondary heating",
+          "solid fuel: wood pellets (in bags, for secondary heating)"
+        ],
+        "wood pellets (bulk)": ["bulk wood pellets", "solid fuel: wood pellets (bulk supply in bags, for main heating)"]
+      }
+    },
+    "community": {
+      "type": "boolean",
+      "description": "True for a community (heat network) supply, false if stated as not community.",
+      "values": {
+        "true": [
+          "mains gas (community)",
+          "community heating schemes: heat from mains gas",
+          "electricity (community)",
+          "oil (community)",
+          "lpg (community)",
+          "biogas (community)",
+          "house coal (community)",
+          "coal (community)",
+          "biomass (community)",
+          "community heating schemes: heat from boilers - biomass",
+          "waste combustion (community)",
+          "community heating schemes: waste heat from power stations",
+          "community heating schemes: heat from electric heat pump",
+          "community heating schemes: heat from heat pump",
+          "from heat network data (community)",
+          "b30d (community)",
+          "heat from boilers using biodiesel from any biomass source (community)",
+          "biodiesel from vegetable oil only (community)",
+          "heat from boilers that can use mineral oil or biodiesel (community)"
+        ],
+        "false": [
+          "mains gas (not community)",
+          "electricity (not community)",
+          "oil (not community)",
+          "lpg (not community)",
+          "biogas (not community)",
+          "house coal (not community)",
+          "b30k (not community)",
+          "biodiesel from vegetable oil only (not community)"
+        ]
+      }
+    }
+  }
+}

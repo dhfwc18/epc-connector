@@ -1,0 +1,111 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "walls",
+  "prefix": "walls",
+  "description": "Wall construction and insulation of the main wall type.",
+  "fields": {
+    "construction": {
+      "type": "string",
+      "values": {
+        "cavity wall": ["cavity wall", "waliau ceudod"],
+        "solid brick": ["solid brick", "briciau solet"],
+        "timber frame": ["timber frame", "ffr'm bren", "ffr\u00e2m bren", "\u00e2m bren"],
+        "system built": [
+          "system built",
+          "l system",
+          "wedi'u hadeiladu yn ?l system",
+          "wedi'u hadeiladu yn \u00f4l system",
+          "\u2019u hadeiladu yn \u00f4l system"
+        ],
+        "sandstone or limestone": ["sandstone or limestone", "sandstone", "tywodfaen"],
+        "granite or whinstone": ["granite or whinstone", "granite or whin", "gwenithfaen neu risgraig"],
+        "cob": ["cob", "cobbuilt"],
+        "park home": ["park home wall"],
+        "basement": ["basement wall"],
+        "curtain wall": ["curtain wall"]
+      }
+    },
+    "insulation": {
+      "type": "string",
+      "values": {
+        "none": ["no insulation (assumed)", "dim inswleiddio (rhagdybiaeth)"],
+        "partial": ["partial insulation (assumed)", "inswleiddio rhannol (rhagdybiaeth)"],
+        "insulated": ["insulated (assumed)", "u hinswleiddio (rhagdybiaeth)", "wedi'u hinswleiddio (rhagdybiaeth)"],
+        "filled cavity": ["filled cavity", "ceudod wedi'i lenwi", "i lenwi", "\u2019i lenwi"],
+        "external": [
+          "with external insulation",
+          "external",
+          "co with external insulation",
+          "gydag inswleiddio allanol"
+        ],
+        "internal": ["with internal insulation", "internal", "gydag inswleiddio mewnol"],
+        "filled cavity and external": ["filled cavity and external insulation", "ynysydd allanol a llenwi ceudod"],
+        "filled cavity and internal": ["filled cavity and internal insulation"],
+        "additional": ["with additional insulation"]
+      }
+    },
+    "insulation_assumed": {
+      "type": "boolean",
+      "description": "True if the insulation is the assessor's default for the age and type, not observed.",
+      "values": {
+        "true": [
+          "no insulation (assumed)",
+          "partial insulation (assumed)",
+          "insulated (assumed)",
+          "dim inswleiddio (rhagdybiaeth)",
+          "inswleiddio rhannol (rhagdybiaeth)",
+          "u hinswleiddio (rhagdybiaeth)",
+          "wedi'u hinswleiddio (rhagdybiaeth)"
+        ],
+        "false": [
+          "filled cavity",
+          "with external insulation",
+          "external",
+          "co with external insulation",
+          "with internal insulation",
+          "internal",
+          "filled cavity and external insulation",
+          "filled cavity and internal insulation",
+          "with additional insulation",
+          "ceudod wedi'i lenwi",
+          "gydag inswleiddio allanol",
+          "gydag inswleiddio mewnol",
+          "i lenwi",
+          "ynysydd allanol a llenwi ceudod",
+          "\u2019i lenwi"
+        ]
+      }
+    },
+    "as_built": {
+      "type": "boolean",
+      "description": "True if the wall is described as unchanged since construction.",
+      "values": {
+        "true": ["as built", "cobbuilt", "fel y'u hadeiladwyd", "u hadeiladwyd", "\u2019u hadeiladwyd"]
+      }
+    },
+    "u_value": {
+      "type": "number",
+      "description": "Average thermal transmittance in W/m2K.",
+      "number_from": [
+        "average thermal transmittance # w/m'k",
+        "average thermal transmittance # w/m\u00b2k",
+        "average thermal transmittance # w/m2k",
+        "average thermal transmittance # w/m??k",
+        "average thermal transmittance # w/m\u00e2\u00b2k",
+        "average thermal transmittance = # w/m'k",
+        "trawsyriannedd thermol cyfartalog # w/m\u00b2k",
+        "trawsyriannedd thermol cyfartalog # w/m\u00e2\u00b2k"
+      ]
+    }
+  },
+  "ignore": {
+    "U-value not recorded": ["average thermal transmittance nan w/m'k", "average thermal transmittance nan w/m\u00b2k"]
+  },
+  "discard": {
+    "placeholder text": ["sap05:walls"],
+    "truncated U-value": ["\u00e2\u00b2k", "\u00b2k"],
+    "recorded as an error": ["error"],
+    "roof description in the walls field": ["pitched", "flat", "roof room(s)", "thatched", "(another dwelling above)"],
+    "two descriptions run together": ["wedi'u hinswleiddio (rhagdybiaeth)fel y'u hadeiladwyd"]
+  }
+}

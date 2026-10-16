@@ -1,0 +1,119 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "secondary-heating",
+  "prefix": "secondary_heating",
+  "description": "Secondary heating system and its fuel.",
+  "count_systems_by": "system",
+  "fields": {
+    "system": {
+      "type": "string",
+      "values": {
+        "boiler": [
+          "gas/lpg boiler 1998 or later",
+          "gas/lpg boiler pre-1998 with balanced or open-flue",
+          "gas/lpg boiler pre-1998",
+          "gas/lpg cpsu"
+        ],
+        "community scheme": [
+          "community scheme",
+          "community scheme with chp",
+          "community",
+          "heat from eletric heat pump",
+          "heat from boilers - mains gas"
+        ],
+        "electric ceiling heating": ["electric ceiling heating"],
+        "electric underfloor heating": ["electric underfloor heating (standard tariff)", "electric underfloor heating"],
+        "hot water only system": ["hot-water-only systems"],
+        "none": ["none", "dim"],
+        "other": ["other space heating systems"],
+        "portable electric heaters": [
+          "portable electric heaters (assumed)",
+          "portable electric heaters",
+          "gwresogyddion trydan cludadwy",
+          "gwresogyddion trydan cludadwy (rhagdybiaeth)"
+        ],
+        "room heaters": [
+          "room heaters",
+          "gas (including lpg) room heaters",
+          "lpg room heaters, gas",
+          "mains gas room heaters, gas",
+          "gwresogyddion ystafell"
+        ]
+      }
+    },
+    "fuel": {
+      "type": "string",
+      "values": {
+        "anthracite": ["anthracite", "glo carreg"],
+        "b30k": ["b30k"],
+        "biodiesel": ["biodiesel from any biomass source"],
+        "bioethanol": ["bioethanol", "bioethanol from any biomass source"],
+        "biogas": ["biogas", "biogas (not community)"],
+        "biomass": ["biomass"],
+        "bottled lpg": ["bottled lpg", "bottled gas"],
+        "bulk lpg": ["bulk lpg"],
+        "coal": ["coal", "glo"],
+        "dual fuel (mineral and wood)": ["dual fuel (mineral and wood)", "dual fuel", "dau danwydd (mwynau a choed)"],
+        "electric": [
+          "electric",
+          "portable electric heaters (assumed)",
+          "portable electric heaters",
+          "electric underfloor heating (standard tariff)",
+          "electric underfloor heating",
+          "electric ceiling heating",
+          "heat from eletric heat pump",
+          "gwresogyddion trydan cludadwy",
+          "gwresogyddion trydan cludadwy (rhagdybiaeth)",
+          "trydan"
+        ],
+        "gas": [
+          "gas",
+          "gas (including lpg) room heaters",
+          "gas/lpg boiler 1998 or later",
+          "gas/lpg boiler pre-1998 with balanced or open-flue",
+          "gas/lpg boiler pre-1998",
+          "gas/lpg cpsu"
+        ],
+        "liquid biofuel": ["liquid biofuel", "appliances able to use mineral oil or liquid biofuel"],
+        "lng": ["lng"],
+        "lpg": ["lpg", "lpg room heaters, gas"],
+        "mains gas": [
+          "mains gas",
+          "heat from boilers - mains gas",
+          "mains gas room heaters, gas",
+          "nwy prif gyflenwad"
+        ],
+        "oil": ["oil", "heating oil"],
+        "rapeseed oil": ["rapeseed oil"],
+        "smokeless fuel": ["smokeless fuel", "tanwydd di-fwg"],
+        "waste combustion": ["waste combustion"],
+        "wood chips": ["wood chips", "asglodion coed"],
+        "wood logs": ["wood logs", "logiau coed"],
+        "wood pellets": [
+          "wood pellets",
+          "bulk wood pellets",
+          "main wood pellets",
+          "secondary wood pellets",
+          "wood pellets (bags)",
+          "wood pellets (bulk)",
+          "pelenni coed"
+        ]
+      }
+    },
+    "assumed": {
+      "type": "boolean",
+      "description": "True if portable electric heaters are assumed, not observed.",
+      "values": {
+        "true": ["portable electric heaters (assumed)", "gwresogyddion trydan cludadwy (rhagdybiaeth)"]
+      }
+    }
+  },
+  "ignore": {
+    "flue type": ["with fan-assisted flue"],
+    "empty value": ["(null)"]
+  },
+  "discard": {
+    "placeholder text": ["sap05:secondary-heating"],
+    "numeric code instead of a description": ["13"]
+  }
+}

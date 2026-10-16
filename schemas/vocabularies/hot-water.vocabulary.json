@@ -1,0 +1,163 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "hot-water",
+  "prefix": "hot_water",
+  "description": "Hot water source, tariff and the features listed with it.",
+  "fields": {
+    "source": {
+      "type": "string",
+      "values": {
+        "back boiler": ["back boiler (hot water only)"],
+        "community heat pump": [
+          "community heat pump",
+          "from community heat pump",
+          "from hot-water only community scheme - heat pump"
+        ],
+        "community scheme": [
+          "community scheme",
+          "from community scheme",
+          "from hot-water only community scheme - boilers",
+          "cynllun cymunedol",
+          "o gynllun cymunedol"
+        ],
+        "community scheme with chp": ["community scheme with chp", "from community chp scheme"],
+        "electric heat pump": ["electric heat pump for water heating only", "electric heat pump"],
+        "electric immersion": [
+          "electric immersion",
+          "electric immersion (on-peak or off-peak)",
+          "no system present: electric immersion assumed",
+          "no system present : electric immersion assumed",
+          "no system present'electric immersion assumed",
+          "no system present\uff1aelectric immersion assumed",
+          "no hot water system present - electric immersion assumed",
+          "dim system ar gael: rhagdybir bod twymwr tanddwr trydan",
+          "trochi trydan",
+          "twymwr tanddwr"
+        ],
+        "electric instantaneous": [
+          "electric instantaneous at point of use",
+          "trydan ar unwaith yn y fan lle mae'n cael ei ddefnyddio"
+        ],
+        "electric multipoint": ["electric multipoint"],
+        "gas boiler/circulator": [
+          "gas boiler/circulator",
+          "gas boiler/circulator for water heating only",
+          "bwyler/cylchredydd nwy"
+        ],
+        "gas multipoint": [
+          "gas multipoint",
+          "multi-point gas water heater (instantaneous serving several taps)",
+          "nwy wrth fwy nag un pwynt"
+        ],
+        "gas range cooker": ["gas range cooker"],
+        "gas single-point": [
+          "gas instantaneous at point of use",
+          "single-point gas water heater",
+          "point gas water heater"
+        ],
+        "gas warm air circulator": ["from a circulator built into a gas warm air system"],
+        "heat pump": ["heat pump", "pwmp gwres"],
+        "main system": [
+          "from main system",
+          "from main heating system",
+          "o'r brif system",
+          "r brif system",
+          "\u2019r brif system"
+        ],
+        "oil boiler/circulator": ["oil boiler/circulator"],
+        "oil range cooker": ["oil range cooker", "popty estynedig olew"],
+        "room heaters": ["room heaters"],
+        "second main system": ["from second main heating system"],
+        "secondary system": ["from secondary system", "from secondary heater", "o system eilaidd"],
+        "solid fuel boiler/circulator": [
+          "solid fuel boiler/circulator",
+          "solid fuel boiler/circulator for water heating only"
+        ],
+        "solid fuel range cooker": ["solid fuel range cooker"]
+      }
+    },
+    "assumed": {
+      "type": "boolean",
+      "description": "True if no system was present and an electric immersion is assumed.",
+      "values": {
+        "true": [
+          "no system present: electric immersion assumed",
+          "no system present : electric immersion assumed",
+          "no system present'electric immersion assumed",
+          "no system present\uff1aelectric immersion assumed",
+          "no hot water system present - electric immersion assumed",
+          "dim system ar gael: rhagdybir bod twymwr tanddwr trydan"
+        ]
+      }
+    },
+    "dedicated": {
+      "type": "boolean",
+      "description": "True if the source heats water only.",
+      "values": {
+        "true": [
+          "gas boiler/circulator for water heating only",
+          "solid fuel boiler/circulator for water heating only",
+          "back boiler (hot water only)",
+          "electric heat pump for water heating only",
+          "from hot-water only community scheme - boilers",
+          "from hot-water only community scheme - heat pump"
+        ]
+      }
+    },
+    "tariff": {
+      "type": "string",
+      "values": {
+        "off-peak": ["off-peak", "an-frig"],
+        "standard": ["standard tariff", "tarriff safonol"],
+        "dual": ["dual tariff"],
+        "7-hour on-peak": ["7-hour tariff (on-peak)"]
+      }
+    },
+    "cylinder_thermostat": {
+      "type": "boolean",
+      "description": "False if the cylinder is stated to have no thermostat.",
+      "values": {
+        "false": ["no cylinder thermostat", "no cylinderstat", "dim thermostat ar y silindr"]
+      }
+    },
+    "solar": {
+      "type": "boolean",
+      "values": {
+        "true": ["plus solar", "gydag ynni'r haul", "r haul"]
+      }
+    },
+    "waste_water_heat_recovery": {
+      "type": "boolean",
+      "values": {
+        "true": ["waste water heat recovery", "adfer gwres d\u0175r gwastraff"]
+      }
+    },
+    "flue_gas_heat_recovery": {
+      "type": "boolean",
+      "values": {
+        "true": ["flue gas heat recovery", "adfer gwres nwyon ffliw"]
+      }
+    },
+    "boiler_age": {
+      "type": "string",
+      "values": {
+        "1998 or later": ["1998 or later"],
+        "pre-1998": ["pre 1998"]
+      }
+    },
+    "fuel": {
+      "type": "string",
+      "values": {
+        "gas": ["gas"],
+        "electric": ["electric"]
+      }
+    }
+  },
+  "ignore": {
+    "no detail": ["hot water system"]
+  },
+  "discard": {
+    "placeholder text": ["sap05:hot-water", "sap:hot-water", "***sample***", "description"],
+    "truncated description": ["\u2019n cael ei ddefnyddio"]
+  }
+}

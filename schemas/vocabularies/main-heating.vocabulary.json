@@ -1,0 +1,351 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "main-heating",
+  "prefix": "main_heating",
+  "description": "Main heating systems: one group per system, with its emitter and fuels.",
+  "count_systems_by": "system",
+  "fields": {
+    "system": {
+      "type": "string",
+      "values": {
+        "air source heat pump": [
+          "air source heat pump",
+          "air sourceheat pump",
+          "air source heat pump fan coil units",
+          "air source heat pump and underfloor heating",
+          "pwmp gwres sy'n tarddu yn yr awyr",
+          "\u2019n tarddu yn yr awyr"
+        ],
+        "boiler": [
+          "boiler and radiators",
+          "boiler and underfloor heating",
+          "boiler and underfloor",
+          "boiler with radiators and underfloor heating",
+          "boiler and fan coil units",
+          "boiler",
+          "boiler and",
+          "solid-fuel boiler",
+          "oil boiler",
+          "electric boiler",
+          "gas/lpg boiler 1998 or later",
+          "gas/lpg boiler pre-1998",
+          "gas/lpg boiler pre-1998 with balanced or open-flue",
+          "back boiler to radiators source heat pump",
+          "bwyler a gwres dan y llawr",
+          "bwyler a rheiddiaduron",
+          "bwyler gyda rheiddiaduron a gwres dan y llawr"
+        ],
+        "community heat pump": ["community heat pump", "community heap pump"],
+        "community scheme": [
+          "community scheme",
+          "community",
+          "community heating",
+          "community scheme with chp",
+          "community scheme utilising waste heat",
+          "community scheme utilising geothermal heat",
+          "community scheme utilising geothermal heat and biomass",
+          "community scheme with chp and electric",
+          "community scheme with chp and oil",
+          "community scheme with chp and geothermal",
+          "community scheme with chp and wood logs",
+          "community scheme with chp and waste combustion",
+          "community scheme with chp and mains gas",
+          "cynllun cymunedol"
+        ],
+        "electric ceiling heating": ["electric ceiling heating", "electric ceiling"],
+        "electric storage heaters": [
+          "electric storage heaters",
+          "electric storage",
+          "r wresogyddion trydan",
+          "st'r wresogyddion trydan",
+          "st\u00f4r wresogyddion trydan",
+          "\u00f4r wresogyddion trydan"
+        ],
+        "electric underfloor heating": [
+          "electric underfloor heating",
+          "electric underfloor heating (standard tariff)",
+          "gwresogi dan y llawr trydan"
+        ],
+        "exhaust air heat pump": [
+          "exhaust air mev source heat pump",
+          "exhaust source heat pump",
+          "mixed exhaust air source heat pump"
+        ],
+        "gas-fired heat pump": ["gas-fired heat pumps"],
+        "ground source heat pump": [
+          "ground source heat pump",
+          "ground sourceheat pump",
+          "ground source source heat pump",
+          "ground source heat pump fan coil units",
+          "ground-to-water heat pump with auxiliary heater (electric) source heat pump",
+          "ground-to-air heat pump with auxiliary heater (electric) source heat pump",
+          "pwmp gwres sy'n tarddu yn y ddaear"
+        ],
+        "heat pump": [
+          "heat pump",
+          "electric heat pumps",
+          "heat pumptrydan",
+          "warm air heat pump",
+          "heat from heat pump"
+        ],
+        "hot water only system": ["hot-water-only systems"],
+        "micro-cogeneration": ["micro-cogeneration"],
+        "no system": [
+          "no system present: electric heaters assumed",
+          "dim system ar gael: rhagdybir bod gwresogyddion trydan"
+        ],
+        "portable electric heaters": [
+          "portable electric heaters assumed for most rooms",
+          "portable electric heating assumed for most rooms",
+          "portable electric heaters",
+          "gwresogyddion trydan cludadwy wedi'i ragdybio ar gyfer y rhan fwyaf o'r ystafelloedd"
+        ],
+        "room heaters": ["room heaters", "gwresogyddion ystafell"],
+        "solar assisted heat pump": [
+          "solar assisted source heat pump",
+          "solar-assisted heat pump",
+          "solar assisted heat pump"
+        ],
+        "unspecified": [""],
+        "warm air": ["warm air", "awyr gynnes"],
+        "water source heat pump": [
+          "water source heat pump",
+          "water source source heat pump",
+          "water-to-air heat pump (electric) source heat pump"
+        ]
+      }
+    },
+    "emitter": {
+      "type": "string",
+      "values": {
+        "fan coil units": [
+          "boiler and fan coil units",
+          "air source heat pump fan coil units",
+          "ground source heat pump fan coil units",
+          "fan coil units"
+        ],
+        "radiators": [
+          "boiler and radiators",
+          "back boiler to radiators source heat pump",
+          "radiators",
+          "ratiators",
+          "radiator heating",
+          "systems with radiators",
+          "bwyler a rheiddiaduron",
+          "rheiddiaduron"
+        ],
+        "radiators and underfloor": [
+          "boiler with radiators and underfloor heating",
+          "radiators and underfloor",
+          "underfloor heating and radiators",
+          "bwyler gyda rheiddiaduron a gwres dan y llawr"
+        ],
+        "underfloor": [
+          "boiler and underfloor heating",
+          "boiler and underfloor",
+          "air source heat pump and underfloor heating",
+          "underfloor",
+          "underfloor heating",
+          "bwyler a gwres dan y llawr",
+          "dan y llawr"
+        ],
+        "warm air": [
+          "ground-to-air heat pump with auxiliary heater (electric) source heat pump",
+          "water-to-air heat pump (electric) source heat pump",
+          "warm air heat pump"
+        ]
+      }
+    },
+    "underfloor_construction": {
+      "type": "string",
+      "values": {
+        "pipes in concrete slab": ["pipes in concrete slab"],
+        "pipes in insulated timber floor": ["pipes in insulated timber floor"],
+        "pipes in screed above insulation": ["pipes in screed above insulation"]
+      }
+    },
+    "fuel": {
+      "type": "string",
+      "values": {
+        "anthracite": ["anthracite", "glo carreg"],
+        "b30k": ["b30k"],
+        "bioethanol": ["bioethanol"],
+        "biogas": ["biogas"],
+        "biomass": ["biomass", "biomass and mains gas", "biomass and oil", "biomass and biomass"],
+        "bottled lpg": ["bottled lpg", "lpg (bottled)", "bottled gas", "nwy potel"],
+        "bulk lpg": ["bulk lpg"],
+        "coal": ["coal", "house coal", "glo"],
+        "dual fuel (mineral and wood)": [
+          "dual fuel (mineral and wood)",
+          "dual fuel appliance (mineral and wood)",
+          "dual fuel appliance",
+          "dual fuel",
+          "dau danwydd (mwynau a choed)"
+        ],
+        "electric": [
+          "electric",
+          "electricity",
+          "electicity",
+          "eletric",
+          "electric and mains gas",
+          "electricity (24-hr heating tariff)",
+          "electricity (7-hour off-peak)",
+          "electricaire",
+          "electric boiler",
+          "ground-to-water heat pump with auxiliary heater (electric) source heat pump",
+          "ground-to-air heat pump with auxiliary heater (electric) source heat pump",
+          "water-to-air heat pump (electric) source heat pump",
+          "electric heat pumps",
+          "heat pumptrydan",
+          "electric storage heaters",
+          "electric storage",
+          "electric underfloor heating",
+          "electric underfloor heating (standard tariff)",
+          "electric ceiling heating",
+          "electric ceiling",
+          "portable electric heaters assumed for most rooms",
+          "portable electric heating assumed for most rooms",
+          "portable electric heaters",
+          "no system present: electric heaters assumed",
+          "community scheme with chp and electric",
+          "dim system ar gael: rhagdybir bod gwresogyddion trydan",
+          "gwresogi dan y llawr trydan",
+          "gwresogyddion trydan cludadwy wedi'i ragdybio ar gyfer y rhan fwyaf o'r ystafelloedd",
+          "r wresogyddion trydan",
+          "st'r wresogyddion trydan",
+          "st\u00f4r wresogyddion trydan",
+          "trydan",
+          "\u00f4r wresogyddion trydan"
+        ],
+        "gas": ["gas", "gas-fired", "gas-fired heat pumps", "heat from boilers - gas"],
+        "geothermal": [
+          "community scheme utilising geothermal heat",
+          "community scheme utilising geothermal heat and biomass",
+          "community scheme with chp and geothermal"
+        ],
+        "landfill biogas": ["biogas - landfill"],
+        "liquid biofuel": ["liquid biofuel"],
+        "lng": ["lng"],
+        "lpg": ["lpg"],
+        "lpg special condition": ["lpg subject to special condition 18"],
+        "mains gas": [
+          "mains gas",
+          "mains gas and biomass",
+          "mains gas and wood pellets",
+          "mains gas and oil",
+          "mains gas and mains gas",
+          "heat from boilers - mains gas",
+          "heat from boilers\u2013 mains gas",
+          "community scheme with chp and mains gas",
+          "nwy prif gyflenwad"
+        ],
+        "mineral oil or liquid biofuel": [
+          "appliances able to use mineral oil or liquid biofuel",
+          "appliances able to used mineral oil or liquid biofuel"
+        ],
+        "oil": [
+          "oil",
+          "oil and mains gas",
+          "oil boiler",
+          "heat from boilers - oil",
+          "community scheme with chp and oil",
+          "olew"
+        ],
+        "smokeless fuel": ["smokeless fuel", "tanwydd di-fwg"],
+        "solid fuel": ["solid fuel", "solid-fuel boiler"],
+        "waste combustion": [
+          "waste combustion",
+          "waste combustion and waste combustion",
+          "community scheme with chp and waste combustion"
+        ],
+        "waste heat": ["community scheme utilising waste heat"],
+        "wood chips": ["wood chips", "wood chips and mains gas"],
+        "wood logs": ["wood logs", "community scheme with chp and wood logs", "logiau coed"],
+        "wood pellets": [
+          "wood pellets",
+          "bulk wood pellets",
+          "main wood pellets",
+          "secondary wood pellets",
+          "wood pellets and mains gas",
+          "pelenni coed"
+        ]
+      },
+      "second_value_field": "other_fuel"
+    },
+    "other_fuel": {
+      "type": "string",
+      "description": "A second, different fuel named in the same system (e.g. a community scheme using biomass and mains gas).",
+      "values": {
+        "biomass": ["mains gas and biomass", "community scheme utilising geothermal heat and biomass"],
+        "mains gas": [
+          "biomass and mains gas",
+          "wood pellets and mains gas",
+          "wood chips and mains gas",
+          "oil and mains gas",
+          "electric and mains gas"
+        ],
+        "oil": ["mains gas and oil", "biomass and oil"],
+        "wood pellets": ["mains gas and wood pellets"]
+      }
+    },
+    "tariff": {
+      "type": "string",
+      "values": {
+        "24-hour": ["electricity (24-hr heating tariff)"],
+        "7-hour off-peak": ["electricity (7-hour off-peak)"],
+        "standard": ["electric underfloor heating (standard tariff)"]
+      }
+    },
+    "chp": {
+      "type": "boolean",
+      "description": "True for a community scheme with combined heat and power.",
+      "values": {
+        "true": [
+          "community scheme with chp",
+          "community scheme with chp and electric",
+          "community scheme with chp and oil",
+          "community scheme with chp and geothermal",
+          "community scheme with chp and wood logs",
+          "community scheme with chp and waste combustion",
+          "community scheme with chp and mains gas"
+        ]
+      }
+    },
+    "electricaire": {
+      "type": "boolean",
+      "description": "True for Electricaire electric warm air storage.",
+      "values": {
+        "true": ["electricaire"]
+      }
+    },
+    "assumed": {
+      "type": "boolean",
+      "description": "True if no system was present and electric heating is assumed.",
+      "values": {
+        "true": [
+          "portable electric heaters assumed for most rooms",
+          "portable electric heating assumed for most rooms",
+          "no system present: electric heaters assumed",
+          "dim system ar gael: rhagdybir bod gwresogyddion trydan",
+          "gwresogyddion trydan cludadwy wedi'i ragdybio ar gyfer y rhan fwyaf o'r ystafelloedd"
+        ]
+      }
+    }
+  },
+  "ignore": {
+    "glazing description in the main heating field": [
+      "fully double glazed",
+      "partial double glazing",
+      "single glazed",
+      "partial secondary glazing",
+      "full secondary glazing"
+    ],
+    "hot water description in the main heating field": ["dim system ar gael: rhagdybir bod twymwr tanddwr trydan"],
+    "postcode in the main heating field": ["(ex1 3fs)"],
+    "no detail": ["heating system"],
+    "flue type": ["with fan-assisted flue"]
+  },
+  "discard": {
+    "placeholder text": ["sap05:main-heating"]
+  }
+}
