@@ -4,6 +4,7 @@ Builders for synthetic test inputs and an in-memory HTTP server.
 Everything is a few kilobytes; no test touches the network or real data.
 """
 
+import json
 import zipfile
 from collections import Counter
 from collections.abc import Iterator
@@ -252,3 +253,59 @@ def created_schema() -> dict:
         "required": ["REPORT_REFERENCE_NUMBER", "CREATED_AT", "VALUE"],
         "additionalProperties": False,
     }
+
+
+def write_vocabularies(directory: Path) -> Path:
+    """
+    Write small walls and main-heating vocabularies for engine tests.
+
+    Walls: construction, insulation (assumed or not) and a U-value read from
+    ``u # w/m2k``. Main heating: systems counted by ``system``, with a second
+    fuel going to ``other_fuel``.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    walls = {
+        "element": "walls",
+        "prefix": "walls",
+        "fields": {
+            "construction": {
+                "type": "string",
+                "values": {
+                    "cavity wall": ["cavity wall", "waliau ceudod"],
+                    "solid brick": ["solid brick", "solid brick, filled cavity"],
+                },
+            },
+            "insulation": {
+                "type": "string",
+                "values": {"none": ["no insulation (assumed)"]},
+            },
+            "insulation_assumed": {
+                "type": "boolean",
+                "values": {"true": ["no insulation (assumed)"]},
+            },
+            "u_value": {"type": "number", "number_from": ["u # w/m2k"]},
+        },
+        "ignore": {"no detail": ["as built"]},
+        "discard": {"placeholder text": ["sap05:walls"]},
+    }
+    heating = {
+        "element": "main-heating",
+        "prefix": "main_heating",
+        "count_systems_by": "system",
+        "fields": {
+            "system": {
+                "type": "string",
+                "values": {"boiler": ["boiler"], "unspecified": [""]},
+            },
+            "fuel": {
+                "type": "string",
+                "second_value_field": "other_fuel",
+                "values": {"mains gas": ["mains gas"], "oil": ["oil"]},
+            },
+            "other_fuel": {"type": "string"},
+        },
+    }
+    for document in (walls, heating):
+        path = directory / f"{document['element']}.vocabulary.json"
+        path.write_text(json.dumps(document))
+    return directory

@@ -271,23 +271,56 @@ def merge_csvs_to_parquet(
         )
         for csv_path in csv_paths
     ]
+    stream_to_parquet(
+        pl.concat(frames),
+        output_path,
+        chunk_rows=chunk_rows,
+        row_group_rows=row_group_rows,
+        metadata=metadata,
+    )
+    if schema is not None:
+        written = pl.scan_parquet(output_path, low_memory=True)
+        with pl.Config(streaming_chunk_size=chunk_rows):
+            violations = validation.find_violations(written, schema)
+        if violations:
+            output_path.unlink()
+            raise IngestError(
+                "data breaks the schema:\n" + validation.format_violations(violations)
+            )
+    return pl.scan_parquet(output_path).select(pl.len()).collect().item()
+
+
+def stream_to_parquet(
+    lf: pl.LazyFrame,
+    output_path: Path,
+    *,
+    chunk_rows: int = DEFAULT_CHUNK_ROWS,
+    row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
+    metadata: Mapping[str, str] | None = None,
+) -> None:
+    """
+    Stream a lazy frame to a zstd-compressed Parquet file with bounded memory.
+
+    Parameters
+    ----------
+    lf
+        Frame to write.
+    output_path
+        Parquet file to write.
+    chunk_rows
+        Rows each thread processes at a time.
+    row_group_rows
+        Rows per Parquet row group, i.e. rows buffered before each write.
+    metadata
+        Key-value pairs stored in the Parquet file's metadata.
+    """
     with pl.Config(streaming_chunk_size=chunk_rows):
-        pl.concat(frames).sink_parquet(
+        lf.sink_parquet(
             output_path,
             compression="zstd",
             row_group_size=row_group_rows,
             metadata=dict(metadata) if metadata else None,
         )
-        if schema is not None:
-            written = pl.scan_parquet(output_path, low_memory=True)
-            violations = validation.find_violations(written, schema)
-            if violations:
-                output_path.unlink()
-                raise IngestError(
-                    "data breaks the schema:\n"
-                    + validation.format_violations(violations)
-                )
-    return pl.scan_parquet(output_path).select(pl.len()).collect().item()
 
 
 def read_csv_header(csv_path: Path) -> list[str]:

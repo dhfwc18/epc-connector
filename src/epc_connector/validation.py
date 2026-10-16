@@ -11,9 +11,12 @@ keywords the source schemas use are supported; any other keyword raises
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import polars as pl
+
+# Repository ``schemas/`` directory (src/epc_connector -> repo root).
+DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[2] / "schemas"
 
 # Keywords that describe a property without constraining its value.
 _ANNOTATIONS = frozenset({"title", "description", "format"})

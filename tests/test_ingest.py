@@ -241,6 +241,21 @@ class TestMergeCsvsToParquetWithSchema:
         assert not output.exists()
 
 
+class TestStreamToParquet:
+    def test_rows_and_metadata_are_written_in_row_groups(self, tmp_path: Path) -> None:
+        output = tmp_path / "out.parquet"
+
+        ingest.stream_to_parquet(
+            pl.LazyFrame({"a": range(5)}),
+            output,
+            row_group_rows=2,
+            metadata={"epc_connector.release": "r1"},
+        )
+
+        assert pl.read_parquet(output)["a"].to_list() == [0, 1, 2, 3, 4]
+        assert pl.read_parquet_metadata(output)["epc_connector.release"] == "r1"
+
+
 class TestReadCsvHeader:
     def test_utf8_bom_is_removed(self, tmp_path: Path) -> None:
         path = tmp_path / "2024.csv"

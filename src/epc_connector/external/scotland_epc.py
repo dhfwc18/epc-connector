@@ -30,8 +30,9 @@ from epc_connector.ingest import (
     IngestError,
     archive_url_to_parquet,
     staging_directory,
+    stream_to_parquet,
 )
-from epc_connector.validation import load_schema
+from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +73,6 @@ PARQUET_NAMES: Final[dict[ScotlandEpcDataset, str]] = {
     ScotlandEpcDataset.NON_DOMESTIC: "non_domestic_epc_certificate_scotland.parquet",
 }
 
-# Repository ``schemas/`` directory (src/epc_connector/external -> repo root).
-DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[3] / "schemas"
 RELEASE_METADATA_KEY: Final = "epc_connector.release"
 
 _CREATED_DATE: Final = (
@@ -303,18 +302,18 @@ def _build_series(
         if window is not None:
             in_window = _created_between(*window)
             combined_path = run_dir / "combined.parquet"
-            with pl.Config(streaming_chunk_size=chunk_rows):
+            stream_to_parquet(
                 pl.concat(
                     [
                         pl.scan_parquet(parquet_path).filter(~in_window),
                         pl.scan_parquet(merged_path).filter(in_window),
                     ]
-                ).sink_parquet(
-                    combined_path,
-                    compression="zstd",
-                    row_group_size=row_group_rows,
-                    metadata=metadata,
-                )
+                ),
+                combined_path,
+                chunk_rows=chunk_rows,
+                row_group_rows=row_group_rows,
+                metadata=metadata,
+            )
             merged_path = combined_path
 
         parquet_path.parent.mkdir(parents=True, exist_ok=True)
