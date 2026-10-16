@@ -6,15 +6,20 @@ Download, unpack and convert raw source files with bounded memory.
 - ``extract_files`` pulls selected files out of a 7z or zip archive.
 - ``merge_csvs_to_parquet`` streams same-header CSVs into one Parquet file
   with Polars' streaming engine, with explicit chunk and row-group limits.
+- ``archive_url_to_parquet`` chains the three: one archive URL in, one
+  validated Parquet file out.
+- ``staging_directory`` provides a self-cleaning working directory.
 """
 
 import contextlib
 import csv
 import logging
 import re
+import shutil
+import tempfile
 import time
 import zipfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Final
 
@@ -145,17 +150,22 @@ def extract_files(
     Raises
     ------
     IngestError
-        If the archive is neither 7z nor zip, or holds no matching files.
+        If the archive is neither 7z nor zip, holds no matching files, or the
+        matching files would not fit in the free space under ``destination``.
     """
     destination.mkdir(parents=True, exist_ok=True)
     if py7zr.is_7zfile(archive_path):
         with py7zr.SevenZipFile(archive_path) as archive:
-            names = _select(archive.getnames(), suffix, include)
+            sizes = {i.filename: i.uncompressed for i in archive.list()}
+            names = _select(list(sizes), suffix, include)
+            _check_free_space(destination, sum(sizes[name] for name in names))
             if names:
                 archive.extract(path=destination, targets=names)
     elif zipfile.is_zipfile(archive_path):
         with zipfile.ZipFile(archive_path) as archive:
-            names = _select(archive.namelist(), suffix, include)
+            sizes = {i.filename: i.file_size for i in archive.infolist()}
+            names = _select(list(sizes), suffix, include)
+            _check_free_space(destination, sum(sizes[name] for name in names))
             for name in names:
                 archive.extract(name, destination)
     else:
@@ -163,6 +173,15 @@ def extract_files(
     if not names:
         raise IngestError(f"no {suffix} files in {archive_path.name}")
     return [destination / name for name in names]
+
+
+def _check_free_space(directory: Path, needed_bytes: int) -> None:
+    free_bytes = shutil.disk_usage(directory).free
+    if needed_bytes > free_bytes:
+        raise IngestError(
+            f"extracting needs {needed_bytes / 1e9:.1f} GB but only "
+            f"{free_bytes / 1e9:.1f} GB is free under {directory}"
+        )
 
 
 def _select(
@@ -272,3 +291,76 @@ def read_csv_header(csv_path: Path) -> list[str]:
     """Return the column names in the first row of a CSV (UTF-8 BOM removed)."""
     with csv_path.open(encoding="utf-8-sig", newline="") as csv_file:
         return next(csv.reader(csv_file))
+
+
+def archive_url_to_parquet(
+    url: str,
+    output_path: Path,
+    *,
+    work_dir: Path,
+    client: httpx.Client,
+    include: Callable[[str], bool] | None = None,
+    sort_key: Callable[[Path], Any] | None = None,
+    skip_rows_after_header: int = 0,
+    chunk_rows: int = DEFAULT_CHUNK_ROWS,
+    row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
+    schema: Mapping[str, Any] | None = None,
+    metadata: Mapping[str, str] | None = None,
+) -> int:
+    """
+    Download an archive of CSVs and merge them into one validated Parquet file.
+
+    The archive and extracted CSVs are written to ``work_dir``; the archive is
+    deleted before the merge to free disk.
+
+    Parameters
+    ----------
+    url
+        Archive URL (7z or zip); see ``download_file``.
+    output_path
+        Parquet file to write.
+    work_dir
+        Scratch directory, e.g. from ``staging_directory``.
+    client
+        HTTP client for the download.
+    include
+        Member-name filter; see ``extract_files``.
+    sort_key
+        Order of the CSVs in the output; archive order if omitted.
+    skip_rows_after_header, chunk_rows, row_group_rows, schema, metadata
+        As for ``merge_csvs_to_parquet``.
+
+    Returns
+    -------
+    int
+        Number of rows written.
+    """
+    archive_path = work_dir / "archive"
+    download_file(url, archive_path, client=client)
+    csv_paths = extract_files(archive_path, work_dir / "csv", include=include)
+    archive_path.unlink()
+    return merge_csvs_to_parquet(
+        sorted(csv_paths, key=sort_key) if sort_key else csv_paths,
+        output_path,
+        skip_rows_after_header=skip_rows_after_header,
+        chunk_rows=chunk_rows,
+        row_group_rows=row_group_rows,
+        schema=schema,
+        metadata=metadata,
+    )
+
+
+@contextlib.contextmanager
+def staging_directory(staging_dir: Path, prefix: str) -> Generator[Path]:
+    """
+    Yield a fresh directory inside ``staging_dir`` and delete it afterwards.
+
+    ``staging_dir`` itself is removed too once no other run is using it.
+    """
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        with tempfile.TemporaryDirectory(prefix=prefix, dir=staging_dir) as run_dir:
+            yield Path(run_dir)
+    finally:
+        with contextlib.suppress(OSError):
+            staging_dir.rmdir()

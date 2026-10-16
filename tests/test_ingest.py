@@ -5,6 +5,7 @@ Tests for ``epc_connector.ingest``.
 import lzma
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import polars as pl
 import pytest
@@ -126,6 +127,19 @@ class TestExtractFiles:
             ingest.extract_files(yearly_archive, tmp_path / "out")
 
 
+class TestExtractFilesDiskSpace:
+    def test_insufficient_free_space_raises_before_extracting(
+        self, yearly_archive: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("shutil.disk_usage", lambda path: SimpleNamespace(free=10))
+        destination = tmp_path / "out"
+
+        with pytest.raises(IngestError, match="GB is free"):
+            ingest.extract_files(yearly_archive, destination)
+
+        assert list(destination.iterdir()) == []
+
+
 class TestMergeCsvsToParquet:
     def test_values_are_kept_as_published_strings(self, tmp_path: Path) -> None:
         csvs = write_csvs(tmp_path, yearly_members())
@@ -230,3 +244,57 @@ class TestReadCsvHeader:
         path.write_bytes(scottish_csv([]))
 
         assert ingest.read_csv_header(path) == ["A", "B", "C"]
+
+
+class TestArchiveUrlToParquet:
+    def test_archive_is_downloaded_merged_and_deleted(
+        self, yearly_archive: Path, tmp_path: Path
+    ) -> None:
+        server = FakeServer(yearly_archive.read_bytes())
+        output = tmp_path / "merged.parquet"
+        work_dir = tmp_path / "work"
+        work_dir.mkdir()
+
+        with server.client() as client:
+            row_count = ingest.archive_url_to_parquet(
+                SOURCE_URL,
+                output,
+                work_dir=work_dir,
+                client=client,
+                sort_key=lambda path: path.name,
+                skip_rows_after_header=1,
+            )
+
+        assert row_count == 4
+        assert pl.read_parquet(output)["A"].to_list() == ["1", "2", "3", "4"]
+        assert not (work_dir / "archive").exists()
+
+
+class TestStagingDirectory:
+    def test_run_directory_and_empty_staging_are_removed(self, tmp_path: Path) -> None:
+        staging = tmp_path / ".staging"
+
+        with ingest.staging_directory(staging, prefix="run-") as run_dir:
+            (run_dir / "file.csv").write_text("a")
+            assert run_dir.parent == staging
+
+        assert not staging.exists()
+
+    def test_staging_used_by_another_run_is_kept(self, tmp_path: Path) -> None:
+        staging = tmp_path / ".staging"
+        staging.mkdir()
+        (staging / "other-run").mkdir()
+
+        with ingest.staging_directory(staging, prefix="run-") as run_dir:
+            pass
+
+        assert not run_dir.exists()
+        assert staging.is_dir()
+
+    def test_run_directory_is_removed_after_an_error(self, tmp_path: Path) -> None:
+        staging = tmp_path / ".staging"
+
+        with pytest.raises(RuntimeError), ingest.staging_directory(staging, "run-"):
+            raise RuntimeError("boom")
+
+        assert not staging.exists()

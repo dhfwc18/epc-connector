@@ -64,6 +64,15 @@ class FakeServer:
         Cut the first response after this many bytes, like a lost connection.
     title
         Dataset title returned by CKAN ``package_show`` (holds the release).
+    source_url
+        URL that redirects to the file; ``<source_url>/info`` serves file info.
+    token
+        If set, ``source_url`` and its ``/info`` require this bearer token.
+    last_updated
+        Timestamp returned by ``<source_url>/info``.
+
+    The pre-signed URL rejects any request carrying an ``Authorization``
+    header, as S3 does.
     """
 
     def __init__(
@@ -73,9 +82,15 @@ class FakeServer:
         supports_ranges: bool = True,
         drop_after: int | None = None,
         title: str = RELEASE_TITLE,
+        source_url: str = SOURCE_URL,
+        token: str | None = None,
+        last_updated: str = "2026-10-01T00:31:19.000+00:00",
     ) -> None:
         self.payload = payload
         self.title = title
+        self.source_url = source_url
+        self.token = token
+        self.last_updated = last_updated
         self.supports_ranges = supports_ranges
         self.drop_after = drop_after
         self.calls: Counter[str] = Counter()
@@ -83,6 +98,9 @@ class FakeServer:
 
     def client(self) -> httpx.Client:
         return httpx.Client(transport=httpx.MockTransport(self))
+
+    def transport(self) -> httpx.MockTransport:
+        return httpx.MockTransport(self)
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         url = str(request.url)
@@ -94,11 +112,24 @@ class FakeServer:
             self.calls["package_show"] += 1
             result = {"title": self.title}
             return httpx.Response(200, json={"success": True, "result": result})
-        if url == SOURCE_URL:
+        needs_token = self.token and url in (self.source_url, f"{self.source_url}/info")
+        if (
+            needs_token
+            and request.headers.get("authorization") != f"Bearer {self.token}"
+        ):
+            self.calls["unauthorised"] += 1
+            return httpx.Response(401, json={"error": "Unauthorised"})
+        if url == f"{self.source_url}/info":
+            data = {"fileSize": len(self.payload), "lastUpdated": self.last_updated}
+            return httpx.Response(200, json={"data": data})
+        if url == self.source_url:
             self.calls["redirect"] += 1
             return httpx.Response(302, headers={"location": PRESIGNED_URL})
         if url != PRESIGNED_URL:
             return httpx.Response(404)
+        if "authorization" in request.headers:
+            self.calls["file_with_authorization"] += 1
+            return httpx.Response(400, text="Only one auth mechanism allowed")
         self.calls["file"] += 1
         range_header = request.headers.get("range")
         self.ranges.append(range_header)

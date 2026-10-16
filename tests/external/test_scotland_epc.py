@@ -289,9 +289,7 @@ class TestUpdateScotlandEpc:
             extracted.extend(p.name for p in paths)
             return paths
 
-        monkeypatch.setattr(
-            "epc_connector.external.scotland_epc.extract_files", recording_extract
-        )
+        monkeypatch.setattr("epc_connector.ingest.extract_files", recording_extract)
 
         downloaded.update(self.new_release(downloaded), date_from="2026-01-01")
 

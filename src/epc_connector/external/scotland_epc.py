@@ -15,7 +15,6 @@ import datetime as dt
 import logging
 import re
 import shutil
-import tempfile
 from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
@@ -29,9 +28,8 @@ from epc_connector.ingest import (
     DEFAULT_ROW_GROUP_ROWS,
     HTTP_TIMEOUT,
     IngestError,
-    download_file,
-    extract_files,
-    merge_csvs_to_parquet,
+    archive_url_to_parquet,
+    staging_directory,
 )
 from epc_connector.validation import load_schema
 
@@ -273,66 +271,56 @@ def _build_series(
     """
     parquet_path = data_dir / PARQUET_NAMES[dataset]
     schema = load_schema(schemas_dir / "source" / "scotland" / f"{dataset}.schema.json")
-    staging_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        with (
-            (
-                contextlib.nullcontext(client)
-                if client is not None
-                else httpx.Client(timeout=HTTP_TIMEOUT)
-            ) as http,
-            tempfile.TemporaryDirectory(prefix=f"{dataset}-", dir=staging_dir) as tmp,
-        ):
-            release = fetch_release(dataset, http)
-            if release == current_release:
-                logger.info("%s is already at release %s", parquet_path, release)
-                return parquet_path
-
-            run_dir = Path(tmp)
-            archive_path = run_dir / "archive.7z"
-            logger.info("Downloading %s (release %s)", dataset, release)
-            download_file(SOURCE_URLS[dataset], archive_path, client=http)
-            csv_paths = extract_files(
-                archive_path,
-                run_dir / "csv",
-                include=None if window is None else _year_filter(window),
-            )
-            archive_path.unlink()  # free disk before the merge
-
-            merged_path = run_dir / "merged.parquet"
-            metadata = {RELEASE_METADATA_KEY: release}
-            merge_csvs_to_parquet(
-                sorted(csv_paths, key=period_sort_key),
-                merged_path,
-                skip_rows_after_header=1,  # descriptive label row
-                chunk_rows=chunk_rows,
-                row_group_rows=row_group_rows,
-                schema=schema,
-                metadata=metadata,
-            )
-            if window is not None:
-                in_window = _created_between(*window)
-                with pl.Config(streaming_chunk_size=chunk_rows):
-                    pl.concat(
-                        [
-                            pl.scan_parquet(parquet_path).filter(~in_window),
-                            pl.scan_parquet(merged_path).filter(in_window),
-                        ]
-                    ).sink_parquet(
-                        run_dir / "combined.parquet",
-                        compression="zstd",
-                        row_group_size=row_group_rows,
-                        metadata=metadata,
-                    )
-                merged_path = run_dir / "combined.parquet"
-
-            parquet_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(merged_path, parquet_path)
-            logger.info("Wrote %s (release %s)", parquet_path, release)
+    with (
+        (
+            contextlib.nullcontext(client)
+            if client is not None
+            else httpx.Client(timeout=HTTP_TIMEOUT)
+        ) as http,
+        staging_directory(staging_dir, prefix=f"{dataset}-") as run_dir,
+    ):
+        release = fetch_release(dataset, http)
+        if release == current_release:
+            logger.info("%s is already at release %s", parquet_path, release)
             return parquet_path
-    finally:
-        with contextlib.suppress(OSError):
-            staging_dir.rmdir()  # only succeeds if no other run is using it
+
+        logger.info("Downloading %s (release %s)", dataset, release)
+        merged_path = run_dir / "merged.parquet"
+        metadata = {RELEASE_METADATA_KEY: release}
+        archive_url_to_parquet(
+            SOURCE_URLS[dataset],
+            merged_path,
+            work_dir=run_dir,
+            client=http,
+            include=None if window is None else _year_filter(window),
+            sort_key=period_sort_key,
+            skip_rows_after_header=1,  # descriptive label row
+            chunk_rows=chunk_rows,
+            row_group_rows=row_group_rows,
+            schema=schema,
+            metadata=metadata,
+        )
+        if window is not None:
+            in_window = _created_between(*window)
+            combined_path = run_dir / "combined.parquet"
+            with pl.Config(streaming_chunk_size=chunk_rows):
+                pl.concat(
+                    [
+                        pl.scan_parquet(parquet_path).filter(~in_window),
+                        pl.scan_parquet(merged_path).filter(in_window),
+                    ]
+                ).sink_parquet(
+                    combined_path,
+                    compression="zstd",
+                    row_group_size=row_group_rows,
+                    metadata=metadata,
+                )
+            merged_path = combined_path
+
+        parquet_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(merged_path, parquet_path)
+        logger.info("Wrote %s (release %s)", parquet_path, release)
+        return parquet_path
 
 
 def _ckan_get(client: httpx.Client, action: str, item_id: str) -> dict[str, Any]:
