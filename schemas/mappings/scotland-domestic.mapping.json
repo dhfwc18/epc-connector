@@ -1,0 +1,455 @@
+{
+  "$schema": "./mapping.schema.json",
+  "source": "source/scotland/domestic.schema.json",
+  "target": "canonical/gb-domestic.schema.json",
+  "description": "Scottish domestic 'valid' dataset (rolling 10 years, superseded EPCs excluded) to the canonical GB domestic record.",
+  "null_values": ["", "Data removed", "data removed"],
+  "fields": {
+    "source_dataset": {
+      "const": "scotland/domestic"
+    },
+    "country": {
+      "const": "scotland"
+    },
+    "certificate_id": {
+      "from": "REPORT_REFERENCE_NUMBER"
+    },
+    "uprn": {
+      "from": "OSG_REFERENCE_NUMBER",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ]
+    },
+    "inspection_date": {
+      "from": "INSPECTION_DATE",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "date",
+          "format": "%Y-%m-%d"
+        }
+      ]
+    },
+    "lodgement_date": {
+      "from": "LODGEMENT_DATE",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "date",
+          "format": "%Y-%m-%d"
+        }
+      ]
+    },
+    "lodged_at": {
+      "from": "CREATED_AT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "datetime",
+          "format": "%d/%m/%Y %H:%M:%S"
+        }
+      ]
+    },
+    "superseded": {
+      "const": false,
+      "note": "The valid dataset only contains EPCs that have not been superseded."
+    },
+    "address_line_1": {
+      "from": "ADDRESS1"
+    },
+    "address_line_2": {
+      "from": "ADDRESS2"
+    },
+    "post_town": {
+      "from": "ADDRESS3",
+      "note": "Scotland publishes the post town in ADDRESS3."
+    },
+    "postcode": {
+      "from": "POSTCODE"
+    },
+    "local_authority_name": {
+      "from": "LOCAL_AUTHORITY_LABEL"
+    },
+    "current_energy_rating": {
+      "from": "CURRENT_ENERGY_RATING"
+    },
+    "current_energy_efficiency": {
+      "from": "CURRENT_ENERGY_EFFICIENCY",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ]
+    },
+    "potential_energy_rating": {
+      "from": "POTENTIAL_ENERGY_RATING"
+    },
+    "potential_energy_efficiency": {
+      "from": "POTENTIAL_ENERGY_EFFICIENCY",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ]
+    },
+    "property_type": {
+      "from": "PROPERTY_TYPE",
+      "steps": [
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "built_form": {
+      "from": "BUILT_FORM",
+      "steps": [
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "tenure": {
+      "from": "TENURE",
+      "steps": [
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "construction_age_band": {
+      "from": "CONSTRUCTION_AGE_BAND"
+    },
+    "construction_year_min": {
+      "from": "CONSTRUCTION_AGE_BAND",
+      "steps": [
+        {
+          "op": "map",
+          "values": {
+            "before 1919": null,
+            "1919-1929": 1919,
+            "1930-1949": 1930,
+            "1950-1964": 1950,
+            "1965-1975": 1965,
+            "1976-1983": 1976,
+            "1984-1991": 1984,
+            "1992-1998": 1992,
+            "1999-2002": 1999,
+            "2003-2007": 2003,
+            "2008 onwards": 2008,
+            "2008-2011": 2008,
+            "2012 onwards": 2012
+          },
+          "unmapped": "error"
+        }
+      ]
+    },
+    "construction_year_max": {
+      "from": "CONSTRUCTION_AGE_BAND",
+      "steps": [
+        {
+          "op": "map",
+          "values": {
+            "before 1919": 1918,
+            "1919-1929": 1929,
+            "1930-1949": 1949,
+            "1950-1964": 1964,
+            "1965-1975": 1975,
+            "1976-1983": 1983,
+            "1984-1991": 1991,
+            "1992-1998": 1998,
+            "1999-2002": 2002,
+            "2003-2007": 2007,
+            "2008 onwards": null,
+            "2008-2011": 2011,
+            "2012 onwards": null
+          },
+          "unmapped": "error"
+        }
+      ]
+    },
+    "total_floor_area": {
+      "from": "TOTAL_FLOOR_AREA",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "null_if",
+          "values": [0]
+        }
+      ],
+      "note": "A floor area of 0 is not a real measurement."
+    },
+    "main_fuel": {
+      "from": "MAIN_FUEL"
+    },
+    "glazed_type": {
+      "from": "GLAZED_TYPE"
+    },
+    "main_heating_description": {
+      "from": "MAINHEAT_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "main_heating_energy_efficiency": {
+      "from": "MAINHEAT_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "main_heating_controls_description": {
+      "from": "MAINHEATCONT_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "main_heating_controls_energy_efficiency": {
+      "from": "MAINHEATC_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "hot_water_description": {
+      "from": "HOTWATER_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "hot_water_energy_efficiency": {
+      "from": "HOT_WATER_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "walls_description": {
+      "from": "WALL_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "walls_energy_efficiency": {
+      "from": "WALL_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "roof_description": {
+      "from": "ROOF_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "roof_energy_efficiency": {
+      "from": "ROOF_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "floor_description": {
+      "from": "FLOOR_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "floor_energy_efficiency": {
+      "from": "FLOOR_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "windows_description": {
+      "from": "WINDOWS_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "windows_energy_efficiency": {
+      "from": "WINDOWS_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "lighting_energy_efficiency": {
+      "from": "LIGHTING_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "has_solar_pv": {
+      "from": "PHOTO_SUPPLY",
+      "steps": [
+        {
+          "op": "regex_extract",
+          "pattern": "(?:Roof Area|Peak Power|Supply): *([0-9]+(?:\\.[0-9]+)?)",
+          "group": 1
+        },
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "greater_than",
+          "value": 0
+        }
+      ],
+      "note": "First PV array only. Null when the array record carries no figure (for example 'Roof Area: %')."
+    },
+    "has_solar_water_heating": {
+      "from": "SOLAR_WATER_HEATING_FLAG",
+      "steps": [
+        {
+          "op": "boolean",
+          "true": ["Y"],
+          "false": ["N"]
+        }
+      ]
+    },
+    "co2_emissions_current": {
+      "from": "CO2_EMISSIONS_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        }
+      ]
+    },
+    "heating_cost_current": {
+      "from": "HEATING_COST_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "divide",
+          "by": 3
+        },
+        {
+          "op": "round",
+          "digits": 2
+        }
+      ],
+      "note": "Scottish costs are over 3 years."
+    },
+    "hot_water_cost_current": {
+      "from": "HOT_WATER_COST_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "divide",
+          "by": 3
+        },
+        {
+          "op": "round",
+          "digits": 2
+        }
+      ],
+      "note": "Scottish costs are over 3 years."
+    },
+    "lighting_cost_current": {
+      "from": "LIGHTING_COST_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "divide",
+          "by": 3
+        },
+        {
+          "op": "round",
+          "digits": 2
+        }
+      ],
+      "note": "Scottish costs are over 3 years."
+    }
+  }
+}

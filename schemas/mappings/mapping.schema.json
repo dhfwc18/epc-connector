@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:epc-connector:schemas:mappings:mapping",
+  "title": "Source to canonical field mapping",
+  "description": "Declares how to build one canonical record from one source row. Every source value is first trimmed of surrounding whitespace; if the trimmed value is in null_values it becomes null. Steps then run in order; any step given null returns null. A step that cannot handle its input is an error, so unexpected source values are reported rather than silently dropped.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "source": {
+      "description": "Source schema path, relative to schemas/.",
+      "type": "string",
+      "pattern": "^source/.+\\.schema\\.json$"
+    },
+    "target": {
+      "description": "Canonical schema path, relative to schemas/.",
+      "type": "string",
+      "pattern": "^canonical/.+\\.schema\\.json$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "null_values": {
+      "description": "Trimmed source values treated as null before any step runs.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "fields": {
+      "description": "One rule per canonical field.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "required": ["source", "target", "null_values", "fields"],
+  "additionalProperties": false,
+  "$defs": {
+    "rule": {
+      "oneOf": [
+        {
+          "description": "A fixed value for every record.",
+          "type": "object",
+          "properties": {
+            "const": {
+              "type": ["string", "number", "boolean", "null"]
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": ["const"],
+          "additionalProperties": false
+        },
+        {
+          "description": "A value taken from one source column and passed through steps.",
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "minLength": 1
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/step"
+              }
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": ["from"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "step": {
+      "oneOf": [
+        {
+          "description": "Split on separator and keep the first part that, once trimmed, is not empty and not in 'skip'; null if there is none. Used for bilingual English|Welsh text and multi-element ' | ' values, where element lists in description and rating columns are positionally aligned.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "first_part"
+            },
+            "separator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "skip": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["op", "separator"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Lower-case the string.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "lower"
+            }
+          },
+          "required": ["op"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Remove prefix if the value starts with it.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "strip_prefix"
+            },
+            "prefix": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["op", "prefix"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Replace whole values via a lookup. 'unmapped' says what happens to values not in the table: keep them, make them null, or raise an error.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "map"
+            },
+            "values": {
+              "type": "object",
+              "additionalProperties": {
+                "type": ["string", "number", "boolean", "null"]
+              }
+            },
+            "unmapped": {
+              "enum": ["keep", "null", "error"]
+            }
+          },
+          "required": ["op", "values", "unmapped"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Convert to a type. integer and number accept plain decimal strings (integer also accepts a whole number). date outputs YYYY-MM-DD and datetime outputs YYYY-MM-DDTHH:MM:SS; 'format' is a strftime pattern for the input, and if absent the input must already be ISO 8601.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "cast"
+            },
+            "to": {
+              "enum": ["integer", "number", "date", "datetime"]
+            },
+            "format": {
+              "type": "string"
+            }
+          },
+          "required": ["op", "to"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Convert to boolean; any value in neither list is an error.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "boolean"
+            },
+            "true": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "false": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          },
+          "required": ["op", "true", "false"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Divide a number.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "divide"
+            },
+            "by": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": ["op", "by"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Round a number to a number of decimal places.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "round"
+            },
+            "digits": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["op", "digits"],
+          "additionalProperties": false
+        },
+        {
+          "description": "True if the number is greater than value.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "greater_than"
+            },
+            "value": {
+              "type": "number"
+            }
+          },
+          "required": ["op", "value"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Null if the value equals one of values (compared after earlier steps).",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "null_if"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": ["string", "number"]
+              },
+              "minItems": 1
+            }
+          },
+          "required": ["op", "values"],
+          "additionalProperties": false
+        },
+        {
+          "description": "Python-style regular expression search; returns the given group of the first match, or null if there is no match.",
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "regex_extract"
+            },
+            "pattern": {
+              "type": "string",
+              "minLength": 1
+            },
+            "group": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["op", "pattern", "group"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:epc-connector:schemas:canonical:gb-domestic",
+  "title": "GB domestic EPC record (canonical)",
+  "description": "One domestic Energy Performance Certificate for Great Britain, mapped from a source dataset (see schemas/mappings/). Values are typed; every field is present and is null when the source has no value.",
+  "type": "object",
+  "$defs": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "year": {
+      "type": ["integer", "null"],
+      "minimum": 1000,
+      "maximum": 2100
+    },
+    "rating_band": {
+      "type": ["string", "null"],
+      "enum": ["A", "B", "C", "D", "E", "F", "G", null]
+    },
+    "sap_score": {
+      "type": ["integer", "null"]
+    },
+    "efficiency": {
+      "type": ["string", "null"],
+      "enum": ["very good", "good", "average", "poor", "very poor", null]
+    },
+    "non_negative": {
+      "type": ["number", "null"],
+      "minimum": 0
+    }
+  },
+  "properties": {
+    "source_dataset": {
+      "description": "Source dataset the record came from (path under schemas/source/).",
+      "type": "string",
+      "enum": ["england-and-wales/domestic", "scotland/domestic", "scotland/domestic-extended-historic"]
+    },
+    "country": {
+      "description": "Country of the property. England and Wales are told apart by the local authority code.",
+      "type": ["string", "null"],
+      "enum": ["england", "wales", "scotland", null]
+    },
+    "certificate_id": {
+      "description": "Certificate identifier: CERTIFICATE_NUMBER (England and Wales) or REPORT_REFERENCE_NUMBER (Scotland).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "uprn": {
+      "description": "Unique Property Reference Number (Scotland: OSG reference number).",
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "inspection_date": {
+      "description": "Date the property was assessed.",
+      "$ref": "#/$defs/date"
+    },
+    "lodgement_date": {
+      "description": "Date the certificate was lodged on the register.",
+      "$ref": "#/$defs/date"
+    },
+    "lodged_at": {
+      "description": "Date and time the certificate was lodged (ISO 8601, no time zone).",
+      "type": ["string", "null"],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$"
+    },
+    "superseded": {
+      "description": "True if a newer certificate exists for the property. Only the Scottish extended historic dataset says; null elsewhere.",
+      "type": ["boolean", "null"]
+    },
+    "address_line_1": {
+      "description": "First address line (Royal Mail / OS licence terms apply).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "address_line_2": {
+      "description": "Second address line (Royal Mail / OS licence terms apply).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "post_town": {
+      "description": "Post town (Royal Mail / OS licence terms apply).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "postcode": {
+      "description": "Postcode (Royal Mail / OS licence terms apply).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "local_authority_name": {
+      "description": "Local authority name as published by the source.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "current_energy_rating": {
+      "description": "Current energy efficiency rating band.",
+      "$ref": "#/$defs/rating_band"
+    },
+    "current_energy_efficiency": {
+      "description": "Current energy efficiency (SAP) score.",
+      "$ref": "#/$defs/sap_score"
+    },
+    "potential_energy_rating": {
+      "description": "Potential energy efficiency rating band.",
+      "$ref": "#/$defs/rating_band"
+    },
+    "potential_energy_efficiency": {
+      "description": "Potential energy efficiency (SAP) score.",
+      "$ref": "#/$defs/sap_score"
+    },
+    "property_type": {
+      "description": "Property type, lower case.",
+      "type": ["string", "null"],
+      "enum": ["house", "flat", "maisonette", "bungalow", "park home", null]
+    },
+    "built_form": {
+      "description": "Built form, lower case.",
+      "type": ["string", "null"],
+      "enum": [
+        "detached",
+        "semi-detached",
+        "mid-terrace",
+        "end-terrace",
+        "enclosed mid-terrace",
+        "enclosed end-terrace",
+        null
+      ]
+    },
+    "tenure": {
+      "description": "Tenure, lower case; 'rental' spellings normalised to 'rented'.",
+      "type": ["string", "null"],
+      "enum": ["owner-occupied", "rented (social)", "rented (private)", "unknown", null]
+    },
+    "construction_age_band": {
+      "description": "Construction age band exactly as the source labels it (England and Wales prefix removed). Bands differ between nations; use construction_year_min/max to compare.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "construction_year_min": {
+      "description": "First year of the construction age band; null if open-ended or unknown.",
+      "$ref": "#/$defs/year"
+    },
+    "construction_year_max": {
+      "description": "Last year of the construction age band; null if open-ended or unknown.",
+      "$ref": "#/$defs/year"
+    },
+    "total_floor_area": {
+      "description": "Total floor area in square metres.",
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0
+    },
+    "main_fuel": {
+      "description": "Main heating fuel as described by the source (English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "glazed_type": {
+      "description": "Glazing type as described by the source.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "main_heating_description": {
+      "description": "Description of the main heating system (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "main_heating_energy_efficiency": {
+      "description": "Energy efficiency rating of the main heating system (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "main_heating_controls_description": {
+      "description": "Description of the main heating controls (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "main_heating_controls_energy_efficiency": {
+      "description": "Energy efficiency rating of the main heating controls (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "hot_water_description": {
+      "description": "Description of the hot water system (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "hot_water_energy_efficiency": {
+      "description": "Energy efficiency rating of the hot water system (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "walls_description": {
+      "description": "Description of the walls (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "walls_energy_efficiency": {
+      "description": "Energy efficiency rating of the walls (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "roof_description": {
+      "description": "Description of the roof (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "roof_energy_efficiency": {
+      "description": "Energy efficiency rating of the roof (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "floor_description": {
+      "description": "Description of the floor (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "floor_energy_efficiency": {
+      "description": "Energy efficiency rating of the floor (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "windows_description": {
+      "description": "Description of the windows (first element and English part only).",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "windows_energy_efficiency": {
+      "description": "Energy efficiency rating of the windows (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "lighting_energy_efficiency": {
+      "description": "Energy efficiency rating of the lighting (first element).",
+      "$ref": "#/$defs/efficiency"
+    },
+    "has_solar_pv": {
+      "description": "True if solar photovoltaic panels are recorded.",
+      "type": ["boolean", "null"]
+    },
+    "has_solar_water_heating": {
+      "description": "True if solar water heating is recorded.",
+      "type": ["boolean", "null"]
+    },
+    "co2_emissions_current": {
+      "description": "Current CO2 emissions, tonnes per year. Can be negative where on-site generation exceeds use.",
+      "type": ["number", "null"]
+    },
+    "heating_cost_current": {
+      "description": "Current space heating cost, GBP per year (Scottish 3-year figures divided by 3).",
+      "$ref": "#/$defs/non_negative"
+    },
+    "hot_water_cost_current": {
+      "description": "Current hot water cost, GBP per year (Scottish 3-year figures divided by 3).",
+      "$ref": "#/$defs/non_negative"
+    },
+    "lighting_cost_current": {
+      "description": "Current lighting cost, GBP per year (Scottish 3-year figures divided by 3).",
+      "$ref": "#/$defs/non_negative"
+    }
+  },
+  "required": [
+    "source_dataset",
+    "country",
+    "certificate_id",
+    "uprn",
+    "inspection_date",
+    "lodgement_date",
+    "lodged_at",
+    "superseded",
+    "address_line_1",
+    "address_line_2",
+    "post_town",
+    "postcode",
+    "local_authority_name",
+    "current_energy_rating",
+    "current_energy_efficiency",
+    "potential_energy_rating",
+    "potential_energy_efficiency",
+    "property_type",
+    "built_form",
+    "tenure",
+    "construction_age_band",
+    "construction_year_min",
+    "construction_year_max",
+    "total_floor_area",
+    "main_fuel",
+    "glazed_type",
+    "main_heating_description",
+    "main_heating_energy_efficiency",
+    "main_heating_controls_description",
+    "main_heating_controls_energy_efficiency",
+    "hot_water_description",
+    "hot_water_energy_efficiency",
+    "walls_description",
+    "walls_energy_efficiency",
+    "roof_description",
+    "roof_energy_efficiency",
+    "floor_description",
+    "floor_energy_efficiency",
+    "windows_description",
+    "windows_energy_efficiency",
+    "lighting_energy_efficiency",
+    "has_solar_pv",
+    "has_solar_water_heating",
+    "co2_emissions_current",
+    "heating_cost_current",
+    "hot_water_cost_current",
+    "lighting_cost_current"
+  ],
+  "additionalProperties": false
+}

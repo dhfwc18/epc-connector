@@ -1,0 +1,491 @@
+{
+  "$schema": "./mapping.schema.json",
+  "source": "source/england-and-wales/domestic.schema.json",
+  "target": "canonical/gb-domestic.schema.json",
+  "description": "England and Wales domestic certificates (Get energy performance of buildings data) to the canonical GB domestic record.",
+  "null_values": ["", "NO DATA!", "NODATA!", "INVALID!", "N/A"],
+  "fields": {
+    "source_dataset": {
+      "const": "england-and-wales/domestic"
+    },
+    "country": {
+      "from": "LOCAL_AUTHORITY",
+      "steps": [
+        {
+          "op": "regex_extract",
+          "pattern": "^([EW])[0-9]",
+          "group": 1
+        },
+        {
+          "op": "map",
+          "values": {
+            "E": "england",
+            "W": "wales"
+          },
+          "unmapped": "error"
+        }
+      ],
+      "note": "ONS local authority codes start with E (England) or W (Wales)."
+    },
+    "certificate_id": {
+      "from": "CERTIFICATE_NUMBER"
+    },
+    "uprn": {
+      "from": "UPRN",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ]
+    },
+    "inspection_date": {
+      "from": "INSPECTION_DATE",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "date",
+          "format": "%Y-%m-%d"
+        }
+      ]
+    },
+    "lodgement_date": {
+      "from": "LODGEMENT_DATE",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "date",
+          "format": "%Y-%m-%d"
+        }
+      ]
+    },
+    "lodged_at": {
+      "from": "LODGEMENT_DATETIME",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "datetime"
+        }
+      ],
+      "note": "LODGEMENT_DATETIME is read as an ISO 8601 date-time."
+    },
+    "superseded": {
+      "const": null,
+      "note": "England and Wales do not flag superseded certificates."
+    },
+    "address_line_1": {
+      "from": "ADDRESS1"
+    },
+    "address_line_2": {
+      "from": "ADDRESS2"
+    },
+    "post_town": {
+      "from": "POSTTOWN"
+    },
+    "postcode": {
+      "from": "POSTCODE"
+    },
+    "local_authority_name": {
+      "from": "LOCAL_AUTHORITY_LABEL"
+    },
+    "current_energy_rating": {
+      "from": "CURRENT_ENERGY_RATING"
+    },
+    "current_energy_efficiency": {
+      "from": "CURRENT_ENERGY_EFFICIENCY",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ]
+    },
+    "potential_energy_rating": {
+      "from": "POTENTIAL_ENERGY_RATING"
+    },
+    "potential_energy_efficiency": {
+      "from": "POTENTIAL_ENERGY_EFFICIENCY",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ]
+    },
+    "property_type": {
+      "from": "PROPERTY_TYPE",
+      "steps": [
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "built_form": {
+      "from": "BUILT_FORM",
+      "steps": [
+        {
+          "op": "lower"
+        },
+        {
+          "op": "null_if",
+          "values": ["not recorded"]
+        }
+      ]
+    },
+    "tenure": {
+      "from": "TENURE",
+      "steps": [
+        {
+          "op": "lower"
+        },
+        {
+          "op": "map",
+          "values": {
+            "rental (private)": "rented (private)",
+            "rental (social)": "rented (social)",
+            "not defined - use in the case of a new dwelling for which the intended tenure in not known. it is not to be used for an existing dwelling": "unknown"
+          },
+          "unmapped": "keep"
+        }
+      ]
+    },
+    "construction_age_band": {
+      "from": "CONSTRUCTION_AGE_BAND",
+      "steps": [
+        {
+          "op": "strip_prefix",
+          "prefix": "England and Wales: "
+        },
+        {
+          "op": "null_if",
+          "values": ["Not applicable", "Not recorded"]
+        }
+      ]
+    },
+    "construction_year_min": {
+      "from": "CONSTRUCTION_AGE_BAND",
+      "steps": [
+        {
+          "op": "strip_prefix",
+          "prefix": "England and Wales: "
+        },
+        {
+          "op": "map",
+          "values": {
+            "before 1900": null,
+            "Pre-1900": null,
+            "1900-1929": 1900,
+            "1930-1949": 1930,
+            "1950-1966": 1950,
+            "1967-1975": 1967,
+            "1976-1982": 1976,
+            "1983-1990": 1983,
+            "1991-1995": 1991,
+            "1996-2002": 1996,
+            "2003-2006": 2003,
+            "2007-2011": 2007,
+            "2007 onwards": 2007,
+            "Post-2006": 2007,
+            "2012 onwards": 2012,
+            "2012-2021": 2012,
+            "2022 onwards": 2022,
+            "Not applicable": null,
+            "Not recorded": null
+          },
+          "unmapped": "keep"
+        },
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ],
+      "note": "Unmapped values must be a single year (new-build lodgements), otherwise the cast fails."
+    },
+    "construction_year_max": {
+      "from": "CONSTRUCTION_AGE_BAND",
+      "steps": [
+        {
+          "op": "strip_prefix",
+          "prefix": "England and Wales: "
+        },
+        {
+          "op": "map",
+          "values": {
+            "before 1900": 1899,
+            "Pre-1900": 1899,
+            "1900-1929": 1929,
+            "1930-1949": 1949,
+            "1950-1966": 1966,
+            "1967-1975": 1975,
+            "1976-1982": 1982,
+            "1983-1990": 1990,
+            "1991-1995": 1995,
+            "1996-2002": 2002,
+            "2003-2006": 2006,
+            "2007-2011": 2011,
+            "2007 onwards": null,
+            "Post-2006": null,
+            "2012 onwards": null,
+            "2012-2021": 2021,
+            "2022 onwards": null,
+            "Not applicable": null,
+            "Not recorded": null
+          },
+          "unmapped": "keep"
+        },
+        {
+          "op": "cast",
+          "to": "integer"
+        }
+      ],
+      "note": "Unmapped values must be a single year (new-build lodgements), otherwise the cast fails."
+    },
+    "total_floor_area": {
+      "from": "TOTAL_FLOOR_AREA",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "null_if",
+          "values": [0]
+        }
+      ],
+      "note": "A floor area of 0 is not a real measurement."
+    },
+    "main_fuel": {
+      "from": "MAIN_FUEL"
+    },
+    "glazed_type": {
+      "from": "GLAZED_TYPE"
+    },
+    "main_heating_description": {
+      "from": "MAINHEAT_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "main_heating_energy_efficiency": {
+      "from": "MAINHEAT_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "main_heating_controls_description": {
+      "from": "MAINHEATCONT_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "main_heating_controls_energy_efficiency": {
+      "from": "MAINHEATC_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "hot_water_description": {
+      "from": "HOTWATER_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "hot_water_energy_efficiency": {
+      "from": "HOT_WATER_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "walls_description": {
+      "from": "WALLS_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "walls_energy_efficiency": {
+      "from": "WALLS_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "roof_description": {
+      "from": "ROOF_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "roof_energy_efficiency": {
+      "from": "ROOF_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "floor_description": {
+      "from": "FLOOR_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "floor_energy_efficiency": {
+      "from": "FLOOR_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "windows_description": {
+      "from": "WINDOWS_DESCRIPTION",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|"
+        }
+      ]
+    },
+    "windows_energy_efficiency": {
+      "from": "WINDOWS_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "lighting_energy_efficiency": {
+      "from": "LIGHTING_ENERGY_EFF",
+      "steps": [
+        {
+          "op": "first_part",
+          "separator": "|",
+          "skip": ["N/A"]
+        },
+        {
+          "op": "lower"
+        }
+      ]
+    },
+    "has_solar_pv": {
+      "from": "PHOTO_SUPPLY",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        },
+        {
+          "op": "greater_than",
+          "value": 0
+        }
+      ],
+      "note": "PHOTO_SUPPLY is the percentage of roof area covered by PV."
+    },
+    "has_solar_water_heating": {
+      "from": "SOLAR_WATER_HEATING_FLAG",
+      "steps": [
+        {
+          "op": "boolean",
+          "true": ["Y"],
+          "false": ["N"]
+        }
+      ]
+    },
+    "co2_emissions_current": {
+      "from": "CO2_EMISSIONS_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        }
+      ]
+    },
+    "heating_cost_current": {
+      "from": "HEATING_COST_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        }
+      ]
+    },
+    "hot_water_cost_current": {
+      "from": "HOT_WATER_COST_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        }
+      ]
+    },
+    "lighting_cost_current": {
+      "from": "LIGHTING_COST_CURRENT",
+      "steps": [
+        {
+          "op": "cast",
+          "to": "number"
+        }
+      ]
+    }
+  }
+}
