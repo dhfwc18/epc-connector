@@ -8,54 +8,55 @@ import polars as pl
 import pytest
 
 from epc_connector.cleaning import domestic
+from epc_connector.cleaning.descriptions import UnknownPhraseError
 from epc_connector.cleaning.text import Nation
-from epc_connector.external.england_wales_epc import LAST_UPDATED_METADATA_KEY
+from tests.fakes import write_raw_domestic
 
 EW = Nation.ENGLAND_AND_WALES
 
 
 class TestCleanDomesticEpc:
     @pytest.fixture
-    def raw_file(self, tmp_path: Path) -> Path:
+    def data_dir(self, tmp_path: Path) -> Path:
         """A two-row England and Wales domestic file with real descriptions."""
-        descriptions = {
-            "walls_description": ["Cavity wall, filled cavity", "SAP05:Walls"],
-            "roof_description": ["Pitched, 250 mm loft insulation", None],
-            "floor_description": ["Solid, no insulation (assumed)", ""],
-            "windows_description": ["Fully double glazed", "Single glazed"],
-            "glazed_type": ["double glazing installed before 2002", ""],
-            "lighting_description": ["Low energy lighting in 50% of fixed outlets", ""],
-            "mainheat_description": ["Electric storage heaters", ""],
-            "mainheatcont_description": ["Programmer, room thermostat and TRVs", ""],
-            "hotwater_description": ["From main system", ""],
-            "secondheat_description": ["None", ""],
-            "main_fuel": ["mains gas (not community)", ""],
-        }
-        frame = pl.DataFrame(
-            {"certificate_number": ["c1", "c2"], **descriptions, "uprn": ["1", "2"]}
-        )
-        path = tmp_path / "data" / domestic.RAW_PARQUET_NAMES[EW]
-        path.parent.mkdir()
-        frame.write_parquet(path, metadata={LAST_UPDATED_METADATA_KEY: "x"})
-        return path
-
-    def test_descriptions_are_replaced_by_cleaned_columns(
-        self, raw_file: Path, tmp_path: Path
-    ) -> None:
-        output = domestic.clean_domestic_epc(
-            EW, data_dir=raw_file.parent, staging_dir=tmp_path / ".staging"
-        )
-
-        frame = pl.read_parquet(output)
-        assert output.name == "cleaned_domestic_epc_certificate_england_wales.parquet"
-        assert frame.columns[:3] == [
-            "certificate_number",
-            "walls_construction",
-            "walls_insulation",
+        rows = [
+            {
+                "certificate_number": "c1",
+                "walls_description": "Cavity wall, filled cavity",
+                "roof_description": "Pitched, 250 mm loft insulation",
+                "lighting_description": "Low energy lighting in 50% of fixed outlets",
+                "mainheat_description": "Electric storage heaters",
+                "mainheatcont_description": "Programmer, room thermostat and TRVs",
+            },
+            {"certificate_number": "c2", "walls_description": "SAP05:Walls"},
         ]
-        assert frame.columns[-1] == "uprn"
-        assert "walls_description" not in frame.columns
-        first, second = frame.iter_rows(named=True)
+        write_raw_domestic(tmp_path / "data", EW, rows, {})
+        return tmp_path / "data"
+
+    def test_result_is_lazy_with_descriptions_replaced_in_place(
+        self, data_dir: Path
+    ) -> None:
+        cleaned = domestic.clean_domestic_epc(EW, data_dir=data_dir)
+
+        raw = pl.scan_parquet(data_dir / domestic.RAW_PARQUET_NAMES[EW])
+        raw_columns = raw.collect_schema().names()
+        columns = cleaned.collect_schema().names()
+        descriptions = set(domestic.SOURCE_COLUMNS[EW].values())
+        kept = [column for column in raw_columns if column not in descriptions]
+        before_walls = raw_columns[raw_columns.index("walls_description") - 1]
+        assert isinstance(cleaned, pl.LazyFrame)
+        assert not descriptions & set(columns)
+        assert [column for column in columns if column in raw_columns] == kept
+        assert columns.index("walls_construction") == columns.index(before_walls) + 1
+
+    def test_cleaned_values_are_joined_in_row_order(self, data_dir: Path) -> None:
+        first, second = (
+            domestic.clean_domestic_epc(EW, data_dir=data_dir)
+            .collect()
+            .iter_rows(named=True)
+        )
+
+        assert first["certificate_number"] == "c1"
         assert first["roof_loft_insulation_thickness"] == 250
         assert first["main_heating_fuel"] == "electric"
         assert first["heating_controls_trvs"] is True
@@ -63,12 +64,11 @@ class TestCleanDomesticEpc:
         assert second["walls_discarded"] == "placeholder text"
         assert second["roof_type"] is None
 
-    def test_raw_metadata_is_copied_and_staging_removed(
-        self, raw_file: Path, tmp_path: Path
+    def test_uncovered_description_raises_before_anything_is_read(
+        self, tmp_path: Path
     ) -> None:
-        output = domestic.clean_domestic_epc(
-            EW, data_dir=raw_file.parent, staging_dir=tmp_path / ".staging"
-        )
+        rows = [{"walls_description": "Straw bale"}]
+        write_raw_domestic(tmp_path / "data", EW, rows, {})
 
-        assert pl.read_parquet_metadata(output)[LAST_UPDATED_METADATA_KEY] == "x"
-        assert not (tmp_path / ".staging").exists()
+        with pytest.raises(UnknownPhraseError, match="straw bale"):
+            domestic.clean_domestic_epc(EW, data_dir=tmp_path / "data")

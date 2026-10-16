@@ -192,21 +192,6 @@
       ],
       "note": "A floor area of 0 is not a real measurement."
     },
-    "main_fuel": {
-      "from": "MAIN_FUEL"
-    },
-    "glazed_type": {
-      "from": "GLAZED_TYPE"
-    },
-    "main_heating_description": {
-      "from": "MAINHEAT_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "main_heating_energy_efficiency": {
       "from": "MAINHEAT_ENERGY_EFF",
       "steps": [
@@ -217,15 +202,6 @@
         },
         {
           "op": "lower"
-        }
-      ]
-    },
-    "main_heating_controls_description": {
-      "from": "MAINHEATCONT_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
         }
       ]
     },
@@ -242,15 +218,6 @@
         }
       ]
     },
-    "hot_water_description": {
-      "from": "HOTWATER_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "hot_water_energy_efficiency": {
       "from": "HOT_WATER_ENERGY_EFF",
       "steps": [
@@ -261,15 +228,6 @@
         },
         {
           "op": "lower"
-        }
-      ]
-    },
-    "walls_description": {
-      "from": "WALL_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
         }
       ]
     },
@@ -286,15 +244,6 @@
         }
       ]
     },
-    "roof_description": {
-      "from": "ROOF_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "roof_energy_efficiency": {
       "from": "ROOF_ENERGY_EFF",
       "steps": [
@@ -308,15 +257,6 @@
         }
       ]
     },
-    "floor_description": {
-      "from": "FLOOR_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "floor_energy_efficiency": {
       "from": "FLOOR_ENERGY_EFF",
       "steps": [
@@ -327,15 +267,6 @@
         },
         {
           "op": "lower"
-        }
-      ]
-    },
-    "windows_description": {
-      "from": "WINDOWS_DESCRIPTION",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
         }
       ]
     },

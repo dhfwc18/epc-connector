@@ -11,7 +11,11 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import httpx
+import polars as pl
 import py7zr
+
+from epc_connector.cleaning import RAW_PARQUET_NAMES, Nation
+from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
 
 UTF8_BOM = "\ufeff"
 LABEL_ROW = "Label A,Total floor area (m\ufffd),Label C"
@@ -309,3 +313,25 @@ def write_vocabularies(directory: Path) -> Path:
         path = directory / f"{document['element']}.vocabulary.json"
         path.write_text(json.dumps(document))
     return directory
+
+
+def write_raw_domestic(
+    data_dir: Path, nation: str, rows: list[dict[str, str]], metadata: dict[str, str]
+) -> Path:
+    """
+    Write a raw domestic file with every source schema column, in schema order.
+
+    Columns not given in a row are empty strings, as in the published files.
+    """
+    folder = "england-and-wales" if nation == Nation.ENGLAND_AND_WALES else "scotland"
+    schema = load_schema(
+        DEFAULT_SCHEMAS_DIR / "source" / folder / "domestic.schema.json"
+    )
+    columns = list(schema["properties"])
+    data = {column: [row.get(column, "") for row in rows] for column in columns}
+    path = data_dir / RAW_PARQUET_NAMES[Nation(nation)]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame(data, schema=dict.fromkeys(columns, pl.String)).write_parquet(
+        path, metadata=metadata
+    )
+    return path

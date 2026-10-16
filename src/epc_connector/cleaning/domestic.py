@@ -1,9 +1,7 @@
 """
-Write the cleaned domestic EPC files next to the raw ones.
+Clean the descriptions of a raw domestic EPC file, lazily.
 """
 
-import logging
-import shutil
 from pathlib import Path
 from typing import Final
 
@@ -13,14 +11,6 @@ from epc_connector.cleaning.descriptions import clean_values
 from epc_connector.cleaning.text import Nation
 from epc_connector.cleaning.vocabulary import DEFAULT_VOCABULARIES_DIR, Element
 from epc_connector.external import england_wales_epc, scotland_epc
-from epc_connector.ingest import (
-    DEFAULT_CHUNK_ROWS,
-    DEFAULT_ROW_GROUP_ROWS,
-    staging_directory,
-    stream_to_parquet,
-)
-
-logger = logging.getLogger(__name__)
 
 SOURCE_COLUMNS: Final[dict[Nation, dict[Element, str]]] = {
     Nation.ENGLAND_AND_WALES: {
@@ -60,62 +50,46 @@ RAW_PARQUET_NAMES: Final[dict[Nation, str]] = {
         scotland_epc.ScotlandEpcDataset.DOMESTIC
     ],
 }
-CLEANED_PARQUET_NAMES: Final[dict[Nation, str]] = {
-    nation: f"cleaned_{name}" for nation, name in RAW_PARQUET_NAMES.items()
-}
-# Provenance copied from the raw file. Only this key: the raw file's other
-# metadata includes "ARROW:schema", which would give readers the raw columns.
-_PROVENANCE_KEYS: Final[dict[Nation, str]] = {
-    Nation.ENGLAND_AND_WALES: england_wales_epc.LAST_UPDATED_METADATA_KEY,
-    Nation.SCOTLAND: scotland_epc.RELEASE_METADATA_KEY,
-}
 
 
 def clean_domestic_epc(
     nation: Nation | str,
     *,
     data_dir: Path | str = "data",
-    staging_dir: Path | str = ".staging",
     strict: bool = True,
-    chunk_rows: int = DEFAULT_CHUNK_ROWS,
-    row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
-) -> Path:
+) -> pl.LazyFrame:
     """
-    Write ``data/cleaned_domestic_epc_certificate_<nation>.parquet``.
+    Return the raw domestic file with its descriptions cleaned, as a lazy frame.
 
-    The cleaned file has every column of the raw domestic file, in order,
-    except that each description column is replaced by its element's output
-    columns (``Vocabulary.columns``). The raw file is not changed, and its
-    release or last-update metadata is copied. Distinct descriptions are
-    cleaned once and joined back, and the result is streamed to disk.
+    Every column of ``data/domestic_epc_certificate_<nation>.parquet`` is kept,
+    in order, except that each description column is replaced by its
+    element's output columns (``Vocabulary.columns``). The distinct
+    descriptions are read in one streaming pass and cleaned once; the frame
+    joins them back, so nothing else is read until it is collected or sunk.
 
     Parameters
     ----------
     nation
         ``"england-and-wales"`` or ``"scotland"``.
     data_dir
-        Directory holding the raw file; the cleaned file is written there.
-    staging_dir
-        Parent of the temporary directory used while writing.
+        Directory holding the raw file.
     strict
         Raise if a description is not covered by the vocabularies; if false,
         mark it ``"not in vocabulary"`` and log a warning instead.
-    chunk_rows, row_group_rows
-        Memory limits; see ``ingest.stream_to_parquet``.
     vocabularies_dir
         Directory holding the vocabulary files.
 
-    Returns
-    -------
-    Path
-        Path of the cleaned file.
+    Raises
+    ------
+    UnknownPhraseError
+        In strict mode, if the vocabularies do not cover a description.
     """
     nation = Nation(nation)
-    raw_path = Path(data_dir) / RAW_PARQUET_NAMES[nation]
-    cleaned_path = Path(data_dir) / CLEANED_PARQUET_NAMES[nation]
     elements = {column: element for element, column in SOURCE_COLUMNS[nation].items()}
-    source = pl.scan_parquet(raw_path, low_memory=True)
+    source = pl.scan_parquet(
+        Path(data_dir) / RAW_PARQUET_NAMES[nation], low_memory=True
+    )
     distinct = source.select(
         pl.col(column).unique().implode() for column in elements
     ).collect(engine="streaming")
@@ -134,19 +108,4 @@ def clean_domestic_epc(
         ).rename({"raw": column})
         source = source.join(table.lazy(), on=column, how="left", maintain_order="left")
         output.extend(table.columns[1:])
-
-    provenance = _PROVENANCE_KEYS[nation]
-    stored = pl.read_parquet_metadata(raw_path)
-    metadata = {provenance: stored[provenance]} if provenance in stored else None
-    with staging_directory(Path(staging_dir), prefix=f"clean-{nation}-") as run_dir:
-        written = run_dir / cleaned_path.name
-        stream_to_parquet(
-            source.select(output),
-            written,
-            chunk_rows=chunk_rows,
-            row_group_rows=row_group_rows,
-            metadata=metadata,
-        )
-        shutil.move(written, cleaned_path)
-    logger.info("Wrote %s", cleaned_path)
-    return cleaned_path
+    return source.select(output)

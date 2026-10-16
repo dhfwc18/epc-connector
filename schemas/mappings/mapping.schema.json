@@ -30,7 +30,7 @@
       "uniqueItems": true
     },
     "fields": {
-      "description": "One rule per canonical field.",
+      "description": "One rule per canonical field, except the cleaned description fields, which come from schemas/vocabularies/.",
       "type": "object",
       "additionalProperties": {
         "$ref": "#/$defs/rule"

@@ -20,8 +20,8 @@ steps:
 A phrase that is not listed, or two phrases that give one field different
 values, raise an error instead of being guessed. Raw values repeat heavily
 (about 22,000 distinct descriptions across 34 million certificates), so
-``domestic.clean_domestic_epc`` cleans each distinct value once and joins the
-result back onto the rows.
+``domestic.clean_domestic_epc`` cleans each distinct value once and returns a
+lazy frame that joins the result back onto the rows.
 
 Modules
 -------
@@ -32,7 +32,7 @@ vocabulary
 descriptions
     Cleaning descriptions with a vocabulary.
 domestic
-    Writing the cleaned domestic files.
+    Cleaning a raw domestic file, as a lazy frame.
 """
 
 from epc_connector.cleaning.descriptions import (
@@ -43,7 +43,6 @@ from epc_connector.cleaning.descriptions import (
     clean_values,
 )
 from epc_connector.cleaning.domestic import (
-    CLEANED_PARQUET_NAMES,
     RAW_PARQUET_NAMES,
     SOURCE_COLUMNS,
     clean_domestic_epc,
@@ -52,7 +51,6 @@ from epc_connector.cleaning.text import Nation
 from epc_connector.cleaning.vocabulary import Element, Vocabulary, load_vocabulary
 
 __all__ = [
-    "CLEANED_PARQUET_NAMES",
     "RAW_PARQUET_NAMES",
     "SOURCE_COLUMNS",
     "CleanedDescription",

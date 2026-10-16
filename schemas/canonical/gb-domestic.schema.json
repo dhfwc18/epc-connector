@@ -63,7 +63,8 @@
     "lodged_at": {
       "description": "Date and time the certificate was lodged (ISO 8601, no time zone).",
       "type": ["string", "null"],
-      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$"
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$",
+      "format": "date-time"
     },
     "superseded": {
       "description": "True if a newer certificate exists for the property. Known for Scotland; null for England and Wales, which publishes superseded certificates without a flag.",
@@ -151,78 +152,661 @@
       "type": ["number", "null"],
       "exclusiveMinimum": 0
     },
-    "main_fuel": {
-      "description": "Main heating fuel as described by the source (English part only).",
+    "main_fuel_type": {
+      "description": "Main fuel: type.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": [
+        "anthracite",
+        "b30d",
+        "b30k",
+        "biodiesel (any biomass)",
+        "biodiesel (used cooking oil)",
+        "biodiesel (vegetable oil)",
+        "bioethanol",
+        "biogas",
+        "biomass",
+        "bottled lpg",
+        "bulk lpg",
+        "coal",
+        "dual fuel (mineral and wood)",
+        "electricity",
+        "heat network",
+        "heat pump",
+        "house coal",
+        "landfill biogas",
+        "lng",
+        "lpg",
+        "lpg special condition",
+        "mains gas",
+        "mineral oil or liquid biofuel",
+        "no heating or hot water system",
+        "no system or community network",
+        "oil",
+        "rapeseed oil",
+        "smokeless fuel",
+        "waste combustion",
+        "waste heat from power stations",
+        "wood chips",
+        "wood logs",
+        "wood pellets (bags)",
+        "wood pellets (bulk)",
+        null
+      ]
     },
-    "glazed_type": {
-      "description": "Glazing type as described by the source.",
-      "type": ["string", "null"],
-      "minLength": 1
+    "main_fuel_community": {
+      "description": "True for a community (heat network) supply, false if stated as not community.",
+      "type": ["boolean", "null"]
     },
-    "main_heating_description": {
-      "description": "Description of the main heating system (first element and English part only).",
+    "main_fuel_parts": {
+      "description": "Main fuel: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "main_fuel_discarded": {
+      "description": "Main fuel: why the description was unusable, if it was.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": ["not in vocabulary", null]
+    },
+    "glazing_type": {
+      "description": "Glazing type: type.",
+      "type": ["string", "null"],
+      "enum": ["single", "double", "triple", "secondary", null]
+    },
+    "glazing_installed": {
+      "description": "Glazing type: installed.",
+      "type": ["string", "null"],
+      "enum": ["before 2002", "2002 or later", null]
+    },
+    "glazing_performance_known": {
+      "description": "True if the glazing's performance data is known.",
+      "type": ["boolean", "null"]
+    },
+    "glazing_parts": {
+      "description": "Glazing type: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "glazing_discarded": {
+      "description": "Glazing type: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not defined", "not in vocabulary", null]
+    },
+    "main_heating_system": {
+      "description": "Main heating: system.",
+      "type": ["string", "null"],
+      "enum": [
+        "air source heat pump",
+        "boiler",
+        "community heat pump",
+        "community scheme",
+        "electric ceiling heating",
+        "electric storage heaters",
+        "electric underfloor heating",
+        "exhaust air heat pump",
+        "gas-fired heat pump",
+        "ground source heat pump",
+        "heat pump",
+        "hot water only system",
+        "micro-cogeneration",
+        "no system",
+        "portable electric heaters",
+        "room heaters",
+        "solar assisted heat pump",
+        "unspecified",
+        "warm air",
+        "water source heat pump",
+        null
+      ]
+    },
+    "main_heating_emitter": {
+      "description": "Main heating: emitter.",
+      "type": ["string", "null"],
+      "enum": ["fan coil units", "radiators", "radiators and underfloor", "underfloor", "warm air", null]
+    },
+    "main_heating_underfloor_construction": {
+      "description": "Main heating: underfloor construction.",
+      "type": ["string", "null"],
+      "enum": ["pipes in concrete slab", "pipes in insulated timber floor", "pipes in screed above insulation", null]
+    },
+    "main_heating_fuel": {
+      "description": "Main heating: fuel.",
+      "type": ["string", "null"],
+      "enum": [
+        "anthracite",
+        "b30k",
+        "bioethanol",
+        "biogas",
+        "biomass",
+        "bottled lpg",
+        "bulk lpg",
+        "coal",
+        "dual fuel (mineral and wood)",
+        "electric",
+        "gas",
+        "geothermal",
+        "landfill biogas",
+        "liquid biofuel",
+        "lng",
+        "lpg",
+        "lpg special condition",
+        "mains gas",
+        "mineral oil or liquid biofuel",
+        "oil",
+        "smokeless fuel",
+        "solid fuel",
+        "waste combustion",
+        "waste heat",
+        "wood chips",
+        "wood logs",
+        "wood pellets",
+        null
+      ]
+    },
+    "main_heating_other_fuel": {
+      "description": "A second, different fuel named in the same system (e.g. a community scheme using biomass and mains gas).",
+      "type": ["string", "null"],
+      "enum": ["biomass", "mains gas", "oil", "wood pellets", null]
+    },
+    "main_heating_tariff": {
+      "description": "Main heating: tariff.",
+      "type": ["string", "null"],
+      "enum": ["24-hour", "7-hour off-peak", "standard", null]
+    },
+    "main_heating_chp": {
+      "description": "True for a community scheme with combined heat and power.",
+      "type": ["boolean", "null"]
+    },
+    "main_heating_electricaire": {
+      "description": "True for Electricaire electric warm air storage.",
+      "type": ["boolean", "null"]
+    },
+    "main_heating_assumed": {
+      "description": "True if no system was present and electric heating is assumed.",
+      "type": ["boolean", "null"]
+    },
+    "main_heating_parts": {
+      "description": "Main heating: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "main_heating_systems": {
+      "description": "Main heating: number of systems listed in the main part.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "main_heating_discarded": {
+      "description": "Main heating: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "placeholder text", null]
     },
     "main_heating_energy_efficiency": {
       "description": "Energy efficiency rating of the main heating system (first element).",
       "$ref": "#/$defs/efficiency"
     },
-    "main_heating_controls_description": {
-      "description": "Description of the main heating controls (first element and English part only).",
+    "heating_controls_appliance_thermostats": {
+      "description": "Main heating controls: appliance thermostats.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_automatic_charge_control": {
+      "description": "Main heating controls: automatic charge control.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_boiler_energy_manager": {
+      "description": "Main heating controls: boiler energy manager.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_bypass": {
+      "description": "Main heating controls: bypass.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_celect_controls": {
+      "description": "Main heating controls: celect controls.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_delayed_start_thermostat": {
+      "description": "Main heating controls: delayed start thermostat.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_flow_switch": {
+      "description": "Main heating controls: flow switch.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_high_heat_retention_controls": {
+      "description": "Main heating controls: high heat retention controls.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_manual_charge_control": {
+      "description": "Main heating controls: manual charge control.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_programmer": {
+      "description": "Main heating controls: programmer.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_room_thermostat": {
+      "description": "Main heating controls: room thermostat.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_room_thermostats": {
+      "description": "Two or more room thermostats.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_temperature_zone_control": {
+      "description": "Main heating controls: temperature zone control.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_thermostat": {
+      "description": "A thermostat of unstated type.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_time_and_temperature_zone_control": {
+      "description": "Main heating controls: time and temperature zone control.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_trvs": {
+      "description": "Main heating controls: trvs.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_no_room_thermostat": {
+      "description": "Main heating controls: no room thermostat.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_no_thermostatic_control": {
+      "description": "Main heating controls: no thermostatic control.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_no_time_control": {
+      "description": "Main heating controls: no time control.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_no_controls": {
+      "description": "Stated as having no controls.",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_charging": {
+      "description": "Main heating controls: charging.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": ["flat rate", "linked to use", "unit", null]
+    },
+    "heating_controls_applicable": {
+      "description": "False if heating controls do not apply (the system supplies hot water only).",
+      "type": ["boolean", "null"]
+    },
+    "heating_controls_parts": {
+      "description": "Main heating controls: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "heating_controls_discarded": {
+      "description": "Main heating controls: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "placeholder text", "recorded as an error", "undefined control code", null]
     },
     "main_heating_controls_energy_efficiency": {
       "description": "Energy efficiency rating of the main heating controls (first element).",
       "$ref": "#/$defs/efficiency"
     },
-    "hot_water_description": {
-      "description": "Description of the hot water system (first element and English part only).",
+    "secondary_heating_system": {
+      "description": "Secondary heating: system.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": [
+        "boiler",
+        "community scheme",
+        "electric ceiling heating",
+        "electric underfloor heating",
+        "hot water only system",
+        "none",
+        "other",
+        "portable electric heaters",
+        "room heaters",
+        null
+      ]
+    },
+    "secondary_heating_fuel": {
+      "description": "Secondary heating: fuel.",
+      "type": ["string", "null"],
+      "enum": [
+        "anthracite",
+        "b30k",
+        "biodiesel",
+        "bioethanol",
+        "biogas",
+        "biomass",
+        "bottled lpg",
+        "bulk lpg",
+        "coal",
+        "dual fuel (mineral and wood)",
+        "electric",
+        "gas",
+        "liquid biofuel",
+        "lng",
+        "lpg",
+        "mains gas",
+        "oil",
+        "rapeseed oil",
+        "smokeless fuel",
+        "waste combustion",
+        "wood chips",
+        "wood logs",
+        "wood pellets",
+        null
+      ]
+    },
+    "secondary_heating_assumed": {
+      "description": "True if portable electric heaters are assumed, not observed.",
+      "type": ["boolean", "null"]
+    },
+    "secondary_heating_parts": {
+      "description": "Secondary heating: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "secondary_heating_systems": {
+      "description": "Secondary heating: number of systems listed in the main part.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "secondary_heating_discarded": {
+      "description": "Secondary heating: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "numeric code instead of a description", "placeholder text", null]
+    },
+    "hot_water_source": {
+      "description": "Hot water: source.",
+      "type": ["string", "null"],
+      "enum": [
+        "back boiler",
+        "community heat pump",
+        "community scheme",
+        "community scheme with chp",
+        "electric heat pump",
+        "electric immersion",
+        "electric instantaneous",
+        "electric multipoint",
+        "gas boiler/circulator",
+        "gas multipoint",
+        "gas range cooker",
+        "gas single-point",
+        "gas warm air circulator",
+        "heat pump",
+        "main system",
+        "oil boiler/circulator",
+        "oil range cooker",
+        "room heaters",
+        "second main system",
+        "secondary system",
+        "solid fuel boiler/circulator",
+        "solid fuel range cooker",
+        null
+      ]
+    },
+    "hot_water_assumed": {
+      "description": "True if no system was present and an electric immersion is assumed.",
+      "type": ["boolean", "null"]
+    },
+    "hot_water_dedicated": {
+      "description": "True if the source heats water only.",
+      "type": ["boolean", "null"]
+    },
+    "hot_water_tariff": {
+      "description": "Hot water: tariff.",
+      "type": ["string", "null"],
+      "enum": ["off-peak", "standard", "dual", "7-hour on-peak", null]
+    },
+    "hot_water_cylinder_thermostat": {
+      "description": "False if the cylinder is stated to have no thermostat.",
+      "type": ["boolean", "null"]
+    },
+    "hot_water_solar": {
+      "description": "Hot water: solar.",
+      "type": ["boolean", "null"]
+    },
+    "hot_water_waste_water_heat_recovery": {
+      "description": "Hot water: waste water heat recovery.",
+      "type": ["boolean", "null"]
+    },
+    "hot_water_flue_gas_heat_recovery": {
+      "description": "Hot water: flue gas heat recovery.",
+      "type": ["boolean", "null"]
+    },
+    "hot_water_boiler_age": {
+      "description": "Hot water: boiler age.",
+      "type": ["string", "null"],
+      "enum": ["1998 or later", "pre-1998", null]
+    },
+    "hot_water_fuel": {
+      "description": "Hot water: fuel.",
+      "type": ["string", "null"],
+      "enum": ["gas", "electric", null]
+    },
+    "hot_water_parts": {
+      "description": "Hot water: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "hot_water_discarded": {
+      "description": "Hot water: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "placeholder text", "truncated description", null]
     },
     "hot_water_energy_efficiency": {
       "description": "Energy efficiency rating of the hot water system (first element).",
       "$ref": "#/$defs/efficiency"
     },
-    "walls_description": {
-      "description": "Description of the walls (first element and English part only).",
+    "walls_construction": {
+      "description": "Walls: construction.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": [
+        "cavity wall",
+        "solid brick",
+        "timber frame",
+        "system built",
+        "sandstone or limestone",
+        "granite or whinstone",
+        "cob",
+        "park home",
+        "basement",
+        "curtain wall",
+        null
+      ]
+    },
+    "walls_insulation": {
+      "description": "Walls: insulation.",
+      "type": ["string", "null"],
+      "enum": [
+        "none",
+        "partial",
+        "insulated",
+        "filled cavity",
+        "external",
+        "internal",
+        "filled cavity and external",
+        "filled cavity and internal",
+        "additional",
+        null
+      ]
+    },
+    "walls_insulation_assumed": {
+      "description": "True if the insulation is the assessor's default for the age and type, not observed.",
+      "type": ["boolean", "null"]
+    },
+    "walls_as_built": {
+      "description": "True if the wall is described as unchanged since construction.",
+      "type": ["boolean", "null"]
+    },
+    "walls_u_value": {
+      "description": "Average thermal transmittance in W/m2K.",
+      "type": ["number", "null"]
+    },
+    "walls_parts": {
+      "description": "Walls: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "walls_discarded": {
+      "description": "Walls: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": [
+        "not in vocabulary",
+        "placeholder text",
+        "recorded as an error",
+        "roof description in the walls field",
+        "truncated U-value",
+        "two descriptions run together",
+        null
+      ]
     },
     "walls_energy_efficiency": {
       "description": "Energy efficiency rating of the walls (first element).",
       "$ref": "#/$defs/efficiency"
     },
-    "roof_description": {
-      "description": "Description of the roof (first element and English part only).",
+    "roof_type": {
+      "description": "Roof: type.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": [
+        "pitched",
+        "flat",
+        "roof room",
+        "another dwelling above",
+        "other premises above",
+        "same dwelling above",
+        null
+      ]
+    },
+    "roof_thatched": {
+      "description": "Roof: thatched.",
+      "type": ["boolean", "null"]
+    },
+    "roof_insulation": {
+      "description": "Roof: insulation.",
+      "type": ["string", "null"],
+      "enum": [
+        "none",
+        "limited",
+        "insulated",
+        "loft insulation",
+        "insulated at rafters",
+        "ceiling insulated",
+        "additional",
+        "unknown",
+        null
+      ]
+    },
+    "roof_insulation_assumed": {
+      "description": "True if the insulation is the assessor's default for the age and type, not observed.",
+      "type": ["boolean", "null"]
+    },
+    "roof_loft_insulation_thickness": {
+      "description": "Loft insulation thickness in mm.",
+      "type": ["integer", "null"]
+    },
+    "roof_loft_insulation_or_more": {
+      "description": "True if the thickness is a lower bound, as in 300+ mm.",
+      "type": ["boolean", "null"]
+    },
+    "roof_u_value": {
+      "description": "Average thermal transmittance in W/m2K.",
+      "type": ["number", "null"]
+    },
+    "roof_parts": {
+      "description": "Roof: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "roof_discarded": {
+      "description": "Roof: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "placeholder text", "recorded as an error", "truncated U-value", null]
     },
     "roof_energy_efficiency": {
       "description": "Energy efficiency rating of the roof (first element).",
       "$ref": "#/$defs/efficiency"
     },
-    "floor_description": {
-      "description": "Description of the floor (first element and English part only).",
+    "floor_type": {
+      "description": "Floor: type.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": [
+        "solid",
+        "suspended",
+        "to unheated space",
+        "to external air",
+        "another dwelling below",
+        "other premises below",
+        "same dwelling below",
+        "basement",
+        "conservatory",
+        null
+      ]
+    },
+    "floor_insulation": {
+      "description": "Floor: insulation.",
+      "type": ["string", "null"],
+      "enum": ["none", "limited", "insulated", null]
+    },
+    "floor_insulation_assumed": {
+      "description": "True if the insulation is the assessor's default for the age and type, not observed.",
+      "type": ["boolean", "null"]
+    },
+    "floor_u_value": {
+      "description": "Average thermal transmittance in W/m2K.",
+      "type": ["number", "null"]
+    },
+    "floor_parts": {
+      "description": "Floor: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "floor_discarded": {
+      "description": "Floor: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "placeholder text", "truncated U-value", "two descriptions run together", null]
     },
     "floor_energy_efficiency": {
       "description": "Energy efficiency rating of the floor (first element).",
       "$ref": "#/$defs/efficiency"
     },
-    "windows_description": {
-      "description": "Description of the windows (first element and English part only).",
+    "windows_glazing": {
+      "description": "Windows: glazing.",
       "type": ["string", "null"],
-      "minLength": 1
+      "enum": ["single", "double", "triple", "secondary", "multiple", "high performance", null]
+    },
+    "windows_coverage": {
+      "description": "Windows: coverage.",
+      "type": ["string", "null"],
+      "enum": ["full", "mostly", "partial", "some", null]
+    },
+    "windows_parts": {
+      "description": "Windows: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "windows_discarded": {
+      "description": "Windows: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["floor description in the windows field", "not in vocabulary", "placeholder text", null]
     },
     "windows_energy_efficiency": {
       "description": "Energy efficiency rating of the windows (first element).",
       "$ref": "#/$defs/efficiency"
+    },
+    "lighting_low_energy_percent": {
+      "description": "Percentage of fixed outlets with low-energy lighting.",
+      "type": ["number", "null"]
+    },
+    "lighting_efficiency": {
+      "description": "Lighting: efficiency.",
+      "type": ["string", "null"],
+      "enum": ["excellent", "good", "below average", null]
+    },
+    "lighting_parts": {
+      "description": "Lighting: number of building parts described.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "lighting_discarded": {
+      "description": "Lighting: why the description was unusable, if it was.",
+      "type": ["string", "null"],
+      "enum": ["not in vocabulary", "placeholder text", "truncated description", null]
     },
     "lighting_energy_efficiency": {
       "description": "Energy efficiency rating of the lighting (first element).",
@@ -278,22 +862,106 @@
     "construction_year_min",
     "construction_year_max",
     "total_floor_area",
-    "main_fuel",
-    "glazed_type",
-    "main_heating_description",
+    "main_fuel_type",
+    "main_fuel_community",
+    "main_fuel_parts",
+    "main_fuel_discarded",
+    "glazing_type",
+    "glazing_installed",
+    "glazing_performance_known",
+    "glazing_parts",
+    "glazing_discarded",
+    "main_heating_system",
+    "main_heating_emitter",
+    "main_heating_underfloor_construction",
+    "main_heating_fuel",
+    "main_heating_other_fuel",
+    "main_heating_tariff",
+    "main_heating_chp",
+    "main_heating_electricaire",
+    "main_heating_assumed",
+    "main_heating_parts",
+    "main_heating_systems",
+    "main_heating_discarded",
     "main_heating_energy_efficiency",
-    "main_heating_controls_description",
+    "heating_controls_appliance_thermostats",
+    "heating_controls_automatic_charge_control",
+    "heating_controls_boiler_energy_manager",
+    "heating_controls_bypass",
+    "heating_controls_celect_controls",
+    "heating_controls_delayed_start_thermostat",
+    "heating_controls_flow_switch",
+    "heating_controls_high_heat_retention_controls",
+    "heating_controls_manual_charge_control",
+    "heating_controls_programmer",
+    "heating_controls_room_thermostat",
+    "heating_controls_room_thermostats",
+    "heating_controls_temperature_zone_control",
+    "heating_controls_thermostat",
+    "heating_controls_time_and_temperature_zone_control",
+    "heating_controls_trvs",
+    "heating_controls_no_room_thermostat",
+    "heating_controls_no_thermostatic_control",
+    "heating_controls_no_time_control",
+    "heating_controls_no_controls",
+    "heating_controls_charging",
+    "heating_controls_applicable",
+    "heating_controls_parts",
+    "heating_controls_discarded",
     "main_heating_controls_energy_efficiency",
-    "hot_water_description",
+    "secondary_heating_system",
+    "secondary_heating_fuel",
+    "secondary_heating_assumed",
+    "secondary_heating_parts",
+    "secondary_heating_systems",
+    "secondary_heating_discarded",
+    "hot_water_source",
+    "hot_water_assumed",
+    "hot_water_dedicated",
+    "hot_water_tariff",
+    "hot_water_cylinder_thermostat",
+    "hot_water_solar",
+    "hot_water_waste_water_heat_recovery",
+    "hot_water_flue_gas_heat_recovery",
+    "hot_water_boiler_age",
+    "hot_water_fuel",
+    "hot_water_parts",
+    "hot_water_discarded",
     "hot_water_energy_efficiency",
-    "walls_description",
+    "walls_construction",
+    "walls_insulation",
+    "walls_insulation_assumed",
+    "walls_as_built",
+    "walls_u_value",
+    "walls_parts",
+    "walls_discarded",
     "walls_energy_efficiency",
-    "roof_description",
+    "roof_type",
+    "roof_thatched",
+    "roof_insulation",
+    "roof_insulation_assumed",
+    "roof_loft_insulation_thickness",
+    "roof_loft_insulation_or_more",
+    "roof_u_value",
+    "roof_parts",
+    "roof_discarded",
     "roof_energy_efficiency",
-    "floor_description",
+    "floor_type",
+    "floor_insulation",
+    "floor_insulation_assumed",
+    "floor_u_value",
+    "floor_parts",
+    "floor_discarded",
     "floor_energy_efficiency",
-    "windows_description",
+    "windows_glazing",
+    "windows_coverage",
+    "windows_parts",
+    "windows_discarded",
     "windows_energy_efficiency",
+    "lighting_low_energy_percent",
+    "lighting_efficiency",
+    "lighting_parts",
+    "lighting_discarded",
     "lighting_energy_efficiency",
     "has_solar_pv",
     "has_solar_water_heating",
