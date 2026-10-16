@@ -11,3 +11,6 @@ wheels/
 
 data/*
 !data/.gitkeep
+
+# Temporary download and extraction workspace
+.staging/
