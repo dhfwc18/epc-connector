@@ -9,10 +9,13 @@ Download, unpack and convert raw source files with bounded memory.
 - ``archive_url_to_parquet`` chains the three: one archive URL in, one
   validated Parquet file out.
 - ``staging_directory`` provides a self-cleaning working directory.
+- ``extract_remote_zip_members`` reads selected members of a remote ZIP with
+  HTTP range requests, without downloading the whole archive.
 """
 
 import contextlib
 import csv
+import io
 import logging
 import re
 import shutil
@@ -364,3 +367,149 @@ def staging_directory(staging_dir: Path, prefix: str) -> Generator[Path]:
     finally:
         with contextlib.suppress(OSError):
             staging_dir.rmdir()
+
+
+def resolve_download_url(url: str, client: httpx.Client) -> tuple[str, int]:
+    """
+    Follow redirects from ``url`` and return the final URL and file size.
+
+    Uses a one-byte range request, so no body beyond one byte is read.
+
+    Raises
+    ------
+    IngestError
+        If the final server does not support range requests.
+    """
+    with client.stream(
+        "GET", url, headers={"Range": "bytes=0-0"}, follow_redirects=True
+    ) as response:
+        response.raise_for_status()
+        total = _total_bytes(response, 0)
+        if response.status_code != 206 or total is None:
+            raise IngestError(f"{url} does not support range requests")
+        return str(response.url), total
+
+
+class RemoteFile(io.RawIOBase):
+    """
+    Read-only, seekable view of a remote file using HTTP range requests.
+
+    Requests carry no ``Authorization`` header, as pre-signed URLs reject
+    them. Wrap in ``io.BufferedReader`` to avoid many tiny requests.
+
+    Parameters
+    ----------
+    url
+        Final file URL, e.g. a pre-signed S3 URL from ``resolve_download_url``.
+    size
+        File size in bytes.
+    client
+        HTTP client used for the range requests.
+    """
+
+    def __init__(self, url: str, size: int, client: httpx.Client) -> None:
+        super().__init__()
+        self._url = url
+        self._size = size
+        self._client = client
+        self._position = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return True
+
+    def tell(self) -> int:
+        return self._position
+
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+        base = {io.SEEK_SET: 0, io.SEEK_CUR: self._position, io.SEEK_END: self._size}
+        self._position = max(0, base[whence] + offset)
+        return self._position
+
+    def readinto(self, buffer: Any) -> int:
+        end = min(self._position + len(buffer), self._size) - 1
+        if end < self._position:
+            return 0
+        data = self._get_range(self._position, end)
+        buffer[: len(data)] = data
+        self._position += len(data)
+        return len(data)
+
+    def _get_range(self, start: int, end: int) -> bytes:
+        attempt = 1
+        while True:
+            request = self._client.build_request(
+                "GET", self._url, headers={"Range": f"bytes={start}-{end}"}
+            )
+            request.headers.pop("Authorization", None)
+            try:
+                response = self._client.send(request)
+                response.raise_for_status()
+                if response.status_code != 206:
+                    raise IngestError(f"no partial response for bytes {start}-{end}")
+                return response.content
+            except (httpx.HTTPError, IngestError) as error:
+                if attempt == MAX_DOWNLOAD_ATTEMPTS:
+                    raise IngestError(f"range {start}-{end} failed: {error}") from error
+                delay = RETRY_BASE_DELAY_SECONDS * 2 ** (attempt - 1)
+                logger.warning("%s; retrying in %.0fs", error, delay)
+                time.sleep(delay)
+                attempt += 1
+
+
+def extract_remote_zip_members(
+    url: str,
+    destination: Path,
+    *,
+    client: httpx.Client,
+    include: Callable[[str], bool],
+    read_block_bytes: int = 8 * 1024 * 1024,
+) -> list[Path]:
+    """
+    Extract selected members of a remote ZIP without downloading the rest.
+
+    Only the ZIP index and the selected members are fetched, using HTTP range
+    requests.
+
+    Parameters
+    ----------
+    url
+        ZIP URL; redirects are followed (e.g. API -> pre-signed S3 URL).
+    destination
+        Directory to write the members into; created if missing.
+    client
+        HTTP client; its ``Authorization`` header is not sent to the file URL.
+    include
+        Filter on member names; only names it accepts are extracted.
+    read_block_bytes
+        Size of each range request.
+
+    Returns
+    -------
+    list of Path
+        Paths of the extracted members, in archive order (an empty list if
+        none match).
+
+    Raises
+    ------
+    IngestError
+        If the members would not fit in the free space under ``destination``.
+    """
+    destination.mkdir(parents=True, exist_ok=True)
+    file_url, size = resolve_download_url(url, client)
+    remote = io.BufferedReader(
+        RemoteFile(file_url, size, client), buffer_size=read_block_bytes
+    )
+    with remote, zipfile.ZipFile(remote) as archive:
+        members = [m for m in archive.infolist() if include(m.filename)]
+        _check_free_space(destination, sum(m.file_size for m in members))
+        paths = []
+        for member in members:
+            path = destination / Path(member.filename).name
+            with archive.open(member) as source, path.open("wb") as target:
+                shutil.copyfileobj(source, target, read_block_bytes)
+            paths.append(path)
+            logger.info("Fetched %s (%d bytes)", member.filename, member.file_size)
+    return paths

@@ -2,11 +2,13 @@
 Tests for ``epc_connector.ingest``.
 """
 
+import io
 import lzma
 import os
 from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import polars as pl
 import pytest
 from py7zr.exceptions import CrcError
@@ -14,6 +16,7 @@ from py7zr.exceptions import CrcError
 from epc_connector import ingest
 from epc_connector.ingest import IngestError
 from tests.fakes import (
+    PRESIGNED_URL,
     SOURCE_URL,
     FakeServer,
     abc_schema,
@@ -298,3 +301,82 @@ class TestStagingDirectory:
             raise RuntimeError("boom")
 
         assert not staging.exists()
+
+
+class TestResolveDownloadUrl:
+    def test_redirect_is_followed_and_size_reported(self) -> None:
+        payload = os.urandom(5_000)
+        server = FakeServer(payload)
+
+        with server.client() as client:
+            url, size = ingest.resolve_download_url(SOURCE_URL, client)
+
+        assert url == PRESIGNED_URL
+        assert size == len(payload)
+
+    def test_server_without_ranges_raises_ingest_error(self) -> None:
+        server = FakeServer(os.urandom(100), supports_ranges=False)
+
+        with server.client() as client, pytest.raises(IngestError, match="range"):
+            ingest.resolve_download_url(SOURCE_URL, client)
+
+
+class TestRemoteFile:
+    def test_seek_and_read_return_the_requested_bytes(self) -> None:
+        payload = os.urandom(10_000)
+        server = FakeServer(payload)
+
+        with server.client() as client:
+            remote = ingest.RemoteFile(PRESIGNED_URL, len(payload), client)
+            remote.seek(2_500)
+            middle = remote.read(1_000)
+            remote.seek(-100, io.SEEK_END)
+            tail = remote.read()
+
+        assert middle == payload[2_500:3_500]
+        assert tail == payload[-100:]
+
+    def test_authorization_header_is_not_sent(self) -> None:
+        payload = os.urandom(1_000)
+        server = FakeServer(payload)
+        client = httpx.Client(
+            transport=server.transport(), headers={"Authorization": "Bearer secret"}
+        )
+
+        with client:
+            data = ingest.RemoteFile(PRESIGNED_URL, len(payload), client).read()
+
+        assert data == payload
+        assert server.calls["file_with_authorization"] == 0
+
+
+class TestExtractRemoteZipMembers:
+    def test_only_selected_members_are_fetched(self, tmp_path: Path) -> None:
+        filler = os.urandom(400_000)  # incompressible, must not be downloaded
+        members = {"certificates-2010.csv": filler, "certificates-2024.csv": b"a\n1\n"}
+        archive = write_zip(tmp_path / "bulk.zip", members)
+        server = FakeServer(archive.read_bytes())
+
+        with server.client() as client:
+            paths = ingest.extract_remote_zip_members(
+                SOURCE_URL,
+                tmp_path / "out",
+                client=client,
+                include=lambda name: name.endswith("2024.csv"),
+                read_block_bytes=16 * 1024,
+            )
+
+        assert [p.name for p in paths] == ["certificates-2024.csv"]
+        assert paths[0].read_bytes() == b"a\n1\n"
+        assert server.bytes_served < len(filler) // 4
+
+    def test_no_matching_members_returns_empty_list(self, tmp_path: Path) -> None:
+        archive = write_zip(tmp_path / "bulk.zip", {"certificates-2024.csv": b"a\n"})
+        server = FakeServer(archive.read_bytes())
+
+        with server.client() as client:
+            paths = ingest.extract_remote_zip_members(
+                SOURCE_URL, tmp_path / "out", client=client, include=lambda name: False
+            )
+
+        assert paths == []

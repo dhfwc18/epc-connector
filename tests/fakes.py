@@ -19,6 +19,7 @@ SOURCE_URL = (
 )
 RELEASE_TITLE = "Domestic Energy Performance Certificates - Dataset to Q2 2026"
 PRESIGNED_URL = "https://bucket.s3.amazonaws.com/archive.7z?X-Amz-Signature=abc"
+CERTIFICATE = "/api/certificate"
 
 
 def scottish_csv(data_rows: list[str], header: str = "A,B,C") -> bytes:
@@ -70,6 +71,13 @@ class FakeServer:
         If set, ``source_url`` and its ``/info`` require this bearer token.
     last_updated
         Timestamp returned by ``<source_url>/info``.
+    lodged
+        ``(certificate number, registration date)`` pairs served by any
+        ``.../search`` endpoint, filtered by date and paginated like the API.
+    delta_events
+        Events served by ``/api/deltas``.
+    documents
+        Certificate documents served by ``/api/certificate``, by number.
 
     The pre-signed URL rejects any request carrying an ``Authorization``
     header, as S3 does.
@@ -85,7 +93,14 @@ class FakeServer:
         source_url: str = SOURCE_URL,
         token: str | None = None,
         last_updated: str = "2026-10-01T00:31:19.000+00:00",
+        lodged: list[tuple[str, str]] | None = None,
+        delta_events: list[dict[str, str]] | None = None,
+        documents: dict[str, dict[str, object]] | None = None,
     ) -> None:
+        self.documents = documents or {}
+        self.lodged = lodged or []
+        self.delta_events = delta_events or []
+        self.bytes_served = 0
         self.payload = payload
         self.title = title
         self.source_url = source_url
@@ -112,13 +127,29 @@ class FakeServer:
             self.calls["package_show"] += 1
             result = {"title": self.title}
             return httpx.Response(200, json={"success": True, "result": result})
-        needs_token = self.token and url in (self.source_url, f"{self.source_url}/info")
+        path = request.url.path
+        api_call = path.endswith("/search") or path in ("/api/deltas", CERTIFICATE)
+        needs_token = self.token and (
+            api_call or url in (self.source_url, f"{self.source_url}/info")
+        )
         if (
             needs_token
             and request.headers.get("authorization") != f"Bearer {self.token}"
         ):
             self.calls["unauthorised"] += 1
             return httpx.Response(401, json={"error": "Unauthorised"})
+        if path.endswith("/search"):
+            return self._search(request)
+        if path == "/api/deltas":
+            if not self.delta_events:
+                return httpx.Response(404, json={"error": "No audit logs"})
+            return httpx.Response(200, json={"data": self.delta_events})
+        if path == CERTIFICATE:
+            self.calls["certificate"] += 1
+            document = self.documents.get(request.url.params["certificate_number"])
+            if document is None:
+                return httpx.Response(404, json={"error": "Certificate not found"})
+            return httpx.Response(200, json={"data": document})
         if url == f"{self.source_url}/info":
             data = {"fileSize": len(self.payload), "lastUpdated": self.last_updated}
             return httpx.Response(200, json={"data": data})
@@ -136,18 +167,43 @@ class FakeServer:
         size = len(self.payload)
         start, status = 0, 200
         headers = {"content-length": str(size)}
+        end = size - 1
         if range_header and self.supports_ranges:
-            start = int(range_header.removeprefix("bytes=").rstrip("-"))
+            first, _, last = range_header.removeprefix("bytes=").partition("-")
+            start, end = int(first), min(int(last or end), end)
             status = 206
             headers = {
-                "content-length": str(size - start),
-                "content-range": f"bytes {start}-{size - 1}/{size}",
+                "content-length": str(end - start + 1),
+                "content-range": f"bytes {start}-{end}/{size}",
             }
-        body = self.payload[start:]
+        body = self.payload[start : end + 1]
+        self.bytes_served += len(body)
         if self.drop_after is not None:
             cut, self.drop_after = self.drop_after, None
             return httpx.Response(status, headers=headers, content=_drop(body, cut))
         return httpx.Response(status, headers=headers, content=body)
+
+    def _search(self, request: httpx.Request) -> httpx.Response:
+        params = request.url.params
+        hits = [
+            {"certificateNumber": number, "registrationDate": date}
+            for number, date in self.lodged
+            if params["date_start"] <= date <= params["date_end"]
+        ]
+        if not hits:
+            return httpx.Response(404, json={"error": "No certificates"})
+        size, page = int(params["page_size"]), int(params["current_page"])
+        pages = -(-len(hits) // size)
+        self.calls["search_page"] += 1
+        pagination = {
+            "totalRecords": len(hits),
+            "currentPage": page,
+            "totalPages": pages,
+            "nextPage": page + 1 if page < pages else None,
+            "pageSize": size,
+        }
+        data = hits[(page - 1) * size : page * size]
+        return httpx.Response(200, json={"data": data, "pagination": pagination})
 
 
 def _drop(body: bytes, cut: int) -> Iterator[bytes]:
