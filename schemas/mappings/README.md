@@ -2,11 +2,10 @@
 
 Declarative mappings from each source dataset (`schemas/source/`) to the canonical record (`schemas/canonical/`).
 
-| Mapping                                            | Source schema                                            |
-| -------------------------------------------------- | -------------------------------------------------------- |
-| `england-and-wales-domestic.mapping.json`          | `source/england-and-wales/domestic.schema.json`          |
-| `scotland-domestic.mapping.json`                   | `source/scotland/domestic.schema.json`                   |
-| `scotland-domestic-extended-historic.mapping.json` | `source/scotland/domestic-extended-historic.schema.json` |
+| Mapping                                   | Source schema                                   |
+| ----------------------------------------- | ----------------------------------------------- |
+| `england-and-wales-domestic.mapping.json` | `source/england-and-wales/domestic.schema.json` |
+| `scotland-domestic.mapping.json`          | `source/scotland/domestic.schema.json`          |
 
 `mapping.schema.json` defines the format and the meaning of each step. In short: each canonical field is either a
 `const` or taken `from` one source column. The value is trimmed, values in `null_values` become null, then `steps` run

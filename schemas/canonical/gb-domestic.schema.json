@@ -35,7 +35,7 @@
     "source_dataset": {
       "description": "Source dataset the record came from (path under schemas/source/).",
       "type": "string",
-      "enum": ["england-and-wales/domestic", "scotland/domestic", "scotland/domestic-extended-historic"]
+      "enum": ["england-and-wales/domestic", "scotland/domestic"]
     },
     "country": {
       "description": "Country of the property. England and Wales are told apart by the local authority code.",
@@ -66,7 +66,7 @@
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$"
     },
     "superseded": {
-      "description": "True if a newer certificate exists for the property. Only the Scottish extended historic dataset says; null elsewhere.",
+      "description": "True if a newer certificate exists for the property. Known for Scotland; null for England and Wales, which publishes superseded certificates without a flag.",
       "type": ["boolean", "null"]
     },
     "address_line_1": {

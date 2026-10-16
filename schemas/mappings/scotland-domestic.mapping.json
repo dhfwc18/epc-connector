@@ -2,7 +2,7 @@
   "$schema": "./mapping.schema.json",
   "source": "source/scotland/domestic.schema.json",
   "target": "canonical/gb-domestic.schema.json",
-  "description": "Scottish domestic 'valid' dataset (rolling 10 years, superseded EPCs excluded) to the canonical GB domestic record.",
+  "description": "Scottish domestic EPCs (Extended Historic dataset: every certificate since December 2008, superseded ones flagged) to the canonical GB domestic record.",
   "null_values": ["", "Data removed", "data removed"],
   "fields": {
     "source_dataset": {
@@ -54,8 +54,14 @@
       ]
     },
     "superseded": {
-      "const": false,
-      "note": "The valid dataset only contains EPCs that have not been superseded."
+      "from": "HISTORIC",
+      "steps": [
+        {
+          "op": "boolean",
+          "true": ["True"],
+          "false": ["False"]
+        }
+      ]
     },
     "address_line_1": {
       "from": "ADDRESS1"
@@ -383,8 +389,8 @@
       "steps": [
         {
           "op": "boolean",
-          "true": ["Y"],
-          "false": ["N"]
+          "true": ["Y", "true"],
+          "false": ["N", "false"]
         }
       ]
     },
