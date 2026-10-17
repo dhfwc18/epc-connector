@@ -296,6 +296,7 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "check-jsonschema" },
+    { name = "jsonschema" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
@@ -313,6 +314,7 @@ requires-dist = [
 dev = [
     { name = "black", specifier = ">=26.10.1" },
     { name = "check-jsonschema", specifier = ">=0.38.2" },
+    { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.17.1" },

@@ -241,6 +241,59 @@ class TestMergeCsvsToParquetWithSchema:
         assert not output.exists()
 
 
+class TestStreamingFile:
+    @pytest.fixture
+    def advised(self, monkeypatch: pytest.MonkeyPatch) -> list[int]:
+        """Record each page cache drop instead of only performing it."""
+        calls: list[int] = []
+        drop = os.POSIX_FADV_DONTNEED
+
+        def record(descriptor: int, offset: int, length: int, advice: int) -> None:
+            if advice == drop:
+                calls.append(descriptor)
+
+        monkeypatch.setattr(os, "posix_fadvise", record)
+        return calls
+
+    def test_cache_is_dropped_every_block_and_on_close(
+        self, tmp_path: Path, advised: list[int], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(ingest, "PAGE_CACHE_DROP_BYTES", 10)
+        path = tmp_path / "out.bin"
+
+        with ingest.StreamingFile(path) as output:
+            for _ in range(5):
+                output.write(b"x" * 4)
+
+        assert path.read_bytes() == b"x" * 20
+        assert len(advised) == 2  # once 12 bytes are written, and on close
+
+    def test_drop_page_cache_flushes_and_drops_a_file(
+        self, tmp_path: Path, advised: list[int]
+    ) -> None:
+        path = tmp_path / "data.bin"
+        path.write_bytes(b"abc")
+
+        ingest.drop_page_cache(path)
+
+        assert len(advised) == 1
+
+
+class TestStreamToParquet:
+    def test_rows_and_metadata_are_written_in_row_groups(self, tmp_path: Path) -> None:
+        output = tmp_path / "out.parquet"
+
+        ingest.stream_to_parquet(
+            pl.LazyFrame({"a": range(5)}),
+            output,
+            row_group_rows=2,
+            metadata={"epc_connector.release": "r1"},
+        )
+
+        assert pl.read_parquet(output)["a"].to_list() == [0, 1, 2, 3, 4]
+        assert pl.read_parquet_metadata(output)["epc_connector.release"] == "r1"
+
+
 class TestReadCsvHeader:
     def test_utf8_bom_is_removed(self, tmp_path: Path) -> None:
         path = tmp_path / "2024.csv"

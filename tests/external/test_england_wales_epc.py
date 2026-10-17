@@ -156,7 +156,7 @@ class TestSourceConstants:
     def test_repository_schemas_exist_for_every_series(self) -> None:
         for dataset in EnglandWalesEpcDataset:
             schema_path = (
-                england_wales_epc.DEFAULT_SCHEMAS_DIR
+                validation.DEFAULT_SCHEMAS_DIR
                 / "source"
                 / "england-and-wales"
                 / f"{dataset}.schema.json"
@@ -315,7 +315,7 @@ class TestDownloadEnglandAndWalesEpc:
 def repository_rules(series: str) -> dict[str, pl.Expr]:
     """Polars rules for the repository's schema of an England and Wales series."""
     path = (
-        england_wales_epc.DEFAULT_SCHEMAS_DIR
+        validation.DEFAULT_SCHEMAS_DIR
         / "source"
         / "england-and-wales"
         / f"{series}.schema.json"

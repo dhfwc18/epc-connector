@@ -12,3 +12,7 @@ Declarative mappings from each source dataset (`schemas/source/`) to the canonic
 in order (`first_part`, `lower`, `strip_prefix`, `map`, `cast`, `boolean`, `divide`, `round`, `greater_than`, `null_if`,
 `regex_extract`). A step that meets a value it cannot handle is an error, so new source values surface instead of being
 silently dropped.
+
+The building description fields (walls, roof, heating, ... and main fuel and glazing type) are not mapped here: they
+come from the cleaning step, whose rules are in `schemas/vocabularies/`. Every other canonical field has exactly one
+rule in each mapping.

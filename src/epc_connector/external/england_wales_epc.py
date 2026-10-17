@@ -39,8 +39,9 @@ from epc_connector.ingest import (
     extract_remote_zip_members,
     merge_csvs_to_parquet,
     staging_directory,
+    stream_to_parquet,
 )
-from epc_connector.validation import load_schema
+from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +91,6 @@ SEARCH_PAGE_SIZE: Final = 5000  # API maximum
 
 API_TOKEN_ENV_VAR: Final = "EPB_API_TOKEN"
 LAST_UPDATED_METADATA_KEY: Final = "epc_connector.last_updated"
-# Repository ``schemas/`` directory (src/epc_connector/external -> repo root).
-DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[3] / "schemas"
 
 _CERTIFICATES_FILE: Final = re.compile(r"^certificates-(\d{4})\.csv$")
 
@@ -302,7 +301,7 @@ def update_england_and_wales_epc(
         affected = set(
             local.filter(certificate.is_in(list(removed | uprn_updated)))
             .select(certificate)
-            .collect()
+            .collect(engine="streaming")
             .to_series()
             .to_list()
         )
@@ -323,7 +322,12 @@ def update_england_and_wales_epc(
             fresh = pl.scan_parquet(fresh_path, low_memory=True).filter(
                 certificate.is_in(list(wanted | uprn_updated))
             )
-            found = set(fresh.select(certificate).collect().to_series().to_list())
+            found = set(
+                fresh.select(certificate)
+                .collect(engine="streaming")
+                .to_series()
+                .to_list()
+            )
             last_updated = fetch_last_updated(dataset, http)
 
         uprns: dict[str, tuple[str, str]] = {}
@@ -354,13 +358,13 @@ def update_england_and_wales_epc(
                 .drop("new_uprn", "new_uprn_source")
             )
         combined_path = run_dir / "combined.parquet"
-        with pl.Config(streaming_chunk_size=chunk_rows):
-            pl.concat([kept] if fresh is None else [kept, fresh]).sink_parquet(
-                combined_path,
-                compression="zstd",
-                row_group_size=row_group_rows,
-                metadata={LAST_UPDATED_METADATA_KEY: last_updated},
-            )
+        stream_to_parquet(
+            pl.concat([kept] if fresh is None else [kept, fresh]),
+            combined_path,
+            chunk_rows=chunk_rows,
+            row_group_rows=row_group_rows,
+            metadata={LAST_UPDATED_METADATA_KEY: last_updated},
+        )
         shutil.move(combined_path, parquet_path)
 
     logger.info(
@@ -467,7 +471,7 @@ def latest_lodgement_date(
     return (
         pl.scan_parquet(parquet_path, low_memory=True)
         .select(lodged.filter(lodged.le(today)).max())
-        .collect()
+        .collect(engine="streaming")
         .item()
     )
 

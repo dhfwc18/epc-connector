@@ -1,0 +1,40 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "glazed-type",
+  "prefix": "glazing",
+  "description": "Glazing type and, for double glazing, when it was installed.",
+  "split_phrases": false,
+  "fields": {
+    "type": {
+      "type": "string",
+      "values": {
+        "single": ["single glazing"],
+        "double": [
+          "double glazing installed during or after 2002",
+          "double glazing installed before 2002",
+          "double glazing, unknown install date",
+          "double, known data"
+        ],
+        "triple": ["triple, known data", "triple glazing"],
+        "secondary": ["secondary glazing"]
+      }
+    },
+    "installed": {
+      "type": "string",
+      "values": {
+        "before 2002": ["double glazing installed before 2002"],
+        "2002 or later": ["double glazing installed during or after 2002"]
+      }
+    },
+    "performance_known": {
+      "type": "boolean",
+      "description": "True if the glazing's performance data is known.",
+      "values": {
+        "true": ["double, known data", "triple, known data"]
+      }
+    }
+  },
+  "discard": {
+    "not defined": ["not defined"]
+  }
+}

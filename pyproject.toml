@@ -6,16 +6,20 @@ readme = "README.md"
 requires-python = ">=3.14"
 authors = [{ name = "David Huang", email = "dh.fwc18@gmail.com" }]
 dependencies = [
-    "httpx>=0.28.1",
-    "polars>=2.0.0",
-    "py7zr>=1.1.4",
-    "python-dotenv>=1.2.4",
+  "httpx>=0.28.1",
+  "polars>=2.0.0",
+  "py7zr>=1.1.4",
+  "python-dotenv>=1.2.4",
 ]
+
+[project.scripts]
+epc-connector = "epc_connector.__main__:main"
 
 [dependency-groups]
 dev = [
   "black>=26.10.1",
   "check-jsonschema>=0.38.2",
+  "jsonschema>=4.26.0",
   "pyright>=1.1.414",
   "pytest>=9.1.1",
   "ruff>=0.17.1",
@@ -29,6 +33,15 @@ build-backend = "uv_build"
 line-length = 88
 target-version = ["py314"]
 
+[tool.pyright]
+include = ["src", "tests"]
+typeCheckingMode = "standard"
+reportDeprecated = "error"
+deprecateTypingAliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py314"
@@ -39,12 +52,3 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["epc_connector"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-
-[tool.pyright]
-include = ["src", "tests", "scripts"]
-typeCheckingMode = "standard"
-reportDeprecated = "error"
-deprecateTypingAliases = true

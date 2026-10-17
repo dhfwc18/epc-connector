@@ -1,0 +1,39 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "lighting",
+  "prefix": "lighting",
+  "description": "Share of fixed outlets with low-energy lighting, or the lighting efficiency band.",
+  "split_phrases": false,
+  "fields": {
+    "low_energy_percent": {
+      "type": "number",
+      "description": "Percentage of fixed outlets with low-energy lighting.",
+      "values": {
+        "100": ["low energy lighting in all fixed outlets", "goleuadau ynni-isel ym mhob un o'r mannau gosod"],
+        "0": ["no low energy lighting", "dim goleuadau ynni-isel"]
+      },
+      "number_from": [
+        "low energy lighting #% all fixed outlets",
+        "low energy lighting in #% of fixed outlets",
+        "low energy lighting in #% fixed outlets",
+        "goleuadau ynni-isel mewn #% o'r mannau gosod"
+      ]
+    },
+    "efficiency": {
+      "type": "string",
+      "values": {
+        "excellent": [
+          "excellent lighting efficiency",
+          "excelent lighting efficiency",
+          "effeithlonrwydd goleuo rhagorol"
+        ],
+        "good": ["good lighting efficiency", "effeithlonrwydd goleuo da"],
+        "below average": ["below average lighting efficiency", "effeithlonrwydd goleuo is na'r cyfartaledd"]
+      }
+    }
+  },
+  "discard": {
+    "placeholder text": ["sap05:lighting", "***sample***"],
+    "truncated description": ["\u2019r mannau gosod", "r mannau gosod"]
+  }
+}

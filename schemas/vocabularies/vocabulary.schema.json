@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:epc-connector:schemas:vocabularies:vocabulary",
+  "title": "Description vocabulary",
+  "description": "For one described element, which normalised phrases give which value of each output field.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "element": {
+      "enum": [
+        "walls",
+        "roof",
+        "floor",
+        "windows",
+        "glazed-type",
+        "lighting",
+        "main-heating",
+        "heating-controls",
+        "hot-water",
+        "secondary-heating",
+        "main-fuel"
+      ]
+    },
+    "prefix": {
+      "description": "Output column prefix: field 'construction' with prefix 'walls' is column 'walls_construction'.",
+      "type": "string",
+      "pattern": "^[a-z][a-z_]*$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "split_phrases": {
+      "description": "Split an element on commas into phrases (default true); false looks the whole element up.",
+      "type": "boolean"
+    },
+    "count_systems_by": {
+      "description": "Field that starts a new system when a phrase gives it again; only the first system is output, with the number of systems.",
+      "type": "string"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/field"
+      },
+      "minProperties": 1
+    },
+    "ignore": {
+      "description": "Reason -> phrases that are recognised but give nothing.",
+      "$ref": "#/$defs/reasons"
+    },
+    "discard": {
+      "description": "Reason -> phrases that drop the whole element.",
+      "$ref": "#/$defs/reasons"
+    }
+  },
+  "required": ["element", "prefix", "fields"],
+  "additionalProperties": false,
+  "$defs": {
+    "field": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["string", "boolean", "integer", "number"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "values": {
+          "description": "Value -> phrases that give it. Boolean values are 'true' and 'false'; numeric values are written as numbers in a string.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        },
+        "number_from": {
+          "description": "Phrases with '#' where the number stands; the number is the field value.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "second_value_field": {
+          "description": "Field that takes a second, different value instead of raising a conflict.",
+          "type": "string"
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    "reasons": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "uniqueItems": true
+      }
+    }
+  }
+}

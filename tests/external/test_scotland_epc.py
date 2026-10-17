@@ -112,7 +112,7 @@ class TestSourceConstants:
     def test_repository_schemas_exist_for_every_series(self) -> None:
         for dataset in ScotlandEpcDataset:
             schema_path = (
-                scotland_epc.DEFAULT_SCHEMAS_DIR
+                validation.DEFAULT_SCHEMAS_DIR
                 / "source"
                 / "scotland"
                 / f"{dataset}.schema.json"
@@ -340,7 +340,7 @@ class TestUpdateScotlandEpc:
 @pytest.fixture(scope="module")
 def domestic_rules() -> dict[str, pl.Expr]:
     """Polars rules for the repository's domestic schema."""
-    path = scotland_epc.DEFAULT_SCHEMAS_DIR / "source/scotland/domestic.schema.json"
+    path = validation.DEFAULT_SCHEMAS_DIR / "source/scotland/domestic.schema.json"
     return validation.column_rules(validation.load_schema(path))
 
 

@@ -64,10 +64,10 @@
       "steps": [
         {
           "op": "cast",
-          "to": "datetime"
+          "to": "datetime",
+          "format": "%Y-%m-%d %H:%M:%S"
         }
-      ],
-      "note": "lodgement_datetime is read as an ISO 8601 date-time."
+      ]
     },
     "superseded": {
       "const": null,
@@ -254,21 +254,6 @@
       ],
       "note": "A floor area of 0 is not a real measurement."
     },
-    "main_fuel": {
-      "from": "main_fuel"
-    },
-    "glazed_type": {
-      "from": "glazed_type"
-    },
-    "main_heating_description": {
-      "from": "mainheat_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "main_heating_energy_efficiency": {
       "from": "mainheat_energy_eff",
       "steps": [
@@ -279,15 +264,6 @@
         },
         {
           "op": "lower"
-        }
-      ]
-    },
-    "main_heating_controls_description": {
-      "from": "mainheatcont_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
         }
       ]
     },
@@ -304,15 +280,6 @@
         }
       ]
     },
-    "hot_water_description": {
-      "from": "hotwater_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "hot_water_energy_efficiency": {
       "from": "hot_water_energy_eff",
       "steps": [
@@ -323,15 +290,6 @@
         },
         {
           "op": "lower"
-        }
-      ]
-    },
-    "walls_description": {
-      "from": "walls_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
         }
       ]
     },
@@ -348,15 +306,6 @@
         }
       ]
     },
-    "roof_description": {
-      "from": "roof_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "roof_energy_efficiency": {
       "from": "roof_energy_eff",
       "steps": [
@@ -370,15 +319,6 @@
         }
       ]
     },
-    "floor_description": {
-      "from": "floor_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
-        }
-      ]
-    },
     "floor_energy_efficiency": {
       "from": "floor_energy_eff",
       "steps": [
@@ -389,15 +329,6 @@
         },
         {
           "op": "lower"
-        }
-      ]
-    },
-    "windows_description": {
-      "from": "windows_description",
-      "steps": [
-        {
-          "op": "first_part",
-          "separator": "|"
         }
       ]
     },

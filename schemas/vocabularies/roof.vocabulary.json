@@ -1,0 +1,212 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "roof",
+  "prefix": "roof",
+  "description": "Roof type and insulation of the main roof.",
+  "fields": {
+    "type": {
+      "type": "string",
+      "values": {
+        "pitched": ["pitched", "ar oleddf"],
+        "flat": ["flat", "yn wastad"],
+        "roof room": ["roof room(s)", "roof room(s)thatched", "ystafell(oedd) to"],
+        "another dwelling above": ["(another dwelling above)", "(other dwelling above)", "(annedd arall uwchben)"],
+        "other premises above": [
+          "(other premises above)",
+          "other premises above",
+          "(another premises above)",
+          "another premises above",
+          "(non residential above)",
+          "(eiddo arall uwchben)"
+        ],
+        "same dwelling above": ["(same dwelling above)", "(yr un annedd uchod)"]
+      }
+    },
+    "thatched": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "roof room(s)thatched",
+          "thatched",
+          "thatched with additional insulation",
+          "thatchedinsulated at rafters",
+          "thatchedinsulated",
+          "thatchedinsulated (assumed)",
+          "thatchedno insulation",
+          "to gwellt"
+        ]
+      }
+    },
+    "insulation": {
+      "type": "string",
+      "values": {
+        "none": [
+          "thatchedno insulation",
+          "no insulation (assumed)",
+          "no insulation",
+          "no loft insulation",
+          "dim inswleiddio",
+          "dim inswleiddio (rhagdybiaeth)"
+        ],
+        "limited": [
+          "limited insulation (assumed)",
+          "limited insulation",
+          "imited insulation",
+          "inswleiddio cyfyngedig",
+          "inswleiddio cyfyngedig (rhagdybiaeth)"
+        ],
+        "insulated": [
+          "thatchedinsulated",
+          "thatchedinsulated (assumed)",
+          "insulated (assumed)",
+          "insulated",
+          "i inswleiddio",
+          "i inswleiddio (rhagdybiaeth)",
+          "wedi'i hinswleiddio",
+          "wedi'i hinswleiddio (rhagdybiaeth)",
+          "wedi'i inswleiddio",
+          "wedi'i inswleiddio (rhagdybiaeth)",
+          "\u2019i inswleiddio (rhagdybiaeth)"
+        ],
+        "loft insulation": [
+          "loft insulation",
+          "mm loft insulation",
+          "joists loft insulation",
+          "yes loft insulation",
+          "flat roof insulation loft insulation",
+          "*** invalid input code : 57 *** loft insulation",
+          "# mm loft insulation",
+          "#+ mm loft insulation",
+          ">=# mm loft insulation",
+          "# mm lo inswleiddio yn y llof",
+          "# mm o inswleiddio yn y llofft",
+          "#+ mm lo inswleiddio yn y llof",
+          "#+ mm mm o inswleiddio yn y llofft",
+          "#+ mm o inswleiddio yn y llofft"
+        ],
+        "insulated at rafters": [
+          "thatchedinsulated at rafters",
+          "insulated at rafters",
+          "i inswleiddio wrth y trawstiau",
+          "wedi'i inswleiddio wrth y trawstia",
+          "wedi'i inswleiddio wrth y trawstiau",
+          "\u2019i inswleiddio wrth y trawstiau"
+        ],
+        "ceiling insulated": ["ceiling insulated", "nenfwd wedi'i inswleiddio"],
+        "additional": [
+          "thatched with additional insulation",
+          "with additional insulation",
+          "gydag inswleiddio ychwanegol"
+        ],
+        "unknown": ["unknown loft insulation", "don't know loft insulation", "no access loft insulation"]
+      }
+    },
+    "insulation_assumed": {
+      "type": "boolean",
+      "description": "True if the insulation is the assessor's default for the age and type, not observed.",
+      "values": {
+        "true": [
+          "thatchedinsulated (assumed)",
+          "no insulation (assumed)",
+          "limited insulation (assumed)",
+          "insulated (assumed)",
+          "dim inswleiddio (rhagdybiaeth)",
+          "i inswleiddio (rhagdybiaeth)",
+          "inswleiddio cyfyngedig (rhagdybiaeth)",
+          "wedi'i hinswleiddio (rhagdybiaeth)",
+          "wedi'i inswleiddio (rhagdybiaeth)",
+          "\u2019i inswleiddio (rhagdybiaeth)"
+        ],
+        "false": [
+          "thatched with additional insulation",
+          "thatchedinsulated at rafters",
+          "thatchedinsulated",
+          "thatchedno insulation",
+          "no insulation",
+          "no loft insulation",
+          "limited insulation",
+          "imited insulation",
+          "insulated",
+          "insulated at rafters",
+          "ceiling insulated",
+          "with additional insulation",
+          "loft insulation",
+          "mm loft insulation",
+          "joists loft insulation",
+          "yes loft insulation",
+          "flat roof insulation loft insulation",
+          "*** invalid input code : 57 *** loft insulation",
+          "# mm loft insulation",
+          "#+ mm loft insulation",
+          ">=# mm loft insulation",
+          "dim inswleiddio",
+          "gydag inswleiddio ychwanegol",
+          "i inswleiddio",
+          "i inswleiddio wrth y trawstiau",
+          "inswleiddio cyfyngedig",
+          "nenfwd wedi'i inswleiddio",
+          "wedi'i hinswleiddio",
+          "wedi'i inswleiddio",
+          "wedi'i inswleiddio wrth y trawstia",
+          "wedi'i inswleiddio wrth y trawstiau",
+          "\u2019i inswleiddio wrth y trawstiau",
+          "# mm lo inswleiddio yn y llof",
+          "# mm o inswleiddio yn y llofft",
+          "#+ mm lo inswleiddio yn y llof",
+          "#+ mm mm o inswleiddio yn y llofft",
+          "#+ mm o inswleiddio yn y llofft"
+        ]
+      }
+    },
+    "loft_insulation_thickness": {
+      "type": "integer",
+      "description": "Loft insulation thickness in mm.",
+      "number_from": [
+        "# mm loft insulation",
+        "#+ mm loft insulation",
+        ">=# mm loft insulation",
+        "# mm lo inswleiddio yn y llof",
+        "# mm o inswleiddio yn y llofft",
+        "#+ mm lo inswleiddio yn y llof",
+        "#+ mm mm o inswleiddio yn y llofft",
+        "#+ mm o inswleiddio yn y llofft"
+      ]
+    },
+    "loft_insulation_or_more": {
+      "type": "boolean",
+      "description": "True if the thickness is a lower bound, as in 300+ mm.",
+      "values": {
+        "true": [
+          "#+ mm loft insulation",
+          ">=# mm loft insulation",
+          "#+ mm lo inswleiddio yn y llof",
+          "#+ mm mm o inswleiddio yn y llofft",
+          "#+ mm o inswleiddio yn y llofft"
+        ],
+        "false": ["# mm loft insulation", "# mm lo inswleiddio yn y llof", "# mm o inswleiddio yn y llofft"]
+      }
+    },
+    "u_value": {
+      "type": "number",
+      "description": "Average thermal transmittance in W/m2K.",
+      "number_from": [
+        "average thermal transmittance # w/m'k",
+        "average thermal transmittance # w/m2k",
+        "average thermal transmittance # w/m\u00b2k",
+        "average thermal transmittance # w/m??k",
+        "average thermal transmittance # w/m\u00e2\u00b2k",
+        "average thermal transmittance = # w/m'k",
+        "trawsyriannedd thermol cyfartalog # w/m\u00b2k",
+        "trawsyriannedd thermol cyfartalog # w/m\u00e2\u00b2k"
+      ]
+    }
+  },
+  "ignore": {
+    "U-value not recorded": ["average thermal transmittance nan w/m'k", "average thermal transmittance nan w/m\u00b2k"]
+  },
+  "discard": {
+    "placeholder text": ["sap05:roof"],
+    "truncated U-value": ["\u00e2\u00b2k", "\u00b2k"],
+    "recorded as an error": ["(error)"]
+  }
+}

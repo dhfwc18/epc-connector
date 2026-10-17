@@ -1,0 +1,302 @@
+{
+  "$schema": "./vocabulary.schema.json",
+  "element": "heating-controls",
+  "prefix": "heating_controls",
+  "description": "Main heating controls present, controls stated as absent, and community heating charging.",
+  "fields": {
+    "appliance_thermostats": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "programmer and appliance thermostats",
+          "appliance thermostat and programmer",
+          "appliance thermostats",
+          "appliance thermostat",
+          "rhaglennydd a thermostatau ar y cyfarpar",
+          "thermostatau ar y cyfarpar"
+        ]
+      }
+    },
+    "automatic_charge_control": {
+      "type": "boolean",
+      "values": {
+        "true": ["automatic charge control", "rheoli gwefr drydanol yn awtomatig"]
+      }
+    },
+    "boiler_energy_manager": {
+      "type": "boolean",
+      "values": {
+        "true": ["trvs and boiler energy manager", "trvs a rheolydd ynni ar y bwyler"]
+      }
+    },
+    "bypass": {
+      "type": "boolean",
+      "values": {
+        "true": ["trvs and bypass", "trvs a falf osgoi"]
+      }
+    },
+    "celect_controls": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "celect-type controls",
+          "celect type controls",
+          "celect controls",
+          "celect control",
+          "rheolaeth celect"
+        ]
+      }
+    },
+    "delayed_start_thermostat": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "programmer and at least two room thermostats including a delayed start thermostat",
+          "delayed start programmer and at least two room thermostats",
+          "delayed start thermostat",
+          "programmer and delayed start thermostat",
+          "delayed start thermostat and programmer",
+          "delayed start stat and program and trv's"
+        ]
+      }
+    },
+    "flow_switch": {
+      "type": "boolean",
+      "values": {
+        "true": ["trvs and flow switch", "program and flow switch"]
+      }
+    },
+    "high_heat_retention_controls": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "controls for high heat retention storage heaters",
+          "rheolyddion i wresogyddion storio sy'n cadw llawer o wres"
+        ]
+      }
+    },
+    "manual_charge_control": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "manual charge control",
+          "group 4: electric storage systems manual charge control",
+          "llaw",
+          "rheoli'r t'l ? llaw",
+          "rheoli'r t\u00e2l \u00e2 llaw",
+          "\u00e2l \u00e2 llaw"
+        ]
+      }
+    },
+    "programmer": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "programmer",
+          "programmer room thermostat and trvs",
+          "programmer and room thermostat",
+          "programmerand room thermostat",
+          "programmer and room stat",
+          "thermostat and programmer",
+          "program and flow switch",
+          "programmer and trvs",
+          "prog and trvs",
+          "programmer'and trvs",
+          "programmer and appliance thermostats",
+          "appliance thermostat and programmer",
+          "programmer and room thermostats",
+          "programmer and at least two room thermostats",
+          "programmer and at least two room thermostat",
+          "programmer and at least 2 room thermostats",
+          "programmer and at least two room stats",
+          "programmer and at least two room thermostats including a delayed start thermostat",
+          "delayed start programmer and at least two room thermostats",
+          "programmer and delayed start thermostat",
+          "delayed start thermostat and programmer",
+          "delayed start stat and program and trv's",
+          "programmer no room thermostat",
+          "group 1: boiler systems with radiators or underfloor heating programmer",
+          "group 5: warm air systems (including heat pumps with warm air distribution) programmer and room thermostat",
+          "rhaglennydd",
+          "rhaglennydd a thermostat ystafell",
+          "rhaglennydd a thermostatau ar y cyfarpar",
+          "rhaglennydd a thermostatau ystafell",
+          "rhaglennydd a trvs",
+          "rhaglennydd ac o leiaf ddau thermostat ystafell"
+        ]
+      }
+    },
+    "room_thermostat": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "room thermostat and trvs",
+          "roomstat and trvs",
+          "programmer room thermostat and trvs",
+          "programmer and room thermostat",
+          "programmerand room thermostat",
+          "programmer and room stat",
+          "room thermostat only",
+          "flat rate charging room thermostat and trvs",
+          "charging system linked to use of heating room thermostat and trvs",
+          "group 5: warm air systems (including heat pumps with warm air distribution) programmer and room thermostat",
+          "rhaglennydd a thermostat ystafell",
+          "thermostat ystafell a trvs",
+          "thermostat ystafell yn unig"
+        ]
+      }
+    },
+    "room_thermostats": {
+      "type": "boolean",
+      "description": "Two or more room thermostats.",
+      "values": {
+        "true": [
+          "room thermostats only",
+          "programmer and room thermostats",
+          "programmer and at least two room thermostats",
+          "programmer and at least two room thermostat",
+          "programmer and at least 2 room thermostats",
+          "programmer and at least two room stats",
+          "and two room thermostats",
+          "programmer and at least two room thermostats including a delayed start thermostat",
+          "delayed start programmer and at least two room thermostats",
+          "rhaglennydd a thermostatau ystafell",
+          "rhaglennydd ac o leiaf ddau thermostat ystafell"
+        ]
+      }
+    },
+    "temperature_zone_control": {
+      "type": "boolean",
+      "values": {
+        "true": ["temperature zone control", "rheolaeth parthau tymheredd"]
+      }
+    },
+    "thermostat": {
+      "type": "boolean",
+      "description": "A thermostat of unstated type.",
+      "values": {
+        "true": ["thermostat and programmer", "thermostat"]
+      }
+    },
+    "time_and_temperature_zone_control": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "time and temperature zone control",
+          "time and temperature zone control by suitable arrangement of plumbing and electrical services",
+          "time and temperature zone control by device in database",
+          "rheolaeth amser a rheolaeth parthau tymheredd"
+        ]
+      }
+    },
+    "trvs": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "room thermostat and trvs",
+          "roomstat and trvs",
+          "programmer room thermostat and trvs",
+          "trvs and bypass",
+          "trvs and flow switch",
+          "trvs and boiler energy manager",
+          "programmer and trvs",
+          "prog and trvs",
+          "programmer'and trvs",
+          "trvs",
+          "trv's",
+          "delayed start stat and program and trv's",
+          "flat rate charging room thermostat and trvs",
+          "flat rate charging trvs",
+          "charging system linked to use of heating room thermostat and trvs",
+          "rhaglennydd a trvs",
+          "thermostat ystafell a trvs",
+          "trvs a falf osgoi",
+          "trvs a rheolydd ynni ar y bwyler"
+        ]
+      }
+    },
+    "no_room_thermostat": {
+      "type": "boolean",
+      "values": {
+        "true": ["no room thermostat", "no thermostat", "programmer no room thermostat", "dim thermostat ystafell"]
+      }
+    },
+    "no_thermostatic_control": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "no thermostatic control of room temperature",
+          "no stat control of room temperature",
+          "no thermostatic control",
+          "no time or thermostatic control of room temperature",
+          "no time or thermostatic control of room temp",
+          "no time or thermostatic control of temperature",
+          "dim rheolaeth amser na rheolaeth thermostatig ar dymheredd yr ystafell",
+          "dim rheolaeth thermostatig ar dymheredd yr ystafell"
+        ]
+      }
+    },
+    "no_time_control": {
+      "type": "boolean",
+      "values": {
+        "true": [
+          "no time or thermostatic control of room temperature",
+          "no time or thermostatic control of room temp",
+          "no time or thermostatic control of temperature",
+          "dim rheolaeth amser na rheolaeth thermostatig ar dymheredd yr ystafell"
+        ]
+      }
+    },
+    "no_controls": {
+      "type": "boolean",
+      "description": "Stated as having no controls.",
+      "values": {
+        "true": ["none", "dim"]
+      }
+    },
+    "charging": {
+      "type": "string",
+      "values": {
+        "flat rate": [
+          "flat rate charging",
+          "flat rate charging*",
+          "flat rate charging room thermostat and trvs",
+          "flat rate charging trvs",
+          "t'l un gyfradd",
+          "t\u00e2l un gyfradd"
+        ],
+        "linked to use": [
+          "charging system linked to use of community heating",
+          "charging system linked to the use of community heating",
+          "charging system linked to use of communit heating",
+          "charging system linked to use of heating",
+          "charging system linked to community heating use",
+          "charging linked to use",
+          "charging system linked to use of heating room thermostat and trvs",
+          "system dalu wedi'i chysylltu \u00e2 defnyddio gwres cymunedol"
+        ],
+        "unit": ["unit charging"]
+      }
+    },
+    "applicable": {
+      "type": "boolean",
+      "description": "False if heating controls do not apply (the system supplies hot water only).",
+      "values": {
+        "false": [
+          "not relevant (supplies dhw only)",
+          "not applicable (boiler provides dhw only)",
+          "not applicable (heating provides dhw only)",
+          "not relevant"
+        ]
+      }
+    }
+  },
+  "discard": {
+    "placeholder text": ["sap05:main-heating-controls", "sap:main-heating-controls"],
+    "recorded as an error": ["error"],
+    "undefined control code": [
+      "undefined welsh description for crtrl code 2113",
+      "undefined welsh description for crtrl code 2699"
+    ]
+  }
+}

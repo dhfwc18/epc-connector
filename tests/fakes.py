@@ -4,13 +4,18 @@ Builders for synthetic test inputs and an in-memory HTTP server.
 Everything is a few kilobytes; no test touches the network or real data.
 """
 
+import json
 import zipfile
 from collections import Counter
 from collections.abc import Iterator
 from pathlib import Path
 
 import httpx
+import polars as pl
 import py7zr
+
+from epc_connector.cleaning import RAW_PARQUET_NAMES, Nation
+from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
 
 UTF8_BOM = "\ufeff"
 LABEL_ROW = "Label A,Total floor area (m\ufffd),Label C"
@@ -252,3 +257,81 @@ def created_schema() -> dict:
         "required": ["REPORT_REFERENCE_NUMBER", "CREATED_AT", "VALUE"],
         "additionalProperties": False,
     }
+
+
+def write_vocabularies(directory: Path) -> Path:
+    """
+    Write small walls and main-heating vocabularies for engine tests.
+
+    Walls: construction, insulation (assumed or not) and a U-value read from
+    ``u # w/m2k``. Main heating: systems counted by ``system``, with a second
+    fuel going to ``other_fuel``.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    walls = {
+        "element": "walls",
+        "prefix": "walls",
+        "fields": {
+            "construction": {
+                "type": "string",
+                "values": {
+                    "cavity wall": ["cavity wall", "waliau ceudod"],
+                    "solid brick": ["solid brick", "solid brick, filled cavity"],
+                },
+            },
+            "insulation": {
+                "type": "string",
+                "values": {"none": ["no insulation (assumed)"]},
+            },
+            "insulation_assumed": {
+                "type": "boolean",
+                "values": {"true": ["no insulation (assumed)"]},
+            },
+            "u_value": {"type": "number", "number_from": ["u # w/m2k"]},
+        },
+        "ignore": {"no detail": ["as built"]},
+        "discard": {"placeholder text": ["sap05:walls"]},
+    }
+    heating = {
+        "element": "main-heating",
+        "prefix": "main_heating",
+        "count_systems_by": "system",
+        "fields": {
+            "system": {
+                "type": "string",
+                "values": {"boiler": ["boiler"], "unspecified": [""]},
+            },
+            "fuel": {
+                "type": "string",
+                "second_value_field": "other_fuel",
+                "values": {"mains gas": ["mains gas"], "oil": ["oil"]},
+            },
+            "other_fuel": {"type": "string"},
+        },
+    }
+    for document in (walls, heating):
+        path = directory / f"{document['element']}.vocabulary.json"
+        path.write_text(json.dumps(document))
+    return directory
+
+
+def write_raw_domestic(
+    data_dir: Path, nation: str, rows: list[dict[str, str]], metadata: dict[str, str]
+) -> Path:
+    """
+    Write a raw domestic file with every source schema column, in schema order.
+
+    Columns not given in a row are empty strings, as in the published files.
+    """
+    folder = "england-and-wales" if nation == Nation.ENGLAND_AND_WALES else "scotland"
+    schema = load_schema(
+        DEFAULT_SCHEMAS_DIR / "source" / folder / "domestic.schema.json"
+    )
+    columns = list(schema["properties"])
+    data = {column: [row.get(column, "") for row in rows] for column in columns}
+    path = data_dir / RAW_PARQUET_NAMES[Nation(nation)]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame(data, schema=dict.fromkeys(columns, pl.String)).write_parquet(
+        path, metadata=metadata
+    )
+    return path
