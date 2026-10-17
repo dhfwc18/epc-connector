@@ -15,6 +15,8 @@ from typing import Any, Final
 
 import polars as pl
 
+from epc_connector.errors import EpcConnectorError
+
 # Repository ``schemas/`` directory (src/epc_connector -> repo root).
 DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[2] / "schemas"
 
@@ -22,7 +24,7 @@ DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[2] / "schemas"
 _ANNOTATIONS = frozenset({"title", "description", "format"})
 
 
-class UnsupportedSchemaError(ValueError):
+class UnsupportedSchemaError(EpcConnectorError, ValueError):
     """A schema uses a keyword this module cannot translate to Polars."""
 
 

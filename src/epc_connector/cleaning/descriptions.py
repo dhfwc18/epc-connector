@@ -20,17 +20,18 @@ from epc_connector.cleaning.vocabulary import (
     load_vocabulary,
     parse_number,
 )
+from epc_connector.errors import EpcConnectorError
 
 logger = logging.getLogger(__name__)
 
 _NUMBER: Final = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?(?![\w.])")
 
 
-class UnknownPhraseError(ValueError):
+class UnknownPhraseError(EpcConnectorError, ValueError):
     """Phrases that no vocabulary entry lists."""
 
 
-class PhraseConflictError(ValueError):
+class PhraseConflictError(EpcConnectorError, ValueError):
     """Two phrases of one element give a field different values."""
 
 

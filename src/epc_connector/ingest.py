@@ -33,6 +33,7 @@ import py7zr
 from py7zr.io import Py7zIO, WriterFactory
 
 from epc_connector import validation
+from epc_connector.errors import EpcConnectorError
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ PAGE_CACHE_DROP_BYTES: Final = 64 * 1024 * 1024
 _CONTENT_RANGE_TOTAL: Final = re.compile(r"/(\d+)$")
 
 
-class IngestError(RuntimeError):
+class IngestError(EpcConnectorError, RuntimeError):
     """A download, archive or CSV is not as expected."""
 
 

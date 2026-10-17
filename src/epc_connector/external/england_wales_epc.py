@@ -30,6 +30,7 @@ import polars as pl
 from dotenv import find_dotenv, load_dotenv
 
 from epc_connector import ingest
+from epc_connector.datasets import LAST_UPDATED_METADATA_KEY, Origin, get_dataset
 from epc_connector.ingest import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
@@ -75,11 +76,8 @@ SOURCE_URLS: Final[dict[EnglandWalesEpcDataset, str]] = {
     EnglandWalesEpcDataset.DISPLAY: DISPLAY_URL,
 }
 PARQUET_NAMES: Final[dict[EnglandWalesEpcDataset, str]] = {
-    EnglandWalesEpcDataset.DOMESTIC: "domestic_epc_certificate_england_wales.parquet",
-    EnglandWalesEpcDataset.NON_DOMESTIC: (
-        "non_domestic_epc_certificate_england_wales.parquet"
-    ),
-    EnglandWalesEpcDataset.DISPLAY: "display_energy_certificate_england_wales.parquet",
+    series: get_dataset(Origin.ENGLAND_AND_WALES, series).parquet_name
+    for series in EnglandWalesEpcDataset
 }
 
 SEARCH_URLS: Final[dict[EnglandWalesEpcDataset, str]] = {
@@ -90,7 +88,6 @@ CERTIFICATE_URL: Final = f"{API_URL}/api/certificate"
 SEARCH_PAGE_SIZE: Final = 5000  # API maximum
 
 API_TOKEN_ENV_VAR: Final = "EPB_API_TOKEN"
-LAST_UPDATED_METADATA_KEY: Final = "epc_connector.last_updated"
 
 _CERTIFICATES_FILE: Final = re.compile(r"^certificates-(\d{4})\.csv$")
 

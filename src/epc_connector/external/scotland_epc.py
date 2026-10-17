@@ -23,6 +23,7 @@ from typing import Any, Final
 import httpx
 import polars as pl
 
+from epc_connector.datasets import RELEASE_METADATA_KEY, Origin, get_dataset
 from epc_connector.ingest import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
@@ -69,11 +70,10 @@ SOURCE_URLS: Final[dict[ScotlandEpcDataset, str]] = {
     ScotlandEpcDataset.NON_DOMESTIC: NON_DOMESTIC_URL,
 }
 PARQUET_NAMES: Final[dict[ScotlandEpcDataset, str]] = {
-    ScotlandEpcDataset.DOMESTIC: "domestic_epc_certificate_scotland.parquet",
-    ScotlandEpcDataset.NON_DOMESTIC: "non_domestic_epc_certificate_scotland.parquet",
+    series: get_dataset(Origin.SCOTLAND, series).parquet_name
+    for series in ScotlandEpcDataset
 }
 
-RELEASE_METADATA_KEY: Final = "epc_connector.release"
 
 _CREATED_DATE: Final = (
     pl.col("CREATED_AT").str.to_datetime("%d/%m/%Y %H:%M:%S", strict=False).dt.date()

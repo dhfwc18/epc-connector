@@ -20,6 +20,7 @@ from typing import Any, Final
 
 import polars as pl
 
+from epc_connector.errors import EpcConnectorError
 from epc_connector.validation import DEFAULT_SCHEMAS_DIR
 
 DEFAULT_MAPPINGS_DIR: Final = DEFAULT_SCHEMAS_DIR / "mappings"
@@ -28,7 +29,7 @@ CANONICAL_SCHEMA_PATH: Final = (
 )
 
 
-class MappingError(ValueError):
+class MappingError(EpcConnectorError, ValueError):
     """Source values that a mapping step does not handle."""
 
 
