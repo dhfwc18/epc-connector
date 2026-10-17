@@ -17,6 +17,7 @@ import contextlib
 import csv
 import io
 import logging
+import os
 import re
 import shutil
 import tempfile
@@ -24,11 +25,12 @@ import time
 import zipfile
 from collections.abc import Callable, Generator, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Final
+from typing import IO, Any, Final, Self
 
 import httpx
 import polars as pl
 import py7zr
+from py7zr.io import Py7zIO, WriterFactory
 
 from epc_connector import validation
 
@@ -41,11 +43,122 @@ RETRY_BASE_DELAY_SECONDS: Final = 1.0
 DEFAULT_CHUNK_ROWS: Final = 10_000
 DEFAULT_ROW_GROUP_ROWS: Final = 50_000
 
+# Bytes written between page cache drops.
+PAGE_CACHE_DROP_BYTES: Final = 64 * 1024 * 1024
+
 _CONTENT_RANGE_TOTAL: Final = re.compile(r"/(\d+)$")
 
 
 class IngestError(RuntimeError):
     """A download, archive or CSV is not as expected."""
+
+
+def drop_page_cache(path: Path) -> None:
+    """
+    Write a file's cached pages to disk and ask the kernel to drop them.
+
+    Does nothing where ``os.posix_fadvise`` is unavailable (not Linux).
+    """
+    if not hasattr(os, "posix_fadvise"):
+        return
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+        os.posix_fadvise(descriptor, 0, 0, os.POSIX_FADV_DONTNEED)
+    finally:
+        os.close(descriptor)
+
+
+class StreamingFile:
+    """
+    A binary file for large sequential writes that keeps the page cache small.
+
+    Every ``PAGE_CACHE_DROP_BYTES`` written, and on close, the written pages
+    are flushed to disk and dropped from the cache.
+
+    Parameters
+    ----------
+    path
+        File to open.
+    mode
+        ``"wb"``, ``"ab"`` or ``"w+b"``.
+    """
+
+    def __init__(self, path: Path, mode: str = "wb") -> None:
+        self._file: IO[bytes] = path.open(mode)
+        self._unflushed = 0
+
+    def write(self, data: bytes | bytearray | memoryview) -> int:
+        written = self._file.write(data)
+        self._unflushed += written
+        if self._unflushed >= PAGE_CACHE_DROP_BYTES:
+            self._drop_cache()
+        return written
+
+    def read(self, size: int = -1) -> bytes:
+        return self._file.read(size)
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        return self._file.seek(offset, whence)
+
+    def tell(self) -> int:
+        return self._file.tell()
+
+    def flush(self) -> None:
+        self._file.flush()
+
+    def close(self) -> None:
+        if not self._file.closed:
+            self._drop_cache()
+            self._file.close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
+
+    def _drop_cache(self) -> None:
+        self._file.flush()
+        if hasattr(os, "posix_fadvise"):
+            descriptor = self._file.fileno()
+            os.fdatasync(descriptor)
+            os.posix_fadvise(descriptor, 0, 0, os.POSIX_FADV_DONTNEED)
+        self._unflushed = 0
+
+
+class _StreamingWriter(Py7zIO):
+    """py7zr writer that extracts a member straight to disk via ``StreamingFile``."""
+
+    def __init__(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._file = StreamingFile(path, "w+b")
+        self._size = 0
+
+    def write(self, s: bytes | bytearray) -> int:
+        written = self._file.write(s)
+        self._size += written
+        return written
+
+    def read(self, size: int | None = None) -> bytes:
+        return self._file.read(-1 if size is None else size)
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        return self._file.seek(offset, whence)
+
+    def flush(self) -> None:
+        self._file.flush()
+
+    def size(self) -> int:
+        return self._size
+
+    def close(self) -> None:
+        self._file.close()
+
+
+class _StreamingWriterFactory(WriterFactory):
+    def create(self, filename: str) -> Py7zIO:
+        return _StreamingWriter(Path(filename))
 
 
 def download_file(
@@ -96,7 +209,9 @@ def download_file(
                     if response.status_code != 206:
                         written = 0  # full response: (re)start from the beginning
                     total = _total_bytes(response, written)
-                    with destination.open("ab" if written else "wb") as output:
+                    with StreamingFile(
+                        destination, "ab" if written else "wb"
+                    ) as output:
                         for block in response.iter_bytes(STREAM_BLOCK_BYTES):
                             output.write(block)
                             written += len(block)
@@ -163,14 +278,19 @@ def extract_files(
             names = _select(list(sizes), suffix, include)
             _check_free_space(destination, sum(sizes[name] for name in names))
             if names:
-                archive.extract(path=destination, targets=names)
+                archive.extract(
+                    path=destination, targets=names, factory=_StreamingWriterFactory()
+                )
     elif zipfile.is_zipfile(archive_path):
         with zipfile.ZipFile(archive_path) as archive:
             sizes = {i.filename: i.file_size for i in archive.infolist()}
             names = _select(list(sizes), suffix, include)
             _check_free_space(destination, sum(sizes[name] for name in names))
             for name in names:
-                archive.extract(name, destination)
+                target = destination / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(name) as source, StreamingFile(target) as output:
+                    shutil.copyfileobj(source, output, STREAM_BLOCK_BYTES)
     else:
         raise IngestError(f"{archive_path.name} is neither a 7z nor a zip archive")
     if not names:
@@ -287,7 +407,10 @@ def merge_csvs_to_parquet(
             raise IngestError(
                 "data breaks the schema:\n" + validation.format_violations(violations)
             )
-    return pl.scan_parquet(output_path).select(pl.len()).collect().item()
+    for csv_path in csv_paths:  # read in full; nothing else needs them cached
+        drop_page_cache(csv_path)
+    rows = pl.scan_parquet(output_path).select(pl.len())
+    return rows.collect(engine="streaming").item()
 
 
 def stream_to_parquet(
@@ -321,6 +444,7 @@ def stream_to_parquet(
             row_group_size=row_group_rows,
             metadata=dict(metadata) if metadata else None,
         )
+    drop_page_cache(output_path)
 
 
 def read_csv_header(csv_path: Path) -> list[str]:
@@ -541,7 +665,7 @@ def extract_remote_zip_members(
         paths = []
         for member in members:
             path = destination / Path(member.filename).name
-            with archive.open(member) as source, path.open("wb") as target:
+            with archive.open(member) as source, StreamingFile(path) as target:
                 shutil.copyfileobj(source, target, read_block_bytes)
             paths.append(path)
             logger.info("Fetched %s (%d bytes)", member.filename, member.file_size)

@@ -238,7 +238,7 @@ def latest_created_date(
     return (
         pl.scan_parquet(parquet_path, low_memory=True)
         .select(_CREATED_DATE.filter(_CREATED_DATE.le(today)).max())
-        .collect()
+        .collect(engine="streaming")
         .item()
     )
 

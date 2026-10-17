@@ -301,7 +301,7 @@ def update_england_and_wales_epc(
         affected = set(
             local.filter(certificate.is_in(list(removed | uprn_updated)))
             .select(certificate)
-            .collect()
+            .collect(engine="streaming")
             .to_series()
             .to_list()
         )
@@ -322,7 +322,12 @@ def update_england_and_wales_epc(
             fresh = pl.scan_parquet(fresh_path, low_memory=True).filter(
                 certificate.is_in(list(wanted | uprn_updated))
             )
-            found = set(fresh.select(certificate).collect().to_series().to_list())
+            found = set(
+                fresh.select(certificate)
+                .collect(engine="streaming")
+                .to_series()
+                .to_list()
+            )
             last_updated = fetch_last_updated(dataset, http)
 
         uprns: dict[str, tuple[str, str]] = {}
@@ -466,7 +471,7 @@ def latest_lodgement_date(
     return (
         pl.scan_parquet(parquet_path, low_memory=True)
         .select(lodged.filter(lodged.le(today)).max())
-        .collect()
+        .collect(engine="streaming")
         .item()
     )
 

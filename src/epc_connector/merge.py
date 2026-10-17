@@ -25,6 +25,7 @@ from epc_connector.external.scotland_epc import RELEASE_METADATA_KEY
 from epc_connector.ingest import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
+    drop_page_cache,
     staging_directory,
     stream_to_parquet,
 )
@@ -126,5 +127,7 @@ def merge_gb_domestic_epc(
             metadata=metadata,
         )
         shutil.move(written, output_path)
+    for nation in MAPPING_NAMES:  # read in full; nothing else needs them cached
+        drop_page_cache(data_dir / RAW_PARQUET_NAMES[nation])
     logger.info("Wrote %s", output_path)
     return output_path
