@@ -1,5 +1,5 @@
 """
-Map source rows to the canonical record with the files in ``schemas/mappings/``.
+Map source rows to the canonical record with ``schemas/mappings/`` files.
 
 Each canonical field is a constant or one source column passed through steps
 (``mapping.schema.json`` defines them). Every step becomes a Polars expression
@@ -20,15 +20,18 @@ from typing import Any, Final
 
 import polars as pl
 
+from epc_connector.errors import EpcConnectorError
 from epc_connector.validation import DEFAULT_SCHEMAS_DIR
 
 DEFAULT_MAPPINGS_DIR: Final = DEFAULT_SCHEMAS_DIR / "mappings"
+"""Repository directory holding the mapping files."""
 CANONICAL_SCHEMA_PATH: Final = (
     DEFAULT_SCHEMAS_DIR / "canonical" / "gb-domestic.schema.json"
 )
+"""JSON Schema of the canonical GB domestic record."""
 
 
-class MappingError(ValueError):
+class MappingError(EpcConnectorError, ValueError):
     """Source values that a mapping step does not handle."""
 
 

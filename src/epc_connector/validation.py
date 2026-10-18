@@ -15,14 +15,16 @@ from typing import Any, Final
 
 import polars as pl
 
-# Repository ``schemas/`` directory (src/epc_connector -> repo root).
+from epc_connector.errors import EpcConnectorError
+
 DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[2] / "schemas"
+"""Repository ``schemas/`` directory."""
 
 # Keywords that describe a property without constraining its value.
 _ANNOTATIONS = frozenset({"title", "description", "format"})
 
 
-class UnsupportedSchemaError(ValueError):
+class UnsupportedSchemaError(EpcConnectorError, ValueError):
     """A schema uses a keyword this module cannot translate to Polars."""
 
 
@@ -38,7 +40,7 @@ def schema_columns(schema: Mapping[str, Any]) -> list[str]:
 
 def check_header(header: list[str], schema: Mapping[str, Any]) -> None:
     """
-    Raise ``ValueError`` unless ``header`` matches the schema's columns exactly.
+    Raise ``ValueError`` unless ``header`` is exactly the schema's columns.
 
     Parameters
     ----------
@@ -59,10 +61,10 @@ def check_header(header: list[str], schema: Mapping[str, Any]) -> None:
 
 def column_rules(schema: Mapping[str, Any]) -> dict[str, pl.Expr]:
     """
-    Translate each property of a source schema into a Polars "is valid" expression.
+    Translate each property of a source schema into an "is valid" expression.
 
-    Supports ``type: string``, ``pattern``, ``enum`` and ``anyOf`` over those and
-    over ``$ref`` to ``#/$defs/<name>``.
+    Supports ``type: string``, ``pattern``, ``enum`` and ``anyOf`` over those
+    and over ``$ref`` to ``#/$defs/<name>``.
 
     Raises
     ------

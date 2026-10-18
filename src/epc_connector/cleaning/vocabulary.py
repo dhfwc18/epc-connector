@@ -15,7 +15,9 @@ import polars as pl
 from epc_connector.validation import DEFAULT_SCHEMAS_DIR
 
 DEFAULT_VOCABULARIES_DIR: Final = DEFAULT_SCHEMAS_DIR / "vocabularies"
+"""Repository directory holding the vocabulary files."""
 NUMBER_PLACEHOLDER: Final = "#"
+"""Stands for the number in a ``number_from`` phrase."""
 
 _DTYPES: Final[dict[str, Any]] = {
     "string": pl.String,

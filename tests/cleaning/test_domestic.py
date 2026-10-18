@@ -9,10 +9,10 @@ import pytest
 
 from epc_connector.cleaning import domestic
 from epc_connector.cleaning.descriptions import UnknownPhraseError
-from epc_connector.cleaning.text import Nation
+from epc_connector.datasets import Origin, Segment, get_dataset
 from tests.fakes import write_raw_domestic
 
-EW = Nation.ENGLAND_AND_WALES
+EW = Origin.ENGLAND_AND_WALES
 
 
 class TestCleanDomesticEpc:
@@ -38,7 +38,7 @@ class TestCleanDomesticEpc:
     ) -> None:
         cleaned = domestic.clean_domestic_epc(EW, data_dir=data_dir)
 
-        raw = pl.scan_parquet(data_dir / domestic.RAW_PARQUET_NAMES[EW])
+        raw = pl.scan_parquet(get_dataset(EW, Segment.DOMESTIC).path(data_dir))
         raw_columns = raw.collect_schema().names()
         columns = cleaned.collect_schema().names()
         descriptions = set(domestic.SOURCE_COLUMNS[EW].values())

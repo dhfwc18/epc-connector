@@ -2,22 +2,23 @@
 Tests for ``epc_connector.cleaning.descriptions``.
 """
 
+import logging
 from pathlib import Path
 
 import polars as pl
 import pytest
 
 from epc_connector.cleaning import descriptions
-from epc_connector.cleaning.text import Nation
+from epc_connector.datasets import Origin
 
-EW = Nation.ENGLAND_AND_WALES
-SCOTLAND = Nation.SCOTLAND
+EW = Origin.ENGLAND_AND_WALES
+SCOTLAND = Origin.SCOTLAND
 
 
 def clean(
-    raw: str, element: str, directory: Path, nation: Nation = EW
+    raw: str, element: str, directory: Path, origin: Origin = EW
 ) -> descriptions.CleanedDescription:
-    return descriptions.clean_description(raw, element, nation, directory)
+    return descriptions.clean_description(raw, element, origin, directory)
 
 
 class TestCleanDescription:
@@ -131,3 +132,22 @@ class TestCleanValues:
         )
 
         assert table["walls_discarded"].to_list() == ["not in vocabulary"]
+
+    def test_lenient_mode_warns_once_and_lists_values_in_debug(
+        self, vocabularies: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level(logging.DEBUG):
+            descriptions.clean_values(
+                ["Thatch", "Cob"],
+                "walls",
+                EW,
+                strict=False,
+                vocabularies_dir=vocabularies,
+            )
+
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        details = [r for r in caplog.records if r.levelno == logging.DEBUG]
+        assert [r.getMessage() for r in warnings] == [
+            "2 walls descriptions are not in the vocabulary; marked as discarded"
+        ]
+        assert len(details) == 2

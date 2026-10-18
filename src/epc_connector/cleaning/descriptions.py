@@ -11,7 +11,7 @@ from typing import Any, Final
 
 import polars as pl
 
-from epc_connector.cleaning.text import Nation, normalise, phrases, split_elements
+from epc_connector.cleaning.text import normalise, phrases, split_elements
 from epc_connector.cleaning.vocabulary import (
     DEFAULT_VOCABULARIES_DIR,
     NUMBER_PLACEHOLDER,
@@ -20,17 +20,19 @@ from epc_connector.cleaning.vocabulary import (
     load_vocabulary,
     parse_number,
 )
+from epc_connector.datasets import Origin
+from epc_connector.errors import EpcConnectorError
 
 logger = logging.getLogger(__name__)
 
 _NUMBER: Final = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?(?![\w.])")
 
 
-class UnknownPhraseError(ValueError):
+class UnknownPhraseError(EpcConnectorError, ValueError):
     """Phrases that no vocabulary entry lists."""
 
 
-class PhraseConflictError(ValueError):
+class PhraseConflictError(EpcConnectorError, ValueError):
     """Two phrases of one element give a field different values."""
 
 
@@ -61,7 +63,7 @@ class CleanedDescription:
 def clean_description(
     raw: str,
     element: Element | str,
-    nation: Nation | str,
+    origin: Origin | str,
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
 ) -> CleanedDescription:
     """
@@ -76,7 +78,7 @@ def clean_description(
     """
     vocabulary = load_vocabulary(element, vocabularies_dir)
     cleaned = CleanedDescription()
-    for part in split_elements(raw, nation):
+    for part in split_elements(raw, origin):
         text = normalise(part)
         if not text:
             continue
@@ -105,7 +107,7 @@ def clean_description(
 def clean_values(
     values: Iterable[str | None],
     element: Element | str,
-    nation: Nation | str,
+    origin: Origin | str,
     *,
     strict: bool = True,
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
@@ -131,7 +133,7 @@ def clean_values(
         if raw is None:
             continue
         try:
-            cleaned = clean_description(raw, element, nation, vocabularies_dir)
+            cleaned = clean_description(raw, element, origin, vocabularies_dir)
         except (UnknownPhraseError, PhraseConflictError) as error:
             problems.append(str(error))
             cleaned = CleanedDescription(discarded="not in vocabulary")
@@ -145,8 +147,14 @@ def clean_values(
         raise UnknownPhraseError(
             f"{len(problems)} descriptions not covered:\n" + "\n".join(problems)
         )
+    if problems:
+        logger.warning(
+            "%d %s descriptions are not in the vocabulary; marked as discarded",
+            len(problems),
+            element,
+        )
     for problem in problems:
-        logger.warning("Not in vocabulary: %s", problem)
+        logger.debug("Not in the %s vocabulary: %s", element, problem)
     return pl.DataFrame(rows, schema={"raw": pl.String, **vocabulary.columns})
 
 
@@ -185,7 +193,7 @@ def _lookup(phrase: str, vocabulary: Vocabulary, raw: str) -> Mapping[str, Any]:
 def _give(
     fields: dict[str, Any], name: str, value: Any, vocabulary: Vocabulary, raw: str
 ) -> None:
-    """Set a field, sending a second, different value to its second-value field."""
+    """Set a field; a second, different value goes to its second field."""
     if fields.get(name, value) != value:
         second = vocabulary.second_value_fields.get(name)
         if second is None:

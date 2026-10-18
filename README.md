@@ -7,22 +7,48 @@ Scotland into one Great Britain Parquet file.
 
 ```bash
 uv sync
-uv run epc-connector setup                           # everything below in one go: download both nations, merge
-uv run epc-connector download scotland
-uv run epc-connector download england-and-wales      # API token in EPB_API_TOKEN or .env
-uv run epc-connector merge                           # data/domestic_epc_certificate_gb.parquet
-uv run epc-connector update england-and-wales --date-from 2026-09-01
-uv run epc-connector coverage --element walls        # vocabulary coverage of the raw descriptions
+uv run epc-connector setup                                       # download what is missing, then build the GB file
+uv run epc-connector setup --origin scotland --segment domestic  # one dataset; replaces its rows in the GB file
+uv run epc-connector update --date-from 2026-09-01               # refresh downloaded datasets, then the GB file
+uv run epc-connector status                                      # which datasets and GB files are set up
+uv run epc-connector coverage --element walls                    # vocabulary coverage of the raw descriptions
 ```
+
+`--origin` is `england-and-wales` (`england` and `wales` mean the same), `scotland` or `gb` (both, the default);
+`--segment` is any of `domestic`, `non-domestic` and `display` (default: all). Only domestic data has a GB file
+(`domestic_epc_certificate_gb.parquet`); non-domestic and display certificates are downloaded but not merged yet. The
+England and Wales API token is read from `EPB_API_TOKEN` or `.env`.
+
+Every command takes `--debug` to show every log message (HTTP requests, archive members, temporary files) and
+`--log-file PATH` to append every message, debug ones included, to a file whatever the console shows.
 
 `uv run epc-connector <command> --help` lists each command's options; `python -m epc_connector` works too. Each step
 runs in its own process, so memory is released between steps.
 
+## Where the data lives
+
+Data goes to `.epc_data/` in the directory you run from, so each project keeps its own copy next to its `.venv`. When
+the package creates the folder it puts a `.gitignore` (`*`) and a `CACHEDIR.TAG` in it, so git and backup tools skip it
+without any change to your project. Running `setup` again only downloads what is missing (`--force` downloads everything
+again); `update` refreshes what is there.
+
+To share one copy between projects, set `EPC_CONNECTOR_DATA_DIR` to a directory, for example in your shell profile.
+`--data-dir` (or `data_dir=` in Python) overrides both. Downloads are staged in `.staging/` inside the data directory,
+which is removed when each step ends; `--staging-dir` puts it elsewhere.
+
 ## Python
 
 ```python
-from epc_connector import download_scotland_epc, merge_gb_domestic_epc
+from epc_connector import build_gb, download, replace_origin_in_gb, update
 
-download_scotland_epc("domestic")
-merge_gb_domestic_epc()
+download("scotland", "domestic")
+download("england-and-wales", "domestic")  # API token in EPB_API_TOKEN or .env
+build_gb()  # .epc_data/domestic_epc_certificate_gb.parquet
+
+update("scotland", "domestic", date_from="2026-07-01")
+replace_origin_in_gb("scotland")  # the England and Wales rows are kept
 ```
+
+`clean_domestic_epc(origin)` returns one origin's raw domestic file with its descriptions cleaned, as a Polars lazy
+frame. `Origin` and `Segment` name the datasets; plain strings such as `"scotland"` work too. Every error the package
+raises on purpose is an `EpcConnectorError`.

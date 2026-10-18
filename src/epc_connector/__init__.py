@@ -1,44 +1,36 @@
 """
 Download, update, clean and merge UK domestic Energy Performance Certificates.
 
-Typical use, writing Parquet files to ``data/``::
+Typical use, writing Parquet files to ``.epc_data/`` (see ``locations``)::
 
-    from epc_connector import (
-        download_england_and_wales_epc,
-        download_scotland_epc,
-        merge_gb_domestic_epc,
-    )
+    from epc_connector import build_gb, download, replace_origin_in_gb, update
 
-    download_scotland_epc("domestic")
-    download_england_and_wales_epc("domestic")  # token in EPB_API_TOKEN
-    merge_gb_domestic_epc()  # data/domestic_epc_certificate_gb.parquet
+    download("scotland", "domestic")
+    download("england-and-wales", "domestic")  # token in EPB_API_TOKEN
+    build_gb()  # .epc_data/domestic_epc_certificate_gb.parquet
 
-``update_scotland_epc`` and ``update_england_and_wales_epc`` refresh a
-downloaded file; ``clean_domestic_epc`` returns one nation's raw file with its
-descriptions cleaned, as a lazy frame.
+    update("scotland", "domestic", date_from="2026-07-01")
+    replace_origin_in_gb("scotland")  # the England and Wales rows are kept
+
+``clean_domestic_epc`` returns one origin's raw file with its descriptions
+cleaned, as a lazy frame. Every error the package raises on purpose is an
+``EpcConnectorError``. The ``epc-connector`` command line wraps these
+functions; see ``epc_connector.pipeline``.
 """
 
-from epc_connector.cleaning import Nation, clean_domestic_epc
-from epc_connector.external.england_wales_epc import (
-    EnglandWalesEpcDataset,
-    download_england_and_wales_epc,
-    update_england_and_wales_epc,
-)
-from epc_connector.external.scotland_epc import (
-    ScotlandEpcDataset,
-    download_scotland_epc,
-    update_scotland_epc,
-)
-from epc_connector.merge import merge_gb_domestic_epc
+from epc_connector.canonical import build_gb, replace_origin_in_gb
+from epc_connector.cleaning import clean_domestic_epc
+from epc_connector.datasets import Origin, Segment
+from epc_connector.errors import EpcConnectorError
+from epc_connector.sources import download, update
 
 __all__ = [
-    "EnglandWalesEpcDataset",
-    "Nation",
-    "ScotlandEpcDataset",
+    "EpcConnectorError",
+    "Origin",
+    "Segment",
+    "build_gb",
     "clean_domestic_epc",
-    "download_england_and_wales_epc",
-    "download_scotland_epc",
-    "merge_gb_domestic_epc",
-    "update_england_and_wales_epc",
-    "update_scotland_epc",
+    "download",
+    "replace_origin_in_gb",
+    "update",
 ]

@@ -2,18 +2,30 @@
 Shared pytest fixtures.
 """
 
+import logging
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
-from epc_connector import ingest
+from epc_connector.locations import DATA_DIR_ENV_VAR
+from epc_connector.pipeline import logs
+from epc_connector.storage import downloads
 from tests.fakes import write_7z, write_vocabularies, yearly_members
+
+
+@pytest.fixture(autouse=True)
+def default_data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """Point the default data directory at ``tmp_path``, never the project."""
+    path = tmp_path / "default-data"
+    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(path))
+    return path
 
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch: pytest.MonkeyPatch) -> None:
     """Retry immediately instead of backing off."""
-    monkeypatch.setattr(ingest, "RETRY_BASE_DELAY_SECONDS", 0.0)
+    monkeypatch.setattr(downloads, "RETRY_BASE_DELAY_SECONDS", 0.0)
 
 
 @pytest.fixture
@@ -24,5 +36,20 @@ def yearly_archive(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def vocabularies(tmp_path: Path) -> Path:
-    """Small walls and main-heating vocabularies (see ``fakes.write_vocabularies``)."""
+    """Small walls and main-heating vocabularies (see ``fakes``)."""
     return write_vocabularies(tmp_path / "vocabularies")
+
+
+@pytest.fixture
+def restore_logging() -> Iterator[None]:
+    """Undo ``pipeline.logs.configure_logging`` after the test."""
+    root = logging.getLogger()
+    handlers, level = root.handlers[:], root.level
+    yield
+    for handler in root.handlers:
+        if handler not in handlers:
+            handler.close()
+    root.handlers[:] = handlers
+    root.setLevel(level)
+    for name in logs.QUIET_LOGGERS:
+        logging.getLogger(name).setLevel(logging.NOTSET)

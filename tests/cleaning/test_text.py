@@ -4,10 +4,11 @@ Tests for ``epc_connector.cleaning.text``.
 
 import pytest
 
-from epc_connector.cleaning.text import Nation, normalise, split_elements
+from epc_connector.cleaning.text import normalise, split_elements
+from epc_connector.datasets import Origin
 
-EW = Nation.ENGLAND_AND_WALES
-SCOTLAND = Nation.SCOTLAND
+EW = Origin.ENGLAND_AND_WALES
+SCOTLAND = Origin.SCOTLAND
 
 
 class TestSplitElements:

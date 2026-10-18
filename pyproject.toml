@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-epc-connector = "epc_connector.__main__:main"
+epc-connector = "epc_connector.pipeline.cli:main"
 
 [dependency-groups]
 dev = [
@@ -41,6 +41,11 @@ deprecateTypingAliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# An unclosed file or handler fails the test instead of only warning.
+filterwarnings = [
+    "error::ResourceWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
 
 [tool.ruff]
 line-length = 88
@@ -49,6 +54,10 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.pycodestyle]
+# Code wraps at 88 (black); docstrings and comments at 79 (PEP 8).
+max-doc-length = 79
 
 [tool.ruff.lint.isort]
 known-first-party = ["epc_connector"]

@@ -10,9 +10,3 @@ wheels/
 .venv
 
 .env
-
-data/*
-!data/.gitkeep
-
-# Temporary download and extraction workspace
-.staging/

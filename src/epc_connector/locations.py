@@ -1,0 +1,76 @@
+"""
+Where the package keeps its data when no directory is given.
+
+Downloads go to ``.epc_data/`` in the working directory, so each project
+keeps its own copy next to its ``.venv`` and a second ``setup`` finds it
+there. Set ``EPC_CONNECTOR_DATA_DIR`` to share one copy between projects.
+
+When the package creates a data directory it adds a ``.gitignore`` holding
+``*`` and a ``CACHEDIR.TAG``, so version control and backup tools skip it,
+as with ``.pytest_cache``. Existing directories and files are left as they
+are.
+"""
+
+import os
+from pathlib import Path
+from typing import Final
+
+DATA_DIR_ENV_VAR: Final = "EPC_CONNECTOR_DATA_DIR"
+"""Environment variable naming the data directory."""
+DEFAULT_DATA_DIR: Final = Path(".epc_data")
+"""Data directory, relative to the working directory, if none is given."""
+STAGING_DIR_NAME: Final = ".staging"
+"""Default staging directory, inside the data directory."""
+GITIGNORE_TEXT: Final = "# Created by epc-connector: downloaded data.\n*\n"
+"""Contents of the ``.gitignore`` written into a new data directory."""
+CACHEDIR_TAG_TEXT: Final = (
+    "Signature: 8a477f597d28d172789f06886806bc55\n"
+    "# This file is a cache directory tag created by epc-connector.\n"
+    "# For information about cache directory tags, see:\n"
+    "#\thttps://bford.info/cachedir/\n"
+)
+"""Contents of the ``CACHEDIR.TAG`` written into a new data directory."""
+
+
+def resolve_data_dir(data_dir: Path | str | None = None) -> Path:
+    """
+    Return the data directory to use.
+
+    In order: ``data_dir`` if given, then ``EPC_CONNECTOR_DATA_DIR`` if set,
+    then ``.epc_data`` in the working directory. ``~`` is expanded.
+    """
+    if data_dir is None:
+        data_dir = os.environ.get(DATA_DIR_ENV_VAR) or DEFAULT_DATA_DIR
+    return Path(data_dir).expanduser()
+
+
+def resolve_staging_dir(staging_dir: Path | str | None, data_dir: Path) -> Path:
+    """
+    Return ``staging_dir``, or ``.staging`` inside ``data_dir`` if ``None``.
+
+    Inside the data directory, staging is on the same disk, so finished
+    files are moved into place by a rename.
+    """
+    if staging_dir is None:
+        return data_dir / STAGING_DIR_NAME
+    return Path(staging_dir).expanduser()
+
+
+def prepare_data_dir(data_dir: Path) -> Path:
+    """
+    Create ``data_dir`` if it is missing, marked as ignorable; return it.
+
+    A new directory gets a ``.gitignore`` holding ``*`` and a
+    ``CACHEDIR.TAG``. An existing directory is not changed.
+    """
+    try:
+        data_dir.mkdir(parents=True)
+    except FileExistsError:
+        return data_dir
+    for name, text in [
+        (".gitignore", GITIGNORE_TEXT),
+        ("CACHEDIR.TAG", CACHEDIR_TAG_TEXT),
+    ]:
+        with (data_dir / name).open("x", encoding="ascii") as marker:
+            marker.write(text)
+    return data_dir
