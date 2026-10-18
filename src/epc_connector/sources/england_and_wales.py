@@ -52,7 +52,6 @@ from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
 
 logger = logging.getLogger(__name__)
 
-
 API_URL: Final = "https://api.get-energy-performance-data.communities.gov.uk"
 """Base URL of the Get energy performance of buildings data API."""
 DOMESTIC_URL: Final = f"{API_URL}/api/files/domestic/csv"

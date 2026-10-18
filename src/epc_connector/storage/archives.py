@@ -5,6 +5,7 @@ Members are written straight to disk through ``StreamingFile``, so neither
 memory nor the page cache grows with the archive's size.
 """
 
+import contextlib
 import io
 import logging
 import shutil
@@ -68,9 +69,8 @@ def extract_files(
             names = _select(list(sizes), suffix, include)
             check_free_space(destination, sum(sizes[name] for name in names))
             if names:
-                archive.extract(
-                    path=destination, targets=names, factory=_StreamingWriterFactory()
-                )
+                with contextlib.closing(_StreamingWriterFactory()) as factory:
+                    archive.extract(path=destination, targets=names, factory=factory)
     elif zipfile.is_zipfile(archive_path):
         with zipfile.ZipFile(archive_path) as archive:
             sizes = {i.filename: i.file_size for i in archive.infolist()}
@@ -185,5 +185,20 @@ class _StreamingWriter(Py7zIO):
 
 
 class _StreamingWriterFactory(WriterFactory):
+    """
+    Creates ``_StreamingWriter`` objects and closes them all on ``close``.
+
+    py7zr leaves the member being written open when extraction fails.
+    """
+
+    def __init__(self) -> None:
+        self._writers: list[_StreamingWriter] = []
+
     def create(self, filename: str) -> Py7zIO:
-        return _StreamingWriter(Path(filename))
+        writer = _StreamingWriter(Path(filename))
+        self._writers.append(writer)
+        return writer
+
+    def close(self) -> None:
+        for writer in self._writers:
+            writer.close()

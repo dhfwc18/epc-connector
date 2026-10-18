@@ -41,6 +41,11 @@ deprecateTypingAliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# An unclosed file or handler fails the test instead of only warning.
+filterwarnings = [
+    "error::ResourceWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
 
 [tool.ruff]
 line-length = 88

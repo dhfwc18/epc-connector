@@ -77,6 +77,27 @@ class TestConfigureLogging:
 
         assert capsys.readouterr().err.count("once") == 1
 
+    def test_calling_again_closes_the_previous_log_file(self, tmp_path: Path) -> None:
+        logs.configure_logging(logs.LogOptions(log_file=tmp_path / "run.log"))
+        [log_file] = [
+            h for h in logging.getLogger().handlers if h.get_name() == logs.FILE_HANDLER
+        ]
+
+        logs.configure_logging()
+
+        assert log_file not in logging.getLogger().handlers
+        assert isinstance(log_file, logging.FileHandler)
+        assert log_file.stream is None
+
+    def test_handlers_added_by_others_are_kept(self) -> None:
+        other = logging.NullHandler()
+        logging.getLogger().addHandler(other)
+
+        logs.configure_logging()
+        logs.configure_logging()
+
+        assert other in logging.getLogger().handlers
+
     def test_query_of_signed_urls_is_hidden(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:

@@ -33,6 +33,10 @@ DETAILED_FORMAT: Final = (
 """Line format of ``--debug`` and of the log file."""
 QUIET_LOGGERS: Final = ("httpcore",)
 """Libraries whose ``DEBUG`` lines are too low-level even for ``--debug``."""
+CONSOLE_HANDLER: Final = "epc_connector.console"
+"""Name of the console handler ``configure_logging`` adds."""
+FILE_HANDLER: Final = "epc_connector.log_file"
+"""Name of the log file handler ``configure_logging`` adds."""
 
 
 @dataclass(frozen=True)
@@ -55,9 +59,6 @@ class LogOptions:
 DEFAULT_LOG_OPTIONS: Final = LogOptions()
 """Package milestones and all warnings on the console; no log file."""
 
-# Handlers added by configure_logging, replaced when it is called again.
-_handlers: list[logging.Handler] = []
-
 
 def configure_logging(options: LogOptions = DEFAULT_LOG_OPTIONS) -> None:
     """
@@ -67,12 +68,13 @@ def configure_logging(options: LogOptions = DEFAULT_LOG_OPTIONS) -> None:
     handlers added by others (e.g. pytest) are left alone.
     """
     root = logging.getLogger()
-    for handler in _handlers:
+    ours = (CONSOLE_HANDLER, FILE_HANDLER)
+    for handler in [h for h in root.handlers if h.get_name() in ours]:
         root.removeHandler(handler)
         handler.close()
-    _handlers.clear()
 
     console = logging.StreamHandler()
+    console.set_name(CONSOLE_HANDLER)
     if options.debug:
         console.setLevel(logging.DEBUG)
         console.setFormatter(logging.Formatter(DETAILED_FORMAT))
@@ -80,15 +82,16 @@ def configure_logging(options: LogOptions = DEFAULT_LOG_OPTIONS) -> None:
         console.setLevel(logging.INFO)
         console.setFormatter(logging.Formatter(CONSOLE_FORMAT, CONSOLE_DATE_FORMAT))
         console.addFilter(_package_or_warning)
-    _handlers.append(console)
+    handlers: list[logging.Handler] = [console]
     if options.log_file is not None:
         options.log_file.parent.mkdir(parents=True, exist_ok=True)
         log_file = logging.FileHandler(options.log_file, encoding="utf-8")
+        log_file.set_name(FILE_HANDLER)
         log_file.setLevel(logging.DEBUG)
         log_file.setFormatter(logging.Formatter(DETAILED_FORMAT))
-        _handlers.append(log_file)
+        handlers.append(log_file)
 
-    for handler in _handlers:
+    for handler in handlers:
         handler.addFilter(_hide_url_signatures)
         root.addHandler(handler)
     detailed = options.debug or options.log_file is not None

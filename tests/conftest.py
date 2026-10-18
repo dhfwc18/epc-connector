@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from epc_connector.pipeline import logs
 from epc_connector.storage import downloads
 from tests.fakes import write_7z, write_vocabularies, yearly_members
 
@@ -41,4 +42,5 @@ def restore_logging() -> Iterator[None]:
             handler.close()
     root.handlers[:] = handlers
     root.setLevel(level)
-    logging.getLogger("httpcore").setLevel(logging.NOTSET)
+    for name in logs.QUIET_LOGGERS:
+        logging.getLogger(name).setLevel(logging.NOTSET)

@@ -44,7 +44,6 @@ from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
 
 logger = logging.getLogger(__name__)
 
-
 CKAN_API_URL: Final = "https://api.data.gov.scot/api/3/action"
 """Base URL of the data.gov.scot CKAN API."""
 DOMESTIC_URL: Final = (
