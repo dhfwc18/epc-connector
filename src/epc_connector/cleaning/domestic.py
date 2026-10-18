@@ -8,12 +8,11 @@ from typing import Final
 import polars as pl
 
 from epc_connector.cleaning.descriptions import clean_values
-from epc_connector.cleaning.text import Nation
 from epc_connector.cleaning.vocabulary import DEFAULT_VOCABULARIES_DIR, Element
 from epc_connector.datasets import Origin, Segment, get_dataset
 
-SOURCE_COLUMNS: Final[dict[Nation, dict[Element, str]]] = {
-    Nation.ENGLAND_AND_WALES: {
+SOURCE_COLUMNS: Final[dict[Origin, dict[Element, str]]] = {
+    Origin.ENGLAND_AND_WALES: {
         Element.WALLS: "walls_description",
         Element.ROOF: "roof_description",
         Element.FLOOR: "floor_description",
@@ -26,7 +25,7 @@ SOURCE_COLUMNS: Final[dict[Nation, dict[Element, str]]] = {
         Element.SECONDARY_HEATING: "secondheat_description",
         Element.MAIN_FUEL: "main_fuel",
     },
-    Nation.SCOTLAND: {
+    Origin.SCOTLAND: {
         Element.WALLS: "WALL_DESCRIPTION",
         Element.ROOF: "ROOF_DESCRIPTION",
         Element.FLOOR: "FLOOR_DESCRIPTION",
@@ -40,17 +39,11 @@ SOURCE_COLUMNS: Final[dict[Nation, dict[Element, str]]] = {
         Element.MAIN_FUEL: "MAIN_FUEL",
     },
 }
-"""Domestic source column holding each element's description, by nation."""
-
-RAW_PARQUET_NAMES: Final[dict[Nation, str]] = {
-    nation: get_dataset(Origin(nation), Segment.DOMESTIC).parquet_name
-    for nation in Nation
-}
-"""Raw domestic file name, by nation."""
+"""Domestic source column holding each element's description, by origin."""
 
 
 def clean_domestic_epc(
-    nation: Nation | str,
+    origin: Origin | str,
     *,
     data_dir: Path | str = "data",
     strict: bool = True,
@@ -59,15 +52,15 @@ def clean_domestic_epc(
     """
     Return a raw domestic file with its descriptions cleaned, as a lazy frame.
 
-    Every column of ``data/domestic_epc_certificate_<nation>.parquet`` is kept,
-    in order, except that each description column is replaced by its
+    Every column of the origin's raw domestic file (``datasets.DATASETS``) is
+    kept, in order, except that each description column is replaced by its
     element's output columns (``Vocabulary.columns``). The distinct
     descriptions are read in one streaming pass and cleaned once; the frame
     joins them back, so nothing else is read until it is collected or sunk.
 
     Parameters
     ----------
-    nation
+    origin
         ``"england-and-wales"`` or ``"scotland"``.
     data_dir
         Directory holding the raw file.
@@ -82,11 +75,10 @@ def clean_domestic_epc(
     UnknownPhraseError
         In strict mode, if the vocabularies do not cover a description.
     """
-    nation = Nation(nation)
-    elements = {column: element for element, column in SOURCE_COLUMNS[nation].items()}
-    source = pl.scan_parquet(
-        Path(data_dir) / RAW_PARQUET_NAMES[nation], low_memory=True
-    )
+    dataset = get_dataset(origin, Segment.DOMESTIC)
+    columns = SOURCE_COLUMNS[dataset.origin]
+    elements = {column: element for element, column in columns.items()}
+    source = pl.scan_parquet(dataset.path(data_dir), low_memory=True)
     distinct = source.select(
         pl.col(column).unique().implode() for column in elements
     ).collect(engine="streaming")
@@ -99,7 +91,7 @@ def clean_domestic_epc(
         table = clean_values(
             distinct[column][0],
             elements[column],
-            nation,
+            dataset.origin,
             strict=strict,
             vocabularies_dir=vocabularies_dir,
         ).rename({"raw": column})

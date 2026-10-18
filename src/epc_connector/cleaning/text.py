@@ -4,25 +4,9 @@ Split and normalise raw description text, before any vocabulary is used.
 
 import html
 import re
-from enum import StrEnum
 from typing import Final
 
-
-class Nation(StrEnum):
-    """
-    Source nation, which decides what ``|`` means in a description.
-
-    Attributes
-    ----------
-    ENGLAND_AND_WALES
-        ``|`` separates English from Welsh text.
-    SCOTLAND
-        ``|`` separates building parts (main building, then extensions).
-    """
-
-    ENGLAND_AND_WALES = "england-and-wales"
-    SCOTLAND = "scotland"
-
+from epc_connector.datasets import Origin
 
 # UTF-8 text that was decoded as Windows-1252 somewhere upstream.
 _MISDECODED: Final = {
@@ -46,16 +30,18 @@ _COMMA: Final = re.compile(r"\s*,\s*")
 _SPACES: Final = re.compile(r"\s+")
 
 
-def split_elements(raw: str, nation: Nation | str) -> list[str]:
+def split_elements(raw: str, origin: Origin | str) -> list[str]:
     """
     Return the elements of a raw description, before normalisation.
 
-    England and Wales: the English text of a bilingual value. Two parts give
+    ``|`` means something different for each origin. England and Wales: it
+    separates English from Welsh, so the English text is kept. Two parts give
     the first; more parts alternate English and Welsh phrase by phrase, so the
-    English is every other part joined. Scotland: one element per building
-    part, in order (an empty part stays as ``""``).
+    English is every other part joined. Scotland: it separates building parts
+    (main building, then extensions), so each part is one element, in order
+    (an empty part stays as ``""``).
     """
-    if Nation(nation) is Nation.SCOTLAND:
+    if Origin(origin) is Origin.SCOTLAND:
         return [part.strip() for part in raw.strip().split("|")]
     parts = raw.split("|")
     if len(parts) == 1:

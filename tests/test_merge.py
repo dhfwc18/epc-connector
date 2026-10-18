@@ -9,8 +9,11 @@ import polars as pl
 import pytest
 
 from epc_connector import merge
-from epc_connector.cleaning import Nation
-from epc_connector.datasets import LAST_UPDATED_METADATA_KEY, RELEASE_METADATA_KEY
+from epc_connector.datasets import (
+    LAST_UPDATED_METADATA_KEY,
+    RELEASE_METADATA_KEY,
+    Origin,
+)
 from epc_connector.mapping import MappingError, canonical_dtypes
 from tests.fakes import write_raw_domestic
 
@@ -44,12 +47,12 @@ def data_dir(tmp_path: Path) -> Path:
     data_dir = tmp_path / "data"
     write_raw_domestic(
         data_dir,
-        Nation.ENGLAND_AND_WALES,
+        Origin.ENGLAND_AND_WALES,
         [ENGLAND_AND_WALES_ROW],
         {LAST_UPDATED_METADATA_KEY: "2026-10-01"},
     )
     write_raw_domestic(
-        data_dir, Nation.SCOTLAND, [SCOTLAND_ROW], {RELEASE_METADATA_KEY: "2026q2"}
+        data_dir, Origin.SCOTLAND, [SCOTLAND_ROW], {RELEASE_METADATA_KEY: "2026q2"}
     )
     return data_dir
 
@@ -107,7 +110,7 @@ class TestMergeGbDomesticEpc:
         self, data_dir: Path, tmp_path: Path
     ) -> None:
         row = SCOTLAND_ROW | {"CONSTRUCTION_AGE_BAND": "1700s"}
-        write_raw_domestic(data_dir, Nation.SCOTLAND, [row], {})
+        write_raw_domestic(data_dir, Origin.SCOTLAND, [row], {})
 
         with pytest.raises(MappingError, match="1700s"):
             merge_into(data_dir, tmp_path)

@@ -10,7 +10,7 @@ from typing import Any
 import pytest
 
 from epc_connector import __main__ as cli
-from epc_connector.cleaning import Nation
+from epc_connector.datasets import Origin
 from epc_connector.sources import england_and_wales, scotland
 from tests.fakes import write_raw_domestic
 
@@ -136,7 +136,7 @@ class TestMain:
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         rows = [{"MAIN_FUEL": "mains gas (not community)"}, {"MAIN_FUEL": ""}]
-        write_raw_domestic(tmp_path, Nation.SCOTLAND, rows, {})
+        write_raw_domestic(tmp_path, Origin.SCOTLAND, rows, {})
 
         status = cli.main(
             [

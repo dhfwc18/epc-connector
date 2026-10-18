@@ -11,7 +11,7 @@ from typing import Any, Final
 
 import polars as pl
 
-from epc_connector.cleaning.text import Nation, normalise, phrases, split_elements
+from epc_connector.cleaning.text import normalise, phrases, split_elements
 from epc_connector.cleaning.vocabulary import (
     DEFAULT_VOCABULARIES_DIR,
     NUMBER_PLACEHOLDER,
@@ -20,6 +20,7 @@ from epc_connector.cleaning.vocabulary import (
     load_vocabulary,
     parse_number,
 )
+from epc_connector.datasets import Origin
 from epc_connector.errors import EpcConnectorError
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class CleanedDescription:
 def clean_description(
     raw: str,
     element: Element | str,
-    nation: Nation | str,
+    origin: Origin | str,
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
 ) -> CleanedDescription:
     """
@@ -77,7 +78,7 @@ def clean_description(
     """
     vocabulary = load_vocabulary(element, vocabularies_dir)
     cleaned = CleanedDescription()
-    for part in split_elements(raw, nation):
+    for part in split_elements(raw, origin):
         text = normalise(part)
         if not text:
             continue
@@ -106,7 +107,7 @@ def clean_description(
 def clean_values(
     values: Iterable[str | None],
     element: Element | str,
-    nation: Nation | str,
+    origin: Origin | str,
     *,
     strict: bool = True,
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
@@ -132,7 +133,7 @@ def clean_values(
         if raw is None:
             continue
         try:
-            cleaned = clean_description(raw, element, nation, vocabularies_dir)
+            cleaned = clean_description(raw, element, origin, vocabularies_dir)
         except (UnknownPhraseError, PhraseConflictError) as error:
             problems.append(str(error))
             cleaned = CleanedDescription(discarded="not in vocabulary")

@@ -33,6 +33,7 @@ from typing import Any, Final
 import polars as pl
 
 from epc_connector import cleaning, merge_gb_domestic_epc
+from epc_connector.datasets import Origin, Segment, get_dataset
 from epc_connector.sources import england_and_wales, scotland
 from epc_connector.sources.england_and_wales import authorised_client
 
@@ -213,8 +214,8 @@ def _merge(args: argparse.Namespace) -> int:
 
 def _coverage(args: argparse.Namespace) -> int:
     elements = [cleaning.Element(e) for e in args.element or list(cleaning.Element)]
-    for nation in map(cleaning.Nation, args.nation):
-        path = args.data_dir / cleaning.RAW_PARQUET_NAMES[nation]
+    for nation in map(Origin, args.nation):
+        path = get_dataset(nation, Segment.DOMESTIC).path(args.data_dir)
         for element in elements:
             column = cleaning.SOURCE_COLUMNS[nation][element]
             counts = (

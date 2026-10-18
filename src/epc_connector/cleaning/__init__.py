@@ -43,19 +43,15 @@ from epc_connector.cleaning.descriptions import (
     clean_values,
 )
 from epc_connector.cleaning.domestic import (
-    RAW_PARQUET_NAMES,
     SOURCE_COLUMNS,
     clean_domestic_epc,
 )
-from epc_connector.cleaning.text import Nation
 from epc_connector.cleaning.vocabulary import Element, Vocabulary, load_vocabulary
 
 __all__ = [
-    "RAW_PARQUET_NAMES",
     "SOURCE_COLUMNS",
     "CleanedDescription",
     "Element",
-    "Nation",
     "PhraseConflictError",
     "UnknownPhraseError",
     "Vocabulary",

@@ -8,16 +8,16 @@ import polars as pl
 import pytest
 
 from epc_connector.cleaning import descriptions
-from epc_connector.cleaning.text import Nation
+from epc_connector.datasets import Origin
 
-EW = Nation.ENGLAND_AND_WALES
-SCOTLAND = Nation.SCOTLAND
+EW = Origin.ENGLAND_AND_WALES
+SCOTLAND = Origin.SCOTLAND
 
 
 def clean(
-    raw: str, element: str, directory: Path, nation: Nation = EW
+    raw: str, element: str, directory: Path, origin: Origin = EW
 ) -> descriptions.CleanedDescription:
-    return descriptions.clean_description(raw, element, nation, directory)
+    return descriptions.clean_description(raw, element, origin, directory)
 
 
 class TestCleanDescription:

@@ -9,11 +9,11 @@ import jsonschema
 import pytest
 
 from epc_connector.cleaning import descriptions, vocabulary
-from epc_connector.cleaning.text import Nation
 from epc_connector.cleaning.vocabulary import Element
+from epc_connector.datasets import Origin
 
-EW = Nation.ENGLAND_AND_WALES
-SCOTLAND = Nation.SCOTLAND
+EW = Origin.ENGLAND_AND_WALES
+SCOTLAND = Origin.SCOTLAND
 
 
 class TestLoadVocabulary:
@@ -42,7 +42,7 @@ class TestRepositoryVocabularies:
         assert vocabulary.load_vocabulary(element).element == element
 
     @pytest.mark.parametrize(
-        ("raw", "element", "nation", "expected"),
+        ("raw", "element", "origin", "expected"),
         [
             (
                 "Average thermal transmittance 0.30 W/m&#0178;K",
@@ -119,12 +119,12 @@ class TestRepositoryVocabularies:
         ],
     )
     def test_published_value_is_cleaned(
-        self, raw: str, element: str, nation: Nation, expected: dict
+        self, raw: str, element: str, origin: Origin, expected: dict
     ) -> None:
-        assert descriptions.clean_description(raw, element, nation).fields == expected
+        assert descriptions.clean_description(raw, element, origin).fields == expected
 
     @pytest.mark.parametrize(
-        ("raw", "element", "nation", "reason"),
+        ("raw", "element", "origin", "reason"),
         [
             (
                 "\N{LATIN CAPITAL LETTER A WITH CIRCUMFLEX}\N{SUPERSCRIPT TWO}K",
@@ -141,9 +141,9 @@ class TestRepositoryVocabularies:
         ],
     )
     def test_publisher_defect_is_discarded_with_its_reason(
-        self, raw: str, element: str, nation: Nation, reason: str
+        self, raw: str, element: str, origin: Origin, reason: str
     ) -> None:
-        result = descriptions.clean_description(raw, element, nation)
+        result = descriptions.clean_description(raw, element, origin)
 
         assert result.fields == {}
         assert result.discarded == reason
