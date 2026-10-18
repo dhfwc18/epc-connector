@@ -25,8 +25,16 @@ runs in its own process, so memory is released between steps.
 ## Python
 
 ```python
-from epc_connector import build_gb, download
+from epc_connector import build_gb, download, replace_origin_in_gb, update
 
 download("scotland", "domestic")
-build_gb()
+download("england-and-wales", "domestic")  # API token in EPB_API_TOKEN or .env
+build_gb()  # data/domestic_epc_certificate_gb.parquet
+
+update("scotland", "domestic", date_from="2026-07-01")
+replace_origin_in_gb("scotland")  # the England and Wales rows are kept
 ```
+
+`clean_domestic_epc(origin)` returns one origin's raw domestic file with its descriptions cleaned, as a Polars lazy
+frame. `Origin` and `Segment` name the datasets; plain strings such as `"scotland"` work too. Every error the package
+raises on purpose is an `EpcConnectorError`.
