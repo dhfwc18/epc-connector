@@ -1,13 +1,13 @@
 """
 Download, update, clean and merge UK domestic Energy Performance Certificates.
 
-Typical use, writing Parquet files to ``data/``::
+Typical use, writing Parquet files to ``.epc_data/`` (see ``locations``)::
 
     from epc_connector import build_gb, download, replace_origin_in_gb, update
 
     download("scotland", "domestic")
     download("england-and-wales", "domestic")  # token in EPB_API_TOKEN
-    build_gb()  # data/domestic_epc_certificate_gb.parquet
+    build_gb()  # .epc_data/domestic_epc_certificate_gb.parquet
 
     update("scotland", "domestic", date_from="2026-07-01")
     replace_origin_in_gb("scotland")  # the England and Wales rows are kept

@@ -8,8 +8,15 @@ import pytest
 
 from epc_connector import sources
 from epc_connector.canonical import gb
-from epc_connector.datasets import DatasetError, Origin, Segment
+from epc_connector.datasets import DatasetError, Origin, Segment, get_dataset
 from epc_connector.pipeline import plan
+
+
+def touch_datasets(data_dir: Path, *names: str) -> None:
+    """Create empty stand-ins for downloads, e.g. ``"scotland/domestic"``."""
+    data_dir.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        get_dataset(*name.split("/")).path(data_dir).touch()
 
 
 def step_summary(work: plan.Plan) -> list[tuple[object, tuple]]:
@@ -47,8 +54,8 @@ class TestPlanSetup:
         ]
         assert work.not_set_up == [Segment.DISPLAY]
 
-    def test_workspace_and_strictness_reach_the_steps(self) -> None:
-        workspace = plan.Workspace(data_dir=Path("elsewhere"), chunk_rows=5)
+    def test_workspace_and_strictness_reach_the_steps(self, tmp_path: Path) -> None:
+        workspace = plan.Workspace.resolve(tmp_path / "elsewhere", chunk_rows=5)
 
         work = plan.plan_setup(
             [Origin.SCOTLAND], [Segment.DOMESTIC], workspace=workspace, strict=False
@@ -57,6 +64,63 @@ class TestPlanSetup:
         download, gb_step = work.steps
         assert download.kwargs == workspace.options()
         assert gb_step.kwargs == workspace.options() | {"strict": False}
+
+    def test_downloaded_datasets_are_skipped(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+        (tmp_path / gb.GB_PARQUET_NAME).touch()
+        workspace = plan.Workspace.resolve(tmp_path)
+
+        work = plan.plan_setup(list(Origin), [Segment.DOMESTIC], workspace=workspace)
+
+        assert [d.name for d in work.skipped] == ["scotland/domestic"]
+        assert step_summary(work) == [
+            (sources.download, (Origin.ENGLAND_AND_WALES, Segment.DOMESTIC)),
+            (gb.replace_origin_in_gb, (Origin.ENGLAND_AND_WALES,)),
+        ]
+
+    def test_everything_downloaded_plans_no_steps(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic", "england-and-wales/domestic")
+        (tmp_path / gb.GB_PARQUET_NAME).touch()
+        workspace = plan.Workspace.resolve(tmp_path)
+
+        work = plan.plan_setup(list(Origin), [Segment.DOMESTIC], workspace=workspace)
+
+        assert work.steps == []
+        assert len(work.skipped) == 2
+
+    def test_missing_gb_file_is_built_from_downloaded_files(
+        self, tmp_path: Path
+    ) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+        workspace = plan.Workspace.resolve(tmp_path)
+
+        work = plan.plan_setup(
+            [Origin.SCOTLAND], [Segment.DOMESTIC], workspace=workspace
+        )
+
+        assert step_summary(work) == [(gb.build_gb, ())]
+
+    def test_force_downloads_again(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+        workspace = plan.Workspace.resolve(tmp_path)
+
+        work = plan.plan_setup(
+            [Origin.SCOTLAND], [Segment.DOMESTIC], workspace=workspace, force=True
+        )
+
+        assert work.skipped == []
+        assert step_summary(work)[0] == (
+            sources.download,
+            (Origin.SCOTLAND, Segment.DOMESTIC),
+        )
+
+    def test_default_workspace_uses_the_default_directories(
+        self, default_data_dir: Path
+    ) -> None:
+        work = plan.plan_setup([Origin.SCOTLAND], [Segment.DOMESTIC])
+
+        assert work.steps[0].kwargs["data_dir"] == default_data_dir
+        assert work.steps[0].kwargs["staging_dir"] == default_data_dir / ".staging"
 
     def test_unpublished_pair_raises(self) -> None:
         with pytest.raises(DatasetError, match="display"):

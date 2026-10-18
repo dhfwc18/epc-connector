@@ -6,7 +6,7 @@ For each origin, the raw file's descriptions are cleaned
 record (``schemas/canonical/gb-domestic.schema.json``) with the origin's
 mapping file, ``<origin>-domestic``. The origins are stacked, England and
 Wales first, and written in one streaming pass to
-``data/domestic_epc_certificate_gb.parquet``.
+``domestic_epc_certificate_gb.parquet`` in the data directory.
 
 ``build_gb`` builds the file from every raw domestic file present.
 ``replace_origin_in_gb`` rebuilds one origin's rows after that origin was
@@ -35,6 +35,7 @@ from epc_connector.canonical.mapping import (
 from epc_connector.cleaning import clean_domestic_epc
 from epc_connector.datasets import Dataset, Origin, Segment, get_dataset
 from epc_connector.errors import EpcConnectorError
+from epc_connector.locations import resolve_data_dir, resolve_staging_dir
 from epc_connector.storage import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
@@ -57,7 +58,7 @@ class GbNotSetUpError(EpcConnectorError, NotImplementedError):
 
 
 def canonical_records(
-    origin: Origin | str, *, data_dir: Path | str = "data", strict: bool = True
+    origin: Origin | str, *, data_dir: Path | str | None = None, strict: bool = True
 ) -> pl.LazyFrame:
     """
     Return one origin's domestic certificates as canonical records, lazily.
@@ -74,6 +75,7 @@ def canonical_records(
         In strict mode, if the vocabularies do not cover a description.
     """
     dataset = get_dataset(origin, Segment.DOMESTIC)
+    data_dir = resolve_data_dir(data_dir)
     mapping = load_mapping(f"{dataset.origin}-{dataset.segment}")
     check_values(pl.scan_parquet(dataset.path(data_dir), low_memory=True), mapping)
     cleaned = clean_domestic_epc(dataset.origin, data_dir=data_dir, strict=strict)
@@ -95,8 +97,8 @@ def require_gb_segment(segment: Segment | str) -> None:
 
 def build_gb(
     *,
-    data_dir: Path | str = "data",
-    staging_dir: Path | str = ".staging",
+    data_dir: Path | str | None = None,
+    staging_dir: Path | str | None = None,
     strict: bool = True,
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
@@ -110,9 +112,11 @@ def build_gb(
     Parameters
     ----------
     data_dir
-        Directory holding the raw files; the GB file is written there.
+        Directory holding the raw files; the GB file is written there. See
+        ``locations.resolve_data_dir``.
     staging_dir
-        Parent of the temporary directory used while writing.
+        Parent of the temporary directory used while writing (default
+        ``<data_dir>/.staging``).
     strict
         Raise if a description is not covered by the vocabularies; if false,
         mark it ``"not in vocabulary"`` and log a warning instead.
@@ -129,7 +133,7 @@ def build_gb(
     FileNotFoundError
         If no raw domestic file is present.
     """
-    data_dir = Path(data_dir)
+    data_dir = resolve_data_dir(data_dir)
     present = [
         dataset for dataset in _domestic_datasets() if _has_file(dataset, data_dir)
     ]
@@ -143,7 +147,7 @@ def build_gb(
     return _write_gb(
         {dataset.origin: None for dataset in present},
         data_dir=data_dir,
-        staging_dir=Path(staging_dir),
+        staging_dir=resolve_staging_dir(staging_dir, data_dir),
         strict=strict,
         chunk_rows=chunk_rows,
         row_group_rows=row_group_rows,
@@ -153,8 +157,8 @@ def build_gb(
 def replace_origin_in_gb(
     origin: Origin | str,
     *,
-    data_dir: Path | str = "data",
-    staging_dir: Path | str = ".staging",
+    data_dir: Path | str | None = None,
+    staging_dir: Path | str | None = None,
     strict: bool = True,
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
@@ -178,7 +182,7 @@ def replace_origin_in_gb(
     Path
         Path of the GB file.
     """
-    data_dir = Path(data_dir)
+    data_dir = resolve_data_dir(data_dir)
     gb_path = data_dir / GB_PARQUET_NAME
     if not gb_path.is_file():
         return build_gb(
@@ -202,7 +206,7 @@ def replace_origin_in_gb(
     return _write_gb(
         sources,
         data_dir=data_dir,
-        staging_dir=Path(staging_dir),
+        staging_dir=resolve_staging_dir(staging_dir, data_dir),
         strict=strict,
         chunk_rows=chunk_rows,
         row_group_rows=row_group_rows,

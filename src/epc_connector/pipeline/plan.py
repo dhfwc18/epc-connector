@@ -4,19 +4,22 @@ Turn a setup or update request into the ordered steps that carry it out.
 A plan downloads (``setup``) or updates (``update``) each selected dataset,
 smallest first, then brings the GB file up to date: one ``build_gb`` when
 every origin's domestic data changed, otherwise ``replace_origin_in_gb`` for
-the origin that did. Segments without a GB file are listed as not set up.
-Plans are plain data, so they can be checked before anything runs.
+the origin that did. ``setup`` skips datasets already in the data directory
+unless forced, so running it again only fills the gaps. Segments without a
+GB file are listed as not set up. Plans are plain data, so they can be
+checked before anything runs.
 """
 
 import datetime as dt
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from epc_connector import sources
 from epc_connector.canonical import gb
 from epc_connector.datasets import Dataset, Origin, Segment, select_datasets
+from epc_connector.locations import resolve_data_dir, resolve_staging_dir
 from epc_connector.storage import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
 
 
@@ -24,6 +27,8 @@ from epc_connector.storage import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
 class Workspace:
     """
     Where the pipeline reads and writes, and its memory limits.
+
+    Build one with ``Workspace.resolve`` to apply the default directories.
 
     Attributes
     ----------
@@ -35,10 +40,33 @@ class Workspace:
         Memory limits; see ``storage.stream_to_parquet``.
     """
 
-    data_dir: Path = Path("data")
-    staging_dir: Path = Path(".staging")
+    data_dir: Path
+    staging_dir: Path
     chunk_rows: int = DEFAULT_CHUNK_ROWS
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS
+
+    @classmethod
+    def resolve(
+        cls,
+        data_dir: Path | str | None = None,
+        staging_dir: Path | str | None = None,
+        *,
+        chunk_rows: int = DEFAULT_CHUNK_ROWS,
+        row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
+    ) -> Self:
+        """
+        Return a workspace, filling in the default directories.
+
+        See ``locations.resolve_data_dir`` and
+        ``locations.resolve_staging_dir``.
+        """
+        resolved = resolve_data_dir(data_dir)
+        return cls(
+            data_dir=resolved,
+            staging_dir=resolve_staging_dir(staging_dir, resolved),
+            chunk_rows=chunk_rows,
+            row_group_rows=row_group_rows,
+        )
 
     def options(self) -> dict[str, Any]:
         """Keyword arguments every download, update and GB function takes."""
@@ -48,10 +76,6 @@ class Workspace:
             "chunk_rows": self.chunk_rows,
             "row_group_rows": self.row_group_rows,
         }
-
-
-DEFAULT_WORKSPACE = Workspace()
-"""``data`` and ``.staging`` under the working directory, default limits."""
 
 
 @dataclass(frozen=True)
@@ -87,39 +111,56 @@ class Plan:
     steps
         Steps to run, in order.
     not_set_up
-        Selected segments that have no GB file yet.
+        Segments of ``datasets`` that have no GB file yet.
+    skipped
+        Selected datasets already downloaded, which ``setup`` leaves alone.
     """
 
     datasets: list[Dataset]
     steps: list[Step]
     not_set_up: list[Segment]
+    skipped: list[Dataset] = field(default_factory=list)
 
 
 def plan_setup(
     origins: Iterable[Origin],
     segments: Iterable[Segment] | None = None,
     *,
-    workspace: Workspace = DEFAULT_WORKSPACE,
+    workspace: Workspace | None = None,
     strict: bool = True,
+    force: bool = False,
 ) -> Plan:
     """
     Plan downloading datasets and bringing the GB file up to date.
+
+    Datasets already in the data directory are skipped unless ``force``.
+    The GB file is built if a domestic dataset was downloaded, or if it is
+    missing although its raw files are there.
 
     Parameters
     ----------
     origins, segments
         Datasets to download; see ``datasets.select_datasets``.
     workspace
-        Directories and memory limits.
+        Directories and memory limits; ``Workspace.resolve()`` if omitted.
     strict
         Whether descriptions the vocabularies do not cover stop the GB step.
+    force
+        Download every selected dataset, even one already downloaded.
 
     Raises
     ------
     DatasetError
         If no published dataset matches.
     """
-    datasets = select_datasets(origins, segments)
+    workspace = workspace or Workspace.resolve()
+    selected = select_datasets(origins, segments)
+    skipped = (
+        [] if force else [d for d in selected if d.path(workspace.data_dir).is_file()]
+    )
+    datasets = [dataset for dataset in selected if dataset not in skipped]
+    gb_missing = not (workspace.data_dir / gb.GB_PARQUET_NAME).is_file()
+    rebuild = gb_missing and any(d.segment in gb.GB_SEGMENTS for d in skipped)
     steps = [
         Step(
             f"download {dataset.name}",
@@ -129,7 +170,8 @@ def plan_setup(
         )
         for dataset in datasets
     ]
-    return _with_gb_steps(datasets, steps, workspace, strict)
+    plan = _with_gb_steps(datasets, steps, workspace, strict, rebuild=rebuild)
+    return replace(plan, skipped=skipped)
 
 
 def plan_update(
@@ -138,7 +180,7 @@ def plan_update(
     *,
     date_from: dt.date | str | None = None,
     date_to: dt.date | str | None = None,
-    workspace: Workspace = DEFAULT_WORKSPACE,
+    workspace: Workspace | None = None,
     strict: bool = True,
 ) -> Plan:
     """
@@ -159,6 +201,7 @@ def plan_update(
     DatasetError
         If no published dataset matches.
     """
+    workspace = workspace or Workspace.resolve()
     datasets = select_datasets(origins, segments)
     window = {"date_from": date_from, "date_to": date_to}
     steps = [
@@ -174,14 +217,23 @@ def plan_update(
 
 
 def _with_gb_steps(
-    datasets: list[Dataset], steps: list[Step], workspace: Workspace, strict: bool
+    datasets: list[Dataset],
+    steps: list[Step],
+    workspace: Workspace,
+    strict: bool,
+    *,
+    rebuild: bool = False,
 ) -> Plan:
-    """Append the step that brings the GB file up to date, if any."""
+    """
+    Append the step that brings the GB file up to date, if any.
+
+    ``rebuild`` builds the GB file even if no domestic dataset changed.
+    """
     changed = [d.origin for d in datasets if d.segment in gb.GB_SEGMENTS]
     not_set_up = [s for s in Segment if s not in gb.GB_SEGMENTS]
     selected = {dataset.segment for dataset in datasets}
     options = workspace.options() | {"strict": strict}
-    if set(changed) == set(Origin):
+    if set(changed) == set(Origin) or (rebuild and not changed):
         steps = [*steps, Step("build GB domestic", gb.build_gb, (), options)]
     elif changed:
         [origin] = changed

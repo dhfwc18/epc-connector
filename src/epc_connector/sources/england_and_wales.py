@@ -34,6 +34,11 @@ from epc_connector.datasets import (
     get_dataset,
     select_datasets,
 )
+from epc_connector.locations import (
+    prepare_data_dir,
+    resolve_data_dir,
+    resolve_staging_dir,
+)
 from epc_connector.sources._shared import as_date, client_or_new
 from epc_connector.storage import (
     DEFAULT_CHUNK_ROWS,
@@ -88,8 +93,8 @@ def download(
     segment: Segment | str,
     *,
     api_token: str | None = None,
-    data_dir: Path | str = "data",
-    staging_dir: Path | str = ".staging",
+    data_dir: Path | str | None = None,
+    staging_dir: Path | str | None = None,
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
     schemas_dir: Path | str = DEFAULT_SCHEMAS_DIR,
@@ -111,9 +116,11 @@ def download(
         API bearer token; defaults to the ``EPB_API_TOKEN`` environment
         variable (or ``.env``). Ignored when ``client`` is given.
     data_dir
-        Directory for the Parquet file.
+        Directory for the Parquet file, created if missing; see
+        ``locations.resolve_data_dir``.
     staging_dir
-        Directory for the archive and extracted CSVs; emptied afterwards.
+        Directory for the archive and extracted CSVs (default
+        ``<data_dir>/.staging``); emptied afterwards.
     chunk_rows, row_group_rows
         Memory limits for the merge; see ``merge_csvs_to_parquet``.
     schemas_dir
@@ -125,7 +132,7 @@ def download(
     -------
     Path
         Path of the Parquet file, e.g.
-        ``data/domestic_epc_certificate_england_wales.parquet``.
+        ``.epc_data/domestic_epc_certificate_england_wales.parquet``.
 
     Raises
     ------
@@ -134,11 +141,13 @@ def download(
     """
     dataset = get_dataset(Origin.ENGLAND_AND_WALES, segment)
     segment = dataset.segment
+    data_dir = prepare_data_dir(resolve_data_dir(data_dir))
+    staging_dir = resolve_staging_dir(staging_dir, data_dir)
     parquet_path = dataset.path(data_dir)
     schema = load_schema(dataset.source_schema(schemas_dir))
     with (
         _api_client(client, api_token) as http,
-        staging_directory(Path(staging_dir), prefix=f"ew-{segment}-") as run_dir,
+        staging_directory(staging_dir, prefix=f"ew-{segment}-") as run_dir,
     ):
         last_updated = fetch_last_updated(segment, http)
         logger.info("Downloading %s (published %s)", dataset.name, last_updated)
@@ -211,8 +220,8 @@ def update(
     date_from: dt.date | str | None = None,
     date_to: dt.date | str | None = None,
     api_token: str | None = None,
-    data_dir: Path | str = "data",
-    staging_dir: Path | str = ".staging",
+    data_dir: Path | str | None = None,
+    staging_dir: Path | str | None = None,
     chunk_rows: int = DEFAULT_CHUNK_ROWS,
     row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
     schemas_dir: Path | str = DEFAULT_SCHEMAS_DIR,
@@ -262,6 +271,8 @@ def update(
     """
     dataset = get_dataset(Origin.ENGLAND_AND_WALES, segment)
     segment = dataset.segment
+    data_dir = resolve_data_dir(data_dir)
+    staging_dir = resolve_staging_dir(staging_dir, data_dir)
     parquet_path = dataset.path(data_dir)
     if not parquet_path.is_file():
         raise FileNotFoundError(f"{parquet_path} not found; download it first")
@@ -276,7 +287,7 @@ def update(
 
     with (
         _api_client(client, api_token) as http,
-        staging_directory(Path(staging_dir), prefix=f"ew-{segment}-") as run_dir,
+        staging_directory(staging_dir, prefix=f"ew-{segment}-") as run_dir,
     ):
         searched = set(search_certificates(segment, start, end, http))
         removed, uprn_updated = fetch_deltas(start, end, http)

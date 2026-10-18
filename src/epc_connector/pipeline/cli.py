@@ -3,7 +3,7 @@ Command line interface: ``epc-connector`` (or ``python -m epc_connector``).
 
 Subcommands::
 
-    epc-connector setup [--origin O] [--segment S ...] [--lenient]
+    epc-connector setup [--origin O] [--segment S ...] [--force] [--lenient]
     epc-connector update [--origin O] [--segment S ...] [--date-from D]
                          [--date-to D] [--lenient]
     epc-connector status
@@ -11,9 +11,10 @@ Subcommands::
 
 ``--origin`` is ``england-and-wales`` (``england`` and ``wales`` mean the
 same), ``scotland`` or ``gb`` (both, the default). ``setup`` downloads the
-selected datasets into ``--data-dir`` (default ``data``) and ``update``
-refreshes them; both then bring the GB file up to date. The England and
-Wales API token is read from ``EPB_API_TOKEN`` or ``.env``.
+selected datasets that are not there yet (all with ``--force``) and
+``update`` refreshes them; both then bring the GB file up to date. Data goes
+to ``--data-dir``, else ``$EPC_CONNECTOR_DATA_DIR``, else ``./.epc_data``.
+The England and Wales API token is read from ``EPB_API_TOKEN`` or ``.env``.
 
 Every command takes ``--debug`` (show every log message) and ``--log-file
 PATH`` (record every message in a file); see ``pipeline.logs``.
@@ -35,6 +36,7 @@ from typing import Final
 from epc_connector import cleaning
 from epc_connector.datasets import Origin, Segment, parse_origins
 from epc_connector.errors import EpcConnectorError
+from epc_connector.locations import DATA_DIR_ENV_VAR, resolve_data_dir
 from epc_connector.pipeline import coverage, logs, plan, process, status
 from epc_connector.sources.england_and_wales import authorised_client
 
@@ -60,7 +62,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 def build_parser() -> argparse.ArgumentParser:
     """Return the parser for every subcommand."""
     common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--data-dir", type=Path, default=Path("data"))
+    common.add_argument(
+        "--data-dir",
+        type=Path,
+        help=f"data directory (default: ${DATA_DIR_ENV_VAR}, else ./.epc_data)",
+    )
     common.add_argument(
         "--debug",
         action="store_true",
@@ -86,7 +92,11 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="SEGMENT",
         help="domestic, non-domestic or display (default: all, smallest first)",
     )
-    writing.add_argument("--staging-dir", type=Path, default=Path(".staging"))
+    writing.add_argument(
+        "--staging-dir",
+        type=Path,
+        help="scratch space for downloads (default: <data dir>/.staging)",
+    )
     writing.add_argument("--chunk-rows", type=int, default=10_000)
     writing.add_argument("--row-group-rows", type=int, default=50_000)
     writing.add_argument(
@@ -106,9 +116,14 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[writing],
         help="download datasets and build the GB file",
         description=(
-            "Download the selected datasets (all by default), then bring the "
-            "GB file up to date."
+            "Download the selected datasets (all by default) that are not "
+            "downloaded yet, then bring the GB file up to date."
         ),
+    )
+    setup.add_argument(
+        "--force",
+        action="store_true",
+        help="download again datasets that are already downloaded",
     )
     setup.set_defaults(run=_setup)
 
@@ -162,6 +177,7 @@ def _setup(args: argparse.Namespace) -> int:
         args.segment,
         workspace=workspace,
         strict=not args.lenient,
+        force=args.force,
     )
     return _run(work, workspace, _log_options(args))
 
@@ -180,13 +196,14 @@ def _update(args: argparse.Namespace) -> int:
 
 
 def _status(args: argparse.Namespace) -> int:
-    print("\n".join(status.status_lines(args.data_dir)))
+    print("\n".join(status.status_lines(resolve_data_dir(args.data_dir))))
     return 0
 
 
 def _coverage(args: argparse.Namespace) -> int:
     elements = args.element or list(cleaning.Element)
-    lines = coverage.coverage_lines(args.data_dir, parse_origins(args.origin), elements)
+    data_dir = resolve_data_dir(args.data_dir)
+    lines = coverage.coverage_lines(data_dir, parse_origins(args.origin), elements)
     print("\n".join(lines))
     return 0
 
@@ -195,6 +212,16 @@ def _run(
     work: plan.Plan, workspace: plan.Workspace, log_options: logs.LogOptions
 ) -> int:
     """Check prerequisites, then run every step of a plan in order."""
+    logger.info("Data directory: %s", workspace.data_dir.resolve())
+    for dataset in work.skipped:
+        logger.info(
+            "%s is already downloaded; run update to refresh it, "
+            "or setup --force to download it again",
+            dataset.name,
+        )
+    if not work.steps:
+        logger.info("Nothing to do")
+        return 0
     scottish_domestic = any(
         dataset.origin is Origin.SCOTLAND and dataset.segment is Segment.DOMESTIC
         for dataset in work.datasets
@@ -235,9 +262,9 @@ def _log_options(args: argparse.Namespace) -> logs.LogOptions:
 
 
 def _workspace(args: argparse.Namespace) -> plan.Workspace:
-    return plan.Workspace(
-        data_dir=args.data_dir,
-        staging_dir=args.staging_dir,
+    return plan.Workspace.resolve(
+        args.data_dir,
+        args.staging_dir,
         chunk_rows=args.chunk_rows,
         row_group_rows=args.row_group_rows,
     )

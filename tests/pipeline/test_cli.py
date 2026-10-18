@@ -12,7 +12,7 @@ import pytest
 
 from epc_connector import sources
 from epc_connector.canonical import gb
-from epc_connector.datasets import Origin, Segment
+from epc_connector.datasets import Origin, Segment, get_dataset
 from epc_connector.pipeline import cli, process
 from epc_connector.pipeline.logs import LogOptions
 from tests.fakes import write_raw_domestic
@@ -198,6 +198,41 @@ class TestMain:
         assert "ERROR   no display certificates are published" in console
         assert "Traceback" not in console
         assert "Traceback" in log_file.read_text()
+
+    def test_second_setup_downloads_nothing(
+        self, calls: list, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        get_dataset("scotland", "domestic").path(tmp_path).touch()
+        (tmp_path / gb.GB_PARQUET_NAME).touch()
+        argv = ["setup", "--origin", "scotland", "--segment", "domestic"]
+
+        with caplog.at_level(logging.INFO):
+            status = cli.main([*argv, "--data-dir", str(tmp_path)])
+
+        assert status == 0
+        assert calls == []
+        assert "scotland/domestic is already downloaded" in caplog.text
+        assert "Nothing to do" in caplog.text
+
+    def test_force_downloads_again(self, calls: list, tmp_path: Path) -> None:
+        get_dataset("scotland", "domestic").path(tmp_path).touch()
+        argv = ["setup", "--origin", "scotland", "--segment", "domestic", "--force"]
+
+        cli.main([*argv, "--data-dir", str(tmp_path)])
+
+        assert summary(calls)[0] == (
+            sources.download,
+            (Origin.SCOTLAND, Segment.DOMESTIC),
+        )
+
+    def test_data_directory_defaults_to_the_environment(
+        self, calls: list, default_data_dir: Path
+    ) -> None:
+        cli.main(["setup", "--origin", "scotland", "--segment", "domestic"])
+
+        kwargs = calls[0][2]
+        assert kwargs["data_dir"] == default_data_dir
+        assert kwargs["staging_dir"] == default_data_dir / ".staging"
 
     def test_unknown_segment_is_rejected(self) -> None:
         with pytest.raises(SystemExit):

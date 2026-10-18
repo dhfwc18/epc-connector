@@ -8,9 +8,18 @@ from pathlib import Path
 
 import pytest
 
+from epc_connector.locations import DATA_DIR_ENV_VAR
 from epc_connector.pipeline import logs
 from epc_connector.storage import downloads
 from tests.fakes import write_7z, write_vocabularies, yearly_members
+
+
+@pytest.fixture(autouse=True)
+def default_data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """Point the default data directory at ``tmp_path``, never the project."""
+    path = tmp_path / "default-data"
+    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(path))
+    return path
 
 
 @pytest.fixture(autouse=True)

@@ -286,7 +286,7 @@ class TestDownload:
             runner.download(server, token="wrong-token")
 
         assert not runner.staging_dir.exists()
-        assert not runner.data_dir.exists()
+        assert not runner.parquet_path.exists()
 
     def test_data_breaking_the_schema_is_not_published(
         self, runner: SegmentRunner
@@ -296,7 +296,7 @@ class TestDownload:
         with pytest.raises(StorageError, match="lodgement_date: 1 invalid"):
             runner.download(runner.server(members))
 
-        assert not runner.data_dir.exists()
+        assert not runner.parquet_path.exists()
         assert not runner.staging_dir.exists()
 
     def test_unknown_segment_raises_dataset_error(self) -> None:

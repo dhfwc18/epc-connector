@@ -173,6 +173,25 @@ class TestDownload:
 
         assert not runner.staging_dir.exists()
 
+    def test_new_data_directory_is_marked_ignored(
+        self, runner: SegmentRunner, yearly_archive: Path
+    ) -> None:
+        runner.download(FakeServer(yearly_archive.read_bytes()))
+
+        assert (runner.data_dir / ".gitignore").read_text().splitlines()[-1] == "*"
+        assert (runner.data_dir / "CACHEDIR.TAG").is_file()
+
+    def test_default_directories_are_used(
+        self, runner: SegmentRunner, yearly_archive: Path, default_data_dir: Path
+    ) -> None:
+        with FakeServer(yearly_archive.read_bytes()).client() as client:
+            output = scotland.download(
+                "domestic", schemas_dir=runner.schemas_dir, client=client
+            )
+
+        assert output.parent == default_data_dir
+        assert not (default_data_dir / ".staging").exists()
+
     def test_existing_parquet_file_is_replaced(
         self, runner: SegmentRunner, yearly_archive: Path
     ) -> None:
@@ -191,7 +210,7 @@ class TestDownload:
             runner.download(runner.server({"note.pdf": b"%PDF"}))
 
         assert not runner.staging_dir.exists()
-        assert not runner.data_dir.exists()
+        assert not runner.parquet_path.exists()
 
     def test_data_breaking_the_schema_is_not_published(
         self, runner: SegmentRunner
@@ -201,7 +220,7 @@ class TestDownload:
         with pytest.raises(StorageError, match="A: 1 invalid"):
             runner.download(server)
 
-        assert not runner.data_dir.exists()
+        assert not runner.parquet_path.exists()
         assert not runner.staging_dir.exists()
 
     def test_unknown_segment_raises_dataset_error(self) -> None:

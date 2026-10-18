@@ -10,6 +10,7 @@ import polars as pl
 from epc_connector.cleaning.descriptions import clean_values
 from epc_connector.cleaning.vocabulary import DEFAULT_VOCABULARIES_DIR, Element
 from epc_connector.datasets import Origin, Segment, get_dataset
+from epc_connector.locations import resolve_data_dir
 
 SOURCE_COLUMNS: Final[dict[Origin, dict[Element, str]]] = {
     Origin.ENGLAND_AND_WALES: {
@@ -45,7 +46,7 @@ SOURCE_COLUMNS: Final[dict[Origin, dict[Element, str]]] = {
 def clean_domestic_epc(
     origin: Origin | str,
     *,
-    data_dir: Path | str = "data",
+    data_dir: Path | str | None = None,
     strict: bool = True,
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
 ) -> pl.LazyFrame:
@@ -63,7 +64,7 @@ def clean_domestic_epc(
     origin
         ``"england-and-wales"`` or ``"scotland"``.
     data_dir
-        Directory holding the raw file.
+        Directory holding the raw file; see ``locations.resolve_data_dir``.
     strict
         Raise if a description is not covered by the vocabularies; if false,
         mark it ``"not in vocabulary"`` and log a warning instead.
@@ -78,7 +79,7 @@ def clean_domestic_epc(
     dataset = get_dataset(origin, Segment.DOMESTIC)
     columns = SOURCE_COLUMNS[dataset.origin]
     elements = {column: element for element, column in columns.items()}
-    source = pl.scan_parquet(dataset.path(data_dir), low_memory=True)
+    source = pl.scan_parquet(dataset.path(resolve_data_dir(data_dir)), low_memory=True)
     distinct = source.select(
         pl.col(column).unique().implode() for column in elements
     ).collect(engine="streaming")
