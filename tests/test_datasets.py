@@ -105,5 +105,5 @@ class TestSelectDatasets:
         assert [dataset.name for dataset in selected] == ["england-and-wales/display"]
 
     def test_empty_selection_raises_dataset_error(self) -> None:
-        with pytest.raises(DatasetError, match="publish no display"):
+        with pytest.raises(DatasetError, match="no display certificates are published"):
             select_datasets([Origin.SCOTLAND], [Segment.DISPLAY])

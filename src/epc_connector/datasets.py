@@ -214,7 +214,8 @@ def select_datasets(
     if not selected:
         names = ", ".join(sorted(map(str, wanted or ()))) or "any"
         raise DatasetError(
-            f"{' and '.join(sorted(origins))} publish no {names} certificates"
+            f"no {names} certificates are published for "
+            f"{' or '.join(sorted(origins))}"
         )
     return selected
 

@@ -7,13 +7,17 @@ Scotland into one Great Britain Parquet file.
 
 ```bash
 uv sync
-uv run epc-connector setup                           # everything below in one go: download both nations, merge
-uv run epc-connector download scotland
-uv run epc-connector download england-and-wales      # API token in EPB_API_TOKEN or .env
-uv run epc-connector merge                           # data/domestic_epc_certificate_gb.parquet
-uv run epc-connector update england-and-wales --date-from 2026-09-01
-uv run epc-connector coverage --element walls        # vocabulary coverage of the raw descriptions
+uv run epc-connector setup                                       # download every dataset, then build the GB file
+uv run epc-connector setup --origin scotland --segment domestic  # one dataset; replaces its rows in the GB file
+uv run epc-connector update --date-from 2026-09-01               # refresh downloaded datasets, then the GB file
+uv run epc-connector status                                      # which datasets and GB files are set up
+uv run epc-connector coverage --element walls                    # vocabulary coverage of the raw descriptions
 ```
+
+`--origin` is `england-and-wales` (`england` and `wales` mean the same), `scotland` or `gb` (both, the default);
+`--segment` is any of `domestic`, `non-domestic` and `display` (default: all). Only domestic data has a GB file
+(`data/domestic_epc_certificate_gb.parquet`); non-domestic and display certificates are downloaded but not merged yet.
+The England and Wales API token is read from `EPB_API_TOKEN` or `.env`.
 
 `uv run epc-connector <command> --help` lists each command's options; `python -m epc_connector` works too. Each step
 runs in its own process, so memory is released between steps.
