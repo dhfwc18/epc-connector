@@ -32,15 +32,9 @@ from typing import Any, Final
 
 import polars as pl
 
-from epc_connector import (
-    cleaning,
-    download_england_and_wales_epc,
-    download_scotland_epc,
-    merge_gb_domestic_epc,
-    update_england_and_wales_epc,
-    update_scotland_epc,
-)
-from epc_connector.external.england_wales_epc import authorised_client
+from epc_connector import cleaning, merge_gb_domestic_epc
+from epc_connector.sources import england_and_wales, scotland
+from epc_connector.sources.england_and_wales import authorised_client
 
 SCOTLAND_SERIES: Final = ["non-domestic", "domestic"]
 """Scottish series, smallest first."""
@@ -169,9 +163,7 @@ def _download(args: argparse.Namespace) -> int:
     if args.nation == "scotland" and not _enough_staging_space(args):
         return 1
     download = (
-        download_scotland_epc
-        if args.nation == "scotland"
-        else download_england_and_wales_epc
+        scotland.download if args.nation == "scotland" else england_and_wales.download
     )
     for series in args.series:
         _run_step(download, series, **_writing_options(args))
@@ -181,11 +173,7 @@ def _download(args: argparse.Namespace) -> int:
 def _update(args: argparse.Namespace) -> int:
     if args.nation == "scotland" and not _enough_staging_space(args):
         return 1
-    update = (
-        update_scotland_epc
-        if args.nation == "scotland"
-        else update_england_and_wales_epc
-    )
+    update = scotland.update if args.nation == "scotland" else england_and_wales.update
     for series in args.series:
         _run_step(
             update,
@@ -199,19 +187,22 @@ def _update(args: argparse.Namespace) -> int:
 
 def _setup(args: argparse.Namespace) -> int:
     """Download both nations' series, then merge; check prerequisites first."""
-    scotland = ["domestic"] if args.domestic_only else SCOTLAND_SERIES
-    england_and_wales = ["domestic"] if args.domestic_only else ENGLAND_AND_WALES_SERIES
-    if not _enough_staging_space(argparse.Namespace(**vars(args), series=scotland)):
+    scottish_series = ["domestic"] if args.domestic_only else SCOTLAND_SERIES
+    english_and_welsh_series = (
+        ["domestic"] if args.domestic_only else ENGLAND_AND_WALES_SERIES
+    )
+    staging_check = argparse.Namespace(**vars(args), series=scottish_series)
+    if not _enough_staging_space(staging_check):
         return 1
     try:  # fail now, not after the Scottish download, if the token is missing
         authorised_client().close()
     except ValueError as error:
         logging.error("%s", error)
         return 1
-    for series in scotland:
-        _run_step(download_scotland_epc, series, **_writing_options(args))
-    for series in england_and_wales:
-        _run_step(download_england_and_wales_epc, series, **_writing_options(args))
+    for series in scottish_series:
+        _run_step(scotland.download, series, **_writing_options(args))
+    for series in english_and_welsh_series:
+        _run_step(england_and_wales.download, series, **_writing_options(args))
     return _merge(args)
 
 

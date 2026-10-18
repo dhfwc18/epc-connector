@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.external.england_wales_epc``.
+Tests for ``epc_connector.sources.england_and_wales``.
 """
 
 import datetime as dt
@@ -15,16 +15,16 @@ import polars as pl
 import pytest
 
 from epc_connector import validation
-from epc_connector.external import england_wales_epc
-from epc_connector.external.england_wales_epc import EnglandWalesEpcDataset
+from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector.sources import england_and_wales
 from epc_connector.storage import StorageError
 from tests.fakes import FakeServer, write_zip
 
 TOKEN = "test-token"
 URL_CONSTANTS = {
-    "domestic": england_wales_epc.DOMESTIC_URL,
-    "non-domestic": england_wales_epc.NON_DOMESTIC_URL,
-    "display": england_wales_epc.DISPLAY_URL,
+    "domestic": england_and_wales.DOMESTIC_URL,
+    "non-domestic": england_and_wales.NON_DOMESTIC_URL,
+    "display": england_and_wales.DISPLAY_URL,
 }
 
 
@@ -67,8 +67,8 @@ def certificates_schema() -> dict[str, Any]:
     }
 
 
-class SeriesRunner:
-    """Run the domestic series against a fake API inside ``tmp_path``."""
+class SegmentRunner:
+    """Run the domestic segment against a fake API inside ``tmp_path``."""
 
     def __init__(self, tmp_path: Path) -> None:
         self.tmp_path = tmp_path
@@ -89,17 +89,17 @@ class SeriesRunner:
         archive = write_zip(self.tmp_path / "source.zip", members)
         return FakeServer(
             archive.read_bytes(),
-            source_url=england_wales_epc.DOMESTIC_URL,
+            source_url=england_and_wales.DOMESTIC_URL,
             token=TOKEN,
             **options,
         )
 
     def download(self, server: FakeServer, token: str = TOKEN) -> Path:
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             token, transport=server.transport()
         )
         with client:
-            return england_wales_epc.download_england_and_wales_epc(
+            return england_and_wales.download(
                 "domestic",
                 data_dir=self.data_dir,
                 staging_dir=self.staging_dir,
@@ -110,11 +110,11 @@ class SeriesRunner:
     def update(
         self, server: FakeServer, date_from: str | None, date_to: str | None
     ) -> Path:
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=server.transport()
         )
         with client:
-            return england_wales_epc.update_england_and_wales_epc(
+            return england_and_wales.update(
                 "domestic",
                 date_from=date_from,
                 date_to=date_to,
@@ -126,8 +126,8 @@ class SeriesRunner:
 
 
 @pytest.fixture
-def runner(tmp_path: Path) -> SeriesRunner:
-    return SeriesRunner(tmp_path)
+def runner(tmp_path: Path) -> SegmentRunner:
+    return SegmentRunner(tmp_path)
 
 
 def two_years_with_recommendations() -> dict[str, bytes]:
@@ -146,22 +146,13 @@ def two_years_with_recommendations() -> dict[str, bytes]:
 class TestSourceConstants:
     @pytest.mark.parametrize("url", URL_CONSTANTS.values(), ids=URL_CONSTANTS.keys())
     def test_url_points_at_a_bulk_csv_endpoint(self, url: str) -> None:
-        assert url.startswith(f"{england_wales_epc.API_URL}/api/files/")
+        assert url.startswith(f"{england_and_wales.API_URL}/api/files/")
         assert url.endswith("/csv")
 
-    def test_every_series_has_a_url_and_parquet_name(self) -> None:
-        assert set(england_wales_epc.SOURCE_URLS) == set(EnglandWalesEpcDataset)
-        assert set(england_wales_epc.PARQUET_NAMES) == set(EnglandWalesEpcDataset)
+    def test_every_published_segment_has_a_url(self) -> None:
+        published = {d.segment for d in select_datasets([Origin.ENGLAND_AND_WALES])}
 
-    def test_repository_schemas_exist_for_every_series(self) -> None:
-        for dataset in EnglandWalesEpcDataset:
-            schema_path = (
-                validation.DEFAULT_SCHEMAS_DIR
-                / "source"
-                / "england-and-wales"
-                / f"{dataset}.schema.json"
-            )
-            assert schema_path.is_file()
+        assert set(england_and_wales.SOURCE_URLS) == published
 
 
 @pytest.fixture
@@ -172,23 +163,23 @@ def token_unset(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     Setting then deleting registers the variable with monkeypatch, so a value
     written by ``load_dotenv`` is removed again after the test.
     """
-    monkeypatch.setenv(england_wales_epc.API_TOKEN_ENV_VAR, "placeholder")
-    monkeypatch.delenv(england_wales_epc.API_TOKEN_ENV_VAR)
+    monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "placeholder")
+    monkeypatch.delenv(england_and_wales.API_TOKEN_ENV_VAR)
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
 
 class TestAuthorisedClient:
     def test_token_argument_sets_bearer_header(self) -> None:
-        with england_wales_epc.authorised_client("abc") as client:
+        with england_and_wales.authorised_client("abc") as client:
             assert client.headers["Authorization"] == "Bearer abc"
 
     def test_environment_variable_is_used_without_argument(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(england_wales_epc.API_TOKEN_ENV_VAR, "from-env")
+        monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "from-env")
 
-        with england_wales_epc.authorised_client() as client:
+        with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-env"
 
     def test_dotenv_file_is_loaded_when_variable_is_unset(
@@ -196,21 +187,21 @@ class TestAuthorisedClient:
     ) -> None:
         (token_unset / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
 
-        with england_wales_epc.authorised_client() as client:
+        with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-dotenv"
 
     def test_environment_variable_takes_precedence_over_dotenv(
         self, token_unset: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         (token_unset / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
-        monkeypatch.setenv(england_wales_epc.API_TOKEN_ENV_VAR, "from-env")
+        monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "from-env")
 
-        with england_wales_epc.authorised_client() as client:
+        with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-env"
 
     def test_missing_token_raises_value_error(self, token_unset: Path) -> None:
         with pytest.raises(ValueError, match="EPB_API_TOKEN"):
-            england_wales_epc.authorised_client()
+            england_and_wales.authorised_client()
 
 
 class TestIsCertificatesFile:
@@ -226,7 +217,7 @@ class TestIsCertificatesFile:
     def test_only_yearly_certificate_files_match(
         self, name: str, expected: bool
     ) -> None:
-        assert england_wales_epc.is_certificates_file(name) is expected
+        assert england_and_wales.is_certificates_file(name) is expected
 
 
 class TestYearSortKey:
@@ -237,7 +228,7 @@ class TestYearSortKey:
             "certificates-2012.csv",
         ]
 
-        ordered = sorted((Path(n) for n in names), key=england_wales_epc.year_sort_key)
+        ordered = sorted((Path(n) for n in names), key=england_and_wales.year_sort_key)
 
         assert [p.name for p in ordered] == [
             "certificates-2008.csv",
@@ -246,9 +237,9 @@ class TestYearSortKey:
         ]
 
 
-class TestDownloadEnglandAndWalesEpc:
+class TestDownload:
     def test_certificates_are_merged_oldest_first_without_recommendations(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
         output = runner.download(runner.server(two_years_with_recommendations()))
 
@@ -265,7 +256,7 @@ class TestDownloadEnglandAndWalesEpc:
         assert frame["value"].to_list() == ["y", "z", "x", ""]
 
     def test_last_updated_is_stored_in_parquet_metadata(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
         server = runner.server(two_years_with_recommendations())
 
@@ -273,10 +264,12 @@ class TestDownloadEnglandAndWalesEpc:
 
         stored = pl.read_parquet_metadata(output)
         assert (
-            stored[england_wales_epc.LAST_UPDATED_METADATA_KEY] == server.last_updated
+            stored[england_and_wales.LAST_UPDATED_METADATA_KEY] == server.last_updated
         )
 
-    def test_token_is_not_sent_to_the_presigned_url(self, runner: SeriesRunner) -> None:
+    def test_token_is_not_sent_to_the_presigned_url(
+        self, runner: SegmentRunner
+    ) -> None:
         server = runner.server(two_years_with_recommendations())
 
         runner.download(server)
@@ -285,7 +278,7 @@ class TestDownloadEnglandAndWalesEpc:
         assert server.calls["file_with_authorization"] == 0
 
     def test_wrong_token_raises_http_error_and_removes_staging(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
         server = runner.server(two_years_with_recommendations())
 
@@ -296,7 +289,7 @@ class TestDownloadEnglandAndWalesEpc:
         assert not runner.data_dir.exists()
 
     def test_data_breaking_the_schema_is_not_published(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
         members = {"certificates-2024.csv": certificates_csv(["c1,01/02/2024,x"])}
 
@@ -306,31 +299,31 @@ class TestDownloadEnglandAndWalesEpc:
         assert not runner.data_dir.exists()
         assert not runner.staging_dir.exists()
 
-    def test_unknown_series_raises_value_error(self) -> None:
-        with pytest.raises(ValueError, match="not-a-series"):
-            england_wales_epc.download_england_and_wales_epc("not-a-series")
+    def test_unknown_segment_raises_dataset_error(self) -> None:
+        with pytest.raises(DatasetError, match="not-a-segment"):
+            england_and_wales.download("not-a-segment")
 
 
 @functools.cache
-def repository_rules(series: str) -> dict[str, pl.Expr]:
-    """Polars rules from the repository schema of an E&W series."""
+def repository_rules(segment: str) -> dict[str, pl.Expr]:
+    """Polars rules from the repository schema of an E&W segment."""
     path = (
         validation.DEFAULT_SCHEMAS_DIR
         / "source"
         / "england-and-wales"
-        / f"{series}.schema.json"
+        / f"{segment}.schema.json"
     )
     return validation.column_rules(validation.load_schema(path))
 
 
-def is_valid(series: str, column: str, value: str) -> bool:
+def is_valid(segment: str, column: str, value: str) -> bool:
     """True if ``value`` passes the repository schema's rule for ``column``."""
-    rule = repository_rules(series)[column]
+    rule = repository_rules(segment)[column]
     return pl.DataFrame({column: [value]}).select(rule).item()
 
 
 class TestDisplaySchema:
-    """Value rules of the repository schema for the display series."""
+    """Value rules of the repository schema for the display segment."""
 
     @pytest.mark.parametrize(
         ("column", "value"),
@@ -358,7 +351,7 @@ class TestDisplaySchema:
 
 
 class TestDomesticSchema:
-    """Value rules of the repository schema for the domestic series."""
+    """Value rules of the repository schema for the domestic segment."""
 
     @pytest.mark.parametrize("value", ["100", "100.0", "50", ""])
     def test_published_multi_glaze_proportion_is_valid(self, value: str) -> None:
@@ -378,13 +371,13 @@ class TestSearchCertificates:
     def test_all_pages_are_collected(self) -> None:
         lodged = [(f"c{i}", "2024-05-0" + str(i)) for i in range(1, 6)]
         server = FakeServer(b"", token=TOKEN, lodged=lodged)
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=server.transport()
         )
 
         with client:
-            numbers = england_wales_epc.search_certificates(
-                EnglandWalesEpcDataset.DOMESTIC,
+            numbers = england_and_wales.search_certificates(
+                Segment.DOMESTIC,
                 dt.date(2024, 5, 1),
                 dt.date(2024, 5, 31),
                 client,
@@ -396,13 +389,13 @@ class TestSearchCertificates:
 
     def test_no_results_returns_empty_list(self) -> None:
         server = FakeServer(b"", token=TOKEN)
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=server.transport()
         )
 
         with client:
-            numbers = england_wales_epc.search_certificates(
-                EnglandWalesEpcDataset.DOMESTIC,
+            numbers = england_and_wales.search_certificates(
+                Segment.DOMESTIC,
                 dt.date(2024, 5, 1),
                 dt.date(2024, 5, 31),
                 client,
@@ -417,12 +410,12 @@ class TestSearchCertificates:
         def rate_limited_once(request: httpx.Request) -> httpx.Response:
             return next(responses, None) or server(request)
 
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=httpx.MockTransport(rate_limited_once)
         )
         with client:
-            numbers = england_wales_epc.search_certificates(
-                EnglandWalesEpcDataset.DOMESTIC,
+            numbers = england_and_wales.search_certificates(
+                Segment.DOMESTIC,
                 dt.date(2024, 5, 1),
                 dt.date(2024, 5, 31),
                 client,
@@ -439,12 +432,12 @@ class TestFetchDeltas:
             {"certificateNumber": "c1", "eventType": "uprn_updated", "timestamp": "t"},
         ]
         server = FakeServer(b"", token=TOKEN, delta_events=events)
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=server.transport()
         )
 
         with client:
-            removed, uprn_updated = england_wales_epc.fetch_deltas(
+            removed, uprn_updated = england_and_wales.fetch_deltas(
                 dt.date(2024, 5, 1), dt.date(2024, 5, 31), client
             )
 
@@ -453,12 +446,12 @@ class TestFetchDeltas:
 
     def test_no_events_returns_empty_sets(self) -> None:
         server = FakeServer(b"", token=TOKEN)
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=server.transport()
         )
 
         with client:
-            result = england_wales_epc.fetch_deltas(
+            result = england_and_wales.fetch_deltas(
                 dt.date(2024, 5, 1), dt.date(2024, 5, 31), client
             )
 
@@ -469,11 +462,11 @@ class TestFetchCertificateUprn:
     @staticmethod
     def fetch(documents: dict[str, dict[str, object]]) -> tuple[str, str] | None:
         server = FakeServer(b"", token=TOKEN, documents=documents)
-        client = england_wales_epc.authorised_client(
+        client = england_and_wales.authorised_client(
             TOKEN, transport=server.transport()
         )
         with client:
-            return england_wales_epc.fetch_certificate_uprn("c1", client)
+            return england_and_wales.fetch_certificate_uprn("c1", client)
 
     def test_uprn_is_returned_as_written_in_the_bulk_csv(self) -> None:
         documents = {"c1": {"uprn": 100121241798, "uprn_source": "Energy Assessor"}}
@@ -489,20 +482,20 @@ class TestFetchCertificateUprn:
 
 class TestLatestLodgementDate:
     def test_future_dates_are_ignored_as_entry_errors(self, tmp_path: Path) -> None:
-        path = tmp_path / "series.parquet"
+        path = tmp_path / "segment.parquet"
         dates = ["2024-01-15", "2108-02-01", "2024-09-30", ""]
         pl.DataFrame({"lodgement_date": dates}).write_parquet(path)
 
-        latest = england_wales_epc.latest_lodgement_date(
+        latest = england_and_wales.latest_lodgement_date(
             path, today=dt.date(2026, 10, 16)
         )
 
         assert latest == dt.date(2024, 9, 30)
 
 
-class TestUpdateEnglandAndWalesEpc:
+class TestUpdate:
     @pytest.fixture
-    def downloaded(self, runner: SeriesRunner) -> SeriesRunner:
+    def downloaded(self, runner: SegmentRunner) -> SegmentRunner:
         """Local domestic file: c1, c2 (2023) and c3, c4 (2024), all "old"."""
         members = {
             "certificates-2023.csv": certificates_csv(
@@ -516,7 +509,7 @@ class TestUpdateEnglandAndWalesEpc:
         return runner
 
     @staticmethod
-    def next_month(runner: SeriesRunner, **options: Any) -> FakeServer:
+    def next_month(runner: SegmentRunner, **options: Any) -> FakeServer:
         """
         Bulk file and APIs one month later.
 
@@ -550,7 +543,7 @@ class TestUpdateEnglandAndWalesEpc:
         )
 
     def test_new_and_changed_certificates_replace_their_old_rows(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         downloaded.update(self.next_month(downloaded), "2024-09-01", "2024-10-31")
 
@@ -562,7 +555,7 @@ class TestUpdateEnglandAndWalesEpc:
         }
 
     def test_changed_uprn_is_patched_from_the_certificate_api(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         server = self.next_month(downloaded)
 
@@ -578,7 +571,7 @@ class TestUpdateEnglandAndWalesEpc:
         assert server.calls["certificate"] == 1
 
     def test_uprn_change_alone_skips_the_bulk_file(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         before = pl.read_parquet_metadata(downloaded.parquet_path)
         events = [
@@ -597,17 +590,19 @@ class TestUpdateEnglandAndWalesEpc:
         assert server.calls["file"] == 0
         assert pl.read_parquet_metadata(downloaded.parquet_path) == before
 
-    def test_last_updated_metadata_is_refreshed(self, downloaded: SeriesRunner) -> None:
+    def test_last_updated_metadata_is_refreshed(
+        self, downloaded: SegmentRunner
+    ) -> None:
         server = self.next_month(downloaded)
 
         downloaded.update(server, "2024-09-01", "2024-10-31")
 
         stored = pl.read_parquet_metadata(downloaded.parquet_path)
         assert (
-            stored[england_wales_epc.LAST_UPDATED_METADATA_KEY] == server.last_updated
+            stored[england_and_wales.LAST_UPDATED_METADATA_KEY] == server.last_updated
         )
 
-    def test_only_needed_years_are_downloaded(self, downloaded: SeriesRunner) -> None:
+    def test_only_needed_years_are_downloaded(self, downloaded: SegmentRunner) -> None:
         server = self.next_month(downloaded)
 
         downloaded.update(server, "2024-09-01", "2024-10-31")
@@ -615,14 +610,14 @@ class TestUpdateEnglandAndWalesEpc:
         assert server.bytes_served < len(server.payload) // 2
 
     def test_pending_certificates_are_logged(
-        self, downloaded: SeriesRunner, caplog: pytest.LogCaptureFixture
+        self, downloaded: SegmentRunner, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO):
             downloaded.update(self.next_month(downloaded), "2024-09-01", "2024-10-31")
 
         assert "1 pending" in caplog.text
 
-    def test_nothing_new_skips_the_bulk_file(self, downloaded: SeriesRunner) -> None:
+    def test_nothing_new_skips_the_bulk_file(self, downloaded: SegmentRunner) -> None:
         before = downloaded.parquet_path.read_bytes()
         server = downloaded.server({"certificates-2024.csv": certificates_csv([])})
 
@@ -631,17 +626,17 @@ class TestUpdateEnglandAndWalesEpc:
         assert server.calls["file"] == 0
         assert downloaded.parquet_path.read_bytes() == before
 
-    def test_intermediate_files_are_discarded(self, downloaded: SeriesRunner) -> None:
+    def test_intermediate_files_are_discarded(self, downloaded: SegmentRunner) -> None:
         downloaded.update(self.next_month(downloaded), "2024-09-01", "2024-10-31")
 
         assert not downloaded.staging_dir.exists()
 
     def test_missing_local_file_raises_file_not_found_error(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
-        with pytest.raises(FileNotFoundError, match="download_england_and_wales_epc"):
+        with pytest.raises(FileNotFoundError, match="download it first"):
             runner.update(FakeServer(b""), "2024-09-01", "2024-10-31")
 
-    def test_empty_window_raises_value_error(self, downloaded: SeriesRunner) -> None:
+    def test_empty_window_raises_value_error(self, downloaded: SegmentRunner) -> None:
         with pytest.raises(ValueError, match="empty window"):
             downloaded.update(FakeServer(b""), "2024-10-31", "2024-09-01")

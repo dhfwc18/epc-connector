@@ -19,8 +19,7 @@ from typing import Final
 import polars as pl
 
 from epc_connector.cleaning import RAW_PARQUET_NAMES, Nation, clean_domestic_epc
-from epc_connector.external.england_wales_epc import LAST_UPDATED_METADATA_KEY
-from epc_connector.external.scotland_epc import RELEASE_METADATA_KEY
+from epc_connector.datasets import LAST_UPDATED_METADATA_KEY, RELEASE_METADATA_KEY
 from epc_connector.mapping import (
     apply_mapping,
     canonical_dtypes,

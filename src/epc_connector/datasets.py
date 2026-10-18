@@ -90,11 +90,10 @@ class Dataset:
         """``"<origin>/<segment>"``, e.g. ``"scotland/domestic"``."""
         return f"{self.origin}/{self.segment}"
 
-    @property
-    def source_schema(self) -> Path:
-        """JSON Schema that validates the raw rows."""
+    def source_schema(self, schemas_dir: Path | str = DEFAULT_SCHEMAS_DIR) -> Path:
+        """Return the JSON Schema that validates the raw rows."""
         return (
-            DEFAULT_SCHEMAS_DIR / "source" / self.origin / f"{self.segment}.schema.json"
+            Path(schemas_dir) / "source" / self.origin / f"{self.segment}.schema.json"
         )
 
     def path(self, data_dir: Path | str) -> Path:

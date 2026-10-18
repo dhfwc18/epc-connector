@@ -11,6 +11,7 @@ import pytest
 
 from epc_connector import __main__ as cli
 from epc_connector.cleaning import Nation
+from epc_connector.sources import england_and_wales, scotland
 from tests.fakes import write_raw_domestic
 
 
@@ -26,14 +27,15 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, tuple, dict]]:
 
         return record
 
-    for name in [
-        "download_scotland_epc",
-        "update_scotland_epc",
-        "download_england_and_wales_epc",
-        "update_england_and_wales_epc",
-        "merge_gb_domestic_epc",
+    for module, function in [
+        (scotland, "download"),
+        (scotland, "update"),
+        (england_and_wales, "download"),
+        (england_and_wales, "update"),
     ]:
-        monkeypatch.setattr(cli, name, recorder(name))
+        name = f"{module.__name__.rsplit('.', 1)[1]}.{function}"
+        monkeypatch.setattr(module, function, recorder(name))
+    monkeypatch.setattr(cli, "merge_gb_domestic_epc", recorder("merge_gb_domestic_epc"))
     # Run steps inline: a spawned process would not see these replacements.
     monkeypatch.setattr(cli, "_run_step", lambda function, *a, **k: function(*a, **k))
     monkeypatch.setattr(
@@ -55,7 +57,7 @@ class TestMain:
             "display",
             "domestic",
         ]
-        assert {name for name, _, _ in calls} == {"download_england_and_wales_epc"}
+        assert {name for name, _, _ in calls} == {"england_and_wales.download"}
 
     def test_update_passes_the_date_window_and_options(self, calls: list) -> None:
         cli.main(
@@ -72,7 +74,7 @@ class TestMain:
         )
 
         [(name, args, kwargs)] = calls
-        assert (name, args) == ("update_scotland_epc", ("domestic",))
+        assert (name, args) == ("scotland.update", ("domestic",))
         assert kwargs["date_from"] == "2025-01-01"
         assert kwargs["date_to"] is None
         assert kwargs["data_dir"] == Path("elsewhere")
@@ -98,8 +100,8 @@ class TestMain:
 
         assert status == 0
         assert [(name, args) for name, args, _ in calls] == [
-            ("download_scotland_epc", ("domestic",)),
-            ("download_england_and_wales_epc", ("domestic",)),
+            ("scotland.download", ("domestic",)),
+            ("england_and_wales.download", ("domestic",)),
             ("merge_gb_domestic_epc", ()),
         ]
         assert calls[-1][2]["strict"] is False

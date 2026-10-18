@@ -10,7 +10,7 @@ import polars as pl
 from epc_connector.cleaning.descriptions import clean_values
 from epc_connector.cleaning.text import Nation
 from epc_connector.cleaning.vocabulary import DEFAULT_VOCABULARIES_DIR, Element
-from epc_connector.external import england_wales_epc, scotland_epc
+from epc_connector.datasets import Origin, Segment, get_dataset
 
 SOURCE_COLUMNS: Final[dict[Nation, dict[Element, str]]] = {
     Nation.ENGLAND_AND_WALES: {
@@ -43,12 +43,8 @@ SOURCE_COLUMNS: Final[dict[Nation, dict[Element, str]]] = {
 """Domestic source column holding each element's description, by nation."""
 
 RAW_PARQUET_NAMES: Final[dict[Nation, str]] = {
-    Nation.ENGLAND_AND_WALES: england_wales_epc.PARQUET_NAMES[
-        england_wales_epc.EnglandWalesEpcDataset.DOMESTIC
-    ],
-    Nation.SCOTLAND: scotland_epc.PARQUET_NAMES[
-        scotland_epc.ScotlandEpcDataset.DOMESTIC
-    ],
+    nation: get_dataset(Origin(nation), Segment.DOMESTIC).parquet_name
+    for nation in Nation
 }
 """Raw domestic file name, by nation."""
 

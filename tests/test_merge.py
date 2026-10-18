@@ -10,8 +10,7 @@ import pytest
 
 from epc_connector import merge
 from epc_connector.cleaning import Nation
-from epc_connector.external.england_wales_epc import LAST_UPDATED_METADATA_KEY
-from epc_connector.external.scotland_epc import RELEASE_METADATA_KEY
+from epc_connector.datasets import LAST_UPDATED_METADATA_KEY, RELEASE_METADATA_KEY
 from epc_connector.mapping import MappingError, canonical_dtypes
 from tests.fakes import write_raw_domestic
 

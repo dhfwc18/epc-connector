@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.external.scotland_epc``.
+Tests for ``epc_connector.sources.scotland``.
 """
 
 import datetime as dt
@@ -12,8 +12,8 @@ import polars as pl
 import pytest
 
 from epc_connector import validation
-from epc_connector.external import scotland_epc
-from epc_connector.external.scotland_epc import ScotlandEpcDataset
+from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector.sources import scotland
 from epc_connector.storage import StorageError
 from epc_connector.storage.archives import extract_files
 from tests.fakes import (
@@ -27,13 +27,13 @@ from tests.fakes import (
 )
 
 URL_CONSTANTS = {
-    "domestic": scotland_epc.DOMESTIC_URL,
-    "non-domestic": scotland_epc.NON_DOMESTIC_URL,
+    "domestic": scotland.DOMESTIC_URL,
+    "non-domestic": scotland.NON_DOMESTIC_URL,
 }
 
 
-class SeriesRunner:
-    """Run the domestic series against a fake server inside ``tmp_path``."""
+class SegmentRunner:
+    """Run the domestic segment against a fake server inside ``tmp_path``."""
 
     def __init__(self, tmp_path: Path) -> None:
         self.tmp_path = tmp_path
@@ -57,7 +57,7 @@ class SeriesRunner:
 
     def download(self, server: FakeServer) -> Path:
         with server.client() as client:
-            return scotland_epc.download_scotland_epc(
+            return scotland.download(
                 "domestic",
                 data_dir=self.data_dir,
                 staging_dir=self.staging_dir,
@@ -72,7 +72,7 @@ class SeriesRunner:
         date_to: str | None = None,
     ) -> Path:
         with server.client() as client:
-            return scotland_epc.update_scotland_epc(
+            return scotland.update(
                 "domestic",
                 date_from=date_from,
                 date_to=date_to,
@@ -84,11 +84,9 @@ class SeriesRunner:
 
 
 @pytest.fixture
-def runner(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> SeriesRunner:
-    monkeypatch.setitem(
-        scotland_epc.SOURCE_URLS, ScotlandEpcDataset.DOMESTIC, SOURCE_URL
-    )
-    return SeriesRunner(tmp_path)
+def runner(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> SegmentRunner:
+    monkeypatch.setitem(scotland.SOURCE_URLS, Segment.DOMESTIC, SOURCE_URL)
+    return SegmentRunner(tmp_path)
 
 
 def title(release: str) -> str:
@@ -106,52 +104,43 @@ class TestSourceConstants:
     def test_url_points_at_a_ckan_resource_download(self, url: str) -> None:
         assert re.search(r"/resource/[0-9a-f-]{36}/download$", url)
 
-    def test_every_series_has_a_url_and_parquet_name(self) -> None:
-        assert set(scotland_epc.SOURCE_URLS) == set(ScotlandEpcDataset)
-        assert set(scotland_epc.PARQUET_NAMES) == set(ScotlandEpcDataset)
+    def test_every_published_segment_has_a_url(self) -> None:
+        published = {d.segment for d in select_datasets([Origin.SCOTLAND])}
 
-    def test_repository_schemas_exist_for_every_series(self) -> None:
-        for dataset in ScotlandEpcDataset:
-            schema_path = (
-                validation.DEFAULT_SCHEMAS_DIR
-                / "source"
-                / "scotland"
-                / f"{dataset}.schema.json"
-            )
-            assert schema_path.is_file()
+        assert set(scotland.SOURCE_URLS) == published
 
 
 class TestReleaseFromTitle:
     def test_quarter_and_year_become_release(self) -> None:
-        assert scotland_epc.release_from_title(title("Q2 2026")) == "2026q2"
+        assert scotland.release_from_title(title("Q2 2026")) == "2026q2"
 
     def test_title_without_quarter_raises_storage_error(self) -> None:
         with pytest.raises(StorageError, match="no release quarter"):
-            scotland_epc.release_from_title("Domestic Energy Performance Certificates")
+            scotland.release_from_title("Domestic Energy Performance Certificates")
 
 
 class TestLatestCreatedDate:
     def test_future_dates_are_ignored_as_entry_errors(self, tmp_path: Path) -> None:
-        path = tmp_path / "series.parquet"
+        path = tmp_path / "segment.parquet"
         created = ["01/02/2025 10:00:00", "02/01/2100 09:00:00", "15/06/2025 08:30:00"]
         pl.DataFrame({"CREATED_AT": created}).write_parquet(path)
 
-        latest = scotland_epc.latest_created_date(path, today=dt.date(2026, 10, 16))
+        latest = scotland.latest_created_date(path, today=dt.date(2026, 10, 16))
 
         assert latest == dt.date(2025, 6, 15)
 
     def test_unparseable_dates_are_ignored(self, tmp_path: Path) -> None:
-        path = tmp_path / "series.parquet"
+        path = tmp_path / "segment.parquet"
         pl.DataFrame({"CREATED_AT": ["", "15/06/2025 08:30:00"]}).write_parquet(path)
 
-        assert scotland_epc.latest_created_date(path) == dt.date(2025, 6, 15)
+        assert scotland.latest_created_date(path) == dt.date(2025, 6, 15)
 
 
 class TestPeriodSortKey:
     def test_years_sort_oldest_first_after_undated_files(self) -> None:
         names = ["2017.csv", "2008.csv", "AllYears.csv", "2026.csv"]
 
-        ordered = sorted((Path(n) for n in names), key=scotland_epc.period_sort_key)
+        ordered = sorted((Path(n) for n in names), key=scotland.period_sort_key)
 
         assert [p.name for p in ordered] == [
             "AllYears.csv",
@@ -161,9 +150,9 @@ class TestPeriodSortKey:
         ]
 
 
-class TestDownloadScotlandEpc:
-    def test_series_is_merged_into_named_parquet_file(
-        self, runner: SeriesRunner, yearly_archive: Path
+class TestDownload:
+    def test_segment_is_merged_into_named_parquet_file(
+        self, runner: SegmentRunner, yearly_archive: Path
     ) -> None:
         output = runner.download(FakeServer(yearly_archive.read_bytes()))
 
@@ -171,21 +160,21 @@ class TestDownloadScotlandEpc:
         assert pl.read_parquet(output)["A"].to_list() == ["1", "2", "3", "4"]
 
     def test_release_is_stored_in_parquet_metadata(
-        self, runner: SeriesRunner, yearly_archive: Path
+        self, runner: SegmentRunner, yearly_archive: Path
     ) -> None:
         output = runner.download(FakeServer(yearly_archive.read_bytes()))
 
-        assert scotland_epc.stored_release(output) == "2026q2"
+        assert scotland.stored_release(output) == "2026q2"
 
     def test_staging_directory_is_removed_after_success(
-        self, runner: SeriesRunner, yearly_archive: Path
+        self, runner: SegmentRunner, yearly_archive: Path
     ) -> None:
         runner.download(FakeServer(yearly_archive.read_bytes()))
 
         assert not runner.staging_dir.exists()
 
     def test_existing_parquet_file_is_replaced(
-        self, runner: SeriesRunner, yearly_archive: Path
+        self, runner: SegmentRunner, yearly_archive: Path
     ) -> None:
         server = FakeServer(yearly_archive.read_bytes())
         output = runner.download(server)
@@ -196,7 +185,7 @@ class TestDownloadScotlandEpc:
         assert pl.read_parquet(output).height == 4
 
     def test_staging_directory_is_removed_after_failure(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
         with pytest.raises(StorageError):
             runner.download(runner.server({"note.pdf": b"%PDF"}))
@@ -205,7 +194,7 @@ class TestDownloadScotlandEpc:
         assert not runner.data_dir.exists()
 
     def test_data_breaking_the_schema_is_not_published(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
         server = runner.server({"2024.csv": scottish_csv(["one,b,x"])})
 
@@ -215,15 +204,19 @@ class TestDownloadScotlandEpc:
         assert not runner.data_dir.exists()
         assert not runner.staging_dir.exists()
 
-    def test_unknown_series_raises_value_error(self) -> None:
-        with pytest.raises(ValueError, match="not-a-series"):
-            scotland_epc.download_scotland_epc("not-a-series")
+    def test_unknown_segment_raises_dataset_error(self) -> None:
+        with pytest.raises(DatasetError, match="not-a-segment"):
+            scotland.download("not-a-segment")
+
+    def test_unpublished_segment_raises_dataset_error(self) -> None:
+        with pytest.raises(DatasetError, match="does not publish display"):
+            scotland.download("display")
 
 
-class TestUpdateScotlandEpc:
+class TestUpdate:
     @pytest.fixture
-    def downloaded(self, runner: SeriesRunner) -> SeriesRunner:
-        """A local series at release Q4 2025 holding 2024 and 2025 rows."""
+    def downloaded(self, runner: SegmentRunner) -> SegmentRunner:
+        """A local segment at release Q4 2025 holding 2024 and 2025 rows."""
         runner.use_schema(created_schema())
         members = {
             "2024.csv": created_csv([("r1", "10/03/2024 09:00:00", "old")]),
@@ -238,7 +231,7 @@ class TestUpdateScotlandEpc:
         return runner
 
     @staticmethod
-    def new_release(runner: SeriesRunner, **options: Any) -> FakeServer:
+    def new_release(runner: SegmentRunner, **options: Any) -> FakeServer:
         """Q1 2026 release: every row re-published as "new", plus r4 and r5."""
         members = {
             "2024.csv": created_csv([("r1", "10/03/2024 09:00:00", "new")]),
@@ -254,7 +247,7 @@ class TestUpdateScotlandEpc:
         return runner.server(members, title=title("Q1 2026"), **options)
 
     def test_new_release_refreshes_rows_from_latest_local_date(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         downloaded.update(self.new_release(downloaded))
 
@@ -265,10 +258,10 @@ class TestUpdateScotlandEpc:
             "r4": "new",
             "r5": "new",
         }
-        assert scotland_epc.stored_release(downloaded.parquet_path) == "2026q1"
+        assert scotland.stored_release(downloaded.parquet_path) == "2026q1"
 
     def test_explicit_window_refreshes_only_those_dates(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         downloaded.update(
             self.new_release(downloaded), date_from="2025-01-01", date_to="2025-06-30"
@@ -281,7 +274,7 @@ class TestUpdateScotlandEpc:
         }
 
     def test_only_files_overlapping_the_window_are_extracted(
-        self, downloaded: SeriesRunner, monkeypatch: pytest.MonkeyPatch
+        self, downloaded: SegmentRunner, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         extracted: list[str] = []
 
@@ -299,7 +292,7 @@ class TestUpdateScotlandEpc:
         assert extracted == ["2026.csv"]
 
     def test_same_release_without_dates_skips_download(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         server = downloaded.server({}, title=title("Q4 2025"))
 
@@ -308,7 +301,7 @@ class TestUpdateScotlandEpc:
         assert server.calls["file"] == 0
 
     def test_window_without_matching_years_raises_and_keeps_file(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         before = downloaded.parquet_path.read_bytes()
 
@@ -319,13 +312,13 @@ class TestUpdateScotlandEpc:
         assert not downloaded.staging_dir.exists()
 
     def test_missing_local_file_raises_file_not_found_error(
-        self, runner: SeriesRunner
+        self, runner: SegmentRunner
     ) -> None:
-        with pytest.raises(FileNotFoundError, match="download_scotland_epc"):
+        with pytest.raises(FileNotFoundError, match="download it first"):
             runner.update(FakeServer(b""))
 
     def test_date_to_before_date_from_raises_value_error(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         with pytest.raises(ValueError, match="before"):
             downloaded.update(
@@ -333,7 +326,7 @@ class TestUpdateScotlandEpc:
             )
 
     def test_staging_directory_is_removed_after_update(
-        self, downloaded: SeriesRunner
+        self, downloaded: SegmentRunner
     ) -> None:
         downloaded.update(self.new_release(downloaded))
 
@@ -348,7 +341,7 @@ def domestic_rules() -> dict[str, pl.Expr]:
 
 
 class TestDomesticSchema:
-    """Value rules of the repository schema for the domestic series."""
+    """Value rules of the repository schema for the domestic segment."""
 
     @pytest.mark.parametrize(
         ("column", "value"),

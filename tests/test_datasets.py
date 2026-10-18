@@ -26,7 +26,7 @@ class TestDataset:
 
     def test_every_source_schema_exists(self) -> None:
         for dataset in DATASETS.values():
-            assert dataset.source_schema.is_file(), dataset.name
+            assert dataset.source_schema().is_file(), dataset.name
 
     def test_path_is_inside_the_data_directory(self) -> None:
         dataset = get_dataset(Origin.SCOTLAND, Segment.DOMESTIC)
