@@ -13,7 +13,6 @@ only). Keeping only the latest certificate per UPRN is a query on this file.
 """
 
 import logging
-import shutil
 from pathlib import Path
 from typing import Final
 
@@ -22,18 +21,19 @@ import polars as pl
 from epc_connector.cleaning import RAW_PARQUET_NAMES, Nation, clean_domestic_epc
 from epc_connector.external.england_wales_epc import LAST_UPDATED_METADATA_KEY
 from epc_connector.external.scotland_epc import RELEASE_METADATA_KEY
-from epc_connector.ingest import (
-    DEFAULT_CHUNK_ROWS,
-    DEFAULT_ROW_GROUP_ROWS,
-    drop_page_cache,
-    staging_directory,
-    stream_to_parquet,
-)
 from epc_connector.mapping import (
     apply_mapping,
     canonical_dtypes,
     check_values,
     load_mapping,
+)
+from epc_connector.storage import (
+    DEFAULT_CHUNK_ROWS,
+    DEFAULT_ROW_GROUP_ROWS,
+    atomic_write,
+    drop_page_cache,
+    staging_directory,
+    stream_to_parquet,
 )
 
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ def merge_gb_domestic_epc(
         Raise if a description is not covered by the vocabularies; if false,
         mark it ``"not in vocabulary"`` and log a warning instead.
     chunk_rows, row_group_rows
-        Memory limits; see ``ingest.stream_to_parquet``.
+        Memory limits; see ``storage.stream_to_parquet``.
 
     Returns
     -------
@@ -119,8 +119,10 @@ def merge_gb_domestic_epc(
         stored = pl.read_parquet_metadata(data_dir / RAW_PARQUET_NAMES[nation])
         if key in stored:
             metadata[key] = stored[key]
-    with staging_directory(Path(staging_dir), prefix="gb-domestic-") as run_dir:
-        written = run_dir / GB_PARQUET_NAME
+    with (
+        staging_directory(Path(staging_dir), prefix="gb-domestic-") as run_dir,
+        atomic_write(output_path, run_dir) as written,
+    ):
         stream_to_parquet(
             pl.concat(frames),
             written,
@@ -128,7 +130,6 @@ def merge_gb_domestic_epc(
             row_group_rows=row_group_rows,
             metadata=metadata,
         )
-        shutil.move(written, output_path)
     for nation in MAPPING_NAMES:  # read in full; nothing else needs them cached
         drop_page_cache(data_dir / RAW_PARQUET_NAMES[nation])
     logger.info("Wrote %s", output_path)

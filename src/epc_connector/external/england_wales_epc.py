@@ -19,7 +19,6 @@ import datetime as dt
 import logging
 import os
 import re
-import shutil
 import time
 from enum import StrEnum
 from pathlib import Path
@@ -29,14 +28,15 @@ import httpx
 import polars as pl
 from dotenv import find_dotenv, load_dotenv
 
-from epc_connector import ingest
 from epc_connector.datasets import LAST_UPDATED_METADATA_KEY, Origin, get_dataset
-from epc_connector.ingest import (
+from epc_connector.storage import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
     HTTP_TIMEOUT,
-    IngestError,
+    StorageError,
     archive_url_to_parquet,
+    atomic_write,
+    downloads,
     extract_remote_zip_members,
     merge_csvs_to_parquet,
     staging_directory,
@@ -160,21 +160,19 @@ def download_england_and_wales_epc(
     ):
         last_updated = fetch_last_updated(dataset, http)
         logger.info("Downloading %s (published %s)", dataset, last_updated)
-        merged_path = run_dir / "merged.parquet"
-        row_count = archive_url_to_parquet(
-            SOURCE_URLS[dataset],
-            merged_path,
-            work_dir=run_dir,
-            client=http,
-            include=is_certificates_file,
-            sort_key=year_sort_key,
-            chunk_rows=chunk_rows,
-            row_group_rows=row_group_rows,
-            schema=schema,
-            metadata={LAST_UPDATED_METADATA_KEY: last_updated},
-        )
-        parquet_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(merged_path, parquet_path)
+        with atomic_write(parquet_path, run_dir) as merged_path:
+            row_count = archive_url_to_parquet(
+                SOURCE_URLS[dataset],
+                merged_path,
+                work_dir=run_dir,
+                client=http,
+                include=is_certificates_file,
+                sort_key=year_sort_key,
+                chunk_rows=chunk_rows,
+                row_group_rows=row_group_rows,
+                schema=schema,
+                metadata={LAST_UPDATED_METADATA_KEY: last_updated},
+            )
     logger.info("Wrote %s (%d rows)", parquet_path, row_count)
     return parquet_path
 
@@ -367,15 +365,14 @@ def update_england_and_wales_epc(
                 )
                 .drop("new_uprn", "new_uprn_source")
             )
-        combined_path = run_dir / "combined.parquet"
-        stream_to_parquet(
-            pl.concat([kept] if fresh is None else [kept, fresh]),
-            combined_path,
-            chunk_rows=chunk_rows,
-            row_group_rows=row_group_rows,
-            metadata={LAST_UPDATED_METADATA_KEY: last_updated},
-        )
-        shutil.move(combined_path, parquet_path)
+        with atomic_write(parquet_path, run_dir) as combined_path:
+            stream_to_parquet(
+                pl.concat([kept] if fresh is None else [kept, fresh]),
+                combined_path,
+                chunk_rows=chunk_rows,
+                row_group_rows=row_group_rows,
+                metadata={LAST_UPDATED_METADATA_KEY: last_updated},
+            )
 
     logger.info(
         "Updated %s for %s to %s: %d added or refreshed, %d removed, "
@@ -505,7 +502,7 @@ def _fetch_window_rows(
         include=lambda name: _certificates_year(name) in years,
     )
     if not csv_paths:
-        raise IngestError(f"bulk file has no certificates for {sorted(years)}")
+        raise StorageError(f"bulk file has no certificates for {sorted(years)}")
     fresh_path = run_dir / "fresh.parquet"
     merge_csvs_to_parquet(
         sorted(csv_paths, key=year_sort_key),
@@ -526,14 +523,14 @@ def _get_json(
         response = client.get(url, params=params)
         if response.status_code == 404:
             return None
-        if response.status_code != 429 or attempt == ingest.MAX_DOWNLOAD_ATTEMPTS:
+        if response.status_code != 429 or attempt == downloads.MAX_DOWNLOAD_ATTEMPTS:
             response.raise_for_status()
             return response.json()
         retry_after = response.headers.get("retry-after", "")
         delay = (
             float(retry_after)
             if retry_after.isdigit()
-            else ingest.RETRY_BASE_DELAY_SECONDS * 2 ** (attempt - 1)
+            else downloads.RETRY_BASE_DELAY_SECONDS * 2 ** (attempt - 1)
         )
         logger.warning("Rate limited by the API; retrying in %.0fs", delay)
         time.sleep(delay)

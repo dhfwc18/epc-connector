@@ -12,9 +12,9 @@ can tell whether a newer release exists.
 
 import contextlib
 import datetime as dt
+import functools
 import logging
 import re
-import shutil
 from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
@@ -24,12 +24,13 @@ import httpx
 import polars as pl
 
 from epc_connector.datasets import RELEASE_METADATA_KEY, Origin, get_dataset
-from epc_connector.ingest import (
+from epc_connector.storage import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
     HTTP_TIMEOUT,
-    IngestError,
+    StorageError,
     archive_url_to_parquet,
+    atomic_write,
     staging_directory,
     stream_to_parquet,
 )
@@ -216,7 +217,7 @@ def fetch_release(dataset: ScotlandEpcDataset, client: httpx.Client) -> str:
     """Return the dataset's current release, e.g. ``"2026q2"``, from CKAN."""
     resource_id = _RESOURCE_ID.search(SOURCE_URLS[dataset])
     if resource_id is None:
-        raise IngestError(f"no resource id in {SOURCE_URLS[dataset]}")
+        raise StorageError(f"no resource id in {SOURCE_URLS[dataset]}")
     resource = _ckan_get(client, "resource_show", resource_id[1])
     package = _ckan_get(client, "package_show", resource["package_id"])
     return release_from_title(package["title"])
@@ -226,7 +227,7 @@ def release_from_title(title: str) -> str:
     """Return ``"2026q2"`` for a title ending ``"... Dataset to Q2 2026"``."""
     match = _RELEASE_IN_TITLE.search(title)
     if match is None:
-        raise IngestError(f"no release quarter in title {title!r}")
+        raise StorageError(f"no release quarter in title {title!r}")
     quarter, year = match.groups()
     return f"{year}q{quarter}"
 
@@ -290,11 +291,10 @@ def _build_series(
             return parquet_path
 
         logger.info("Downloading %s (release %s)", dataset, release)
-        merged_path = run_dir / "merged.parquet"
         metadata = {RELEASE_METADATA_KEY: release}
-        archive_url_to_parquet(
+        download_to = functools.partial(
+            archive_url_to_parquet,
             SOURCE_URLS[dataset],
-            merged_path,
             work_dir=run_dir,
             client=http,
             include=None if window is None else _year_filter(window),
@@ -305,25 +305,25 @@ def _build_series(
             schema=schema,
             metadata=metadata,
         )
-        if window is not None:
-            in_window = _created_between(*window)
-            combined_path = run_dir / "combined.parquet"
-            stream_to_parquet(
-                pl.concat(
-                    [
-                        pl.scan_parquet(parquet_path).filter(~in_window),
-                        pl.scan_parquet(merged_path).filter(in_window),
-                    ]
-                ),
-                combined_path,
-                chunk_rows=chunk_rows,
-                row_group_rows=row_group_rows,
-                metadata=metadata,
-            )
-            merged_path = combined_path
-
-        parquet_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(merged_path, parquet_path)
+        with atomic_write(parquet_path, run_dir) as output_path:
+            if window is None:
+                download_to(output_path)
+            else:
+                window_path = run_dir / "window.parquet"
+                download_to(window_path)
+                in_window = _created_between(*window)
+                stream_to_parquet(
+                    pl.concat(
+                        [
+                            pl.scan_parquet(parquet_path).filter(~in_window),
+                            pl.scan_parquet(window_path).filter(in_window),
+                        ]
+                    ),
+                    output_path,
+                    chunk_rows=chunk_rows,
+                    row_group_rows=row_group_rows,
+                    metadata=metadata,
+                )
         logger.info("Wrote %s (release %s)", parquet_path, release)
         return parquet_path
 

@@ -14,7 +14,8 @@ import pytest
 from epc_connector import validation
 from epc_connector.external import scotland_epc
 from epc_connector.external.scotland_epc import ScotlandEpcDataset
-from epc_connector.ingest import IngestError, extract_files
+from epc_connector.storage import StorageError
+from epc_connector.storage.archives import extract_files
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,
@@ -124,8 +125,8 @@ class TestReleaseFromTitle:
     def test_quarter_and_year_become_release(self) -> None:
         assert scotland_epc.release_from_title(title("Q2 2026")) == "2026q2"
 
-    def test_title_without_quarter_raises_ingest_error(self) -> None:
-        with pytest.raises(IngestError, match="no release quarter"):
+    def test_title_without_quarter_raises_storage_error(self) -> None:
+        with pytest.raises(StorageError, match="no release quarter"):
             scotland_epc.release_from_title("Domestic Energy Performance Certificates")
 
 
@@ -197,7 +198,7 @@ class TestDownloadScotlandEpc:
     def test_staging_directory_is_removed_after_failure(
         self, runner: SeriesRunner
     ) -> None:
-        with pytest.raises(IngestError):
+        with pytest.raises(StorageError):
             runner.download(runner.server({"note.pdf": b"%PDF"}))
 
         assert not runner.staging_dir.exists()
@@ -208,7 +209,7 @@ class TestDownloadScotlandEpc:
     ) -> None:
         server = runner.server({"2024.csv": scottish_csv(["one,b,x"])})
 
-        with pytest.raises(IngestError, match="A: 1 invalid"):
+        with pytest.raises(StorageError, match="A: 1 invalid"):
             runner.download(server)
 
         assert not runner.data_dir.exists()
@@ -289,7 +290,9 @@ class TestUpdateScotlandEpc:
             extracted.extend(p.name for p in paths)
             return paths
 
-        monkeypatch.setattr("epc_connector.ingest.extract_files", recording_extract)
+        monkeypatch.setattr(
+            "epc_connector.storage.archives.extract_files", recording_extract
+        )
 
         downloaded.update(self.new_release(downloaded), date_from="2026-01-01")
 
@@ -309,7 +312,7 @@ class TestUpdateScotlandEpc:
     ) -> None:
         before = downloaded.parquet_path.read_bytes()
 
-        with pytest.raises(IngestError, match=r"no \.csv files"):
+        with pytest.raises(StorageError, match=r"no \.csv files"):
             downloaded.update(self.new_release(downloaded), date_from="2030-01-01")
 
         assert downloaded.parquet_path.read_bytes() == before

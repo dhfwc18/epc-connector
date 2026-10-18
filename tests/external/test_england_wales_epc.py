@@ -17,7 +17,7 @@ import pytest
 from epc_connector import validation
 from epc_connector.external import england_wales_epc
 from epc_connector.external.england_wales_epc import EnglandWalesEpcDataset
-from epc_connector.ingest import IngestError
+from epc_connector.storage import StorageError
 from tests.fakes import FakeServer, write_zip
 
 TOKEN = "test-token"
@@ -300,7 +300,7 @@ class TestDownloadEnglandAndWalesEpc:
     ) -> None:
         members = {"certificates-2024.csv": certificates_csv(["c1,01/02/2024,x"])}
 
-        with pytest.raises(IngestError, match="lodgement_date: 1 invalid"):
+        with pytest.raises(StorageError, match="lodgement_date: 1 invalid"):
             runner.download(runner.server(members))
 
         assert not runner.data_dir.exists()

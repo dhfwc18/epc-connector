@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector import ingest
+from epc_connector.storage import downloads
 from tests.fakes import write_7z, write_vocabularies, yearly_members
 
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch: pytest.MonkeyPatch) -> None:
     """Retry immediately instead of backing off."""
-    monkeypatch.setattr(ingest, "RETRY_BASE_DELAY_SECONDS", 0.0)
+    monkeypatch.setattr(downloads, "RETRY_BASE_DELAY_SECONDS", 0.0)
 
 
 @pytest.fixture
