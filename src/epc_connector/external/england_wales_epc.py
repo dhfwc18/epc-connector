@@ -67,27 +67,38 @@ class EnglandWalesEpcDataset(StrEnum):
 
 
 API_URL: Final = "https://api.get-energy-performance-data.communities.gov.uk"
+"""Base URL of the Get energy performance of buildings data API."""
 DOMESTIC_URL: Final = f"{API_URL}/api/files/domestic/csv"
+"""Bulk CSV ZIP of domestic certificates."""
 NON_DOMESTIC_URL: Final = f"{API_URL}/api/files/non-domestic/csv"
+"""Bulk CSV ZIP of non-domestic certificates."""
 DISPLAY_URL: Final = f"{API_URL}/api/files/display/csv"
+"""Bulk CSV ZIP of Display Energy Certificates."""
 SOURCE_URLS: Final[dict[EnglandWalesEpcDataset, str]] = {
     EnglandWalesEpcDataset.DOMESTIC: DOMESTIC_URL,
     EnglandWalesEpcDataset.NON_DOMESTIC: NON_DOMESTIC_URL,
     EnglandWalesEpcDataset.DISPLAY: DISPLAY_URL,
 }
+"""Bulk CSV ZIP URL, by series."""
 PARQUET_NAMES: Final[dict[EnglandWalesEpcDataset, str]] = {
     series: get_dataset(Origin.ENGLAND_AND_WALES, series).parquet_name
     for series in EnglandWalesEpcDataset
 }
+"""Local file name, by series (from ``datasets.DATASETS``)."""
 
 SEARCH_URLS: Final[dict[EnglandWalesEpcDataset, str]] = {
     series: f"{API_URL}/api/{series}/search" for series in EnglandWalesEpcDataset
 }
+"""Certificate search endpoint, by series."""
 DELTAS_URL: Final = f"{API_URL}/api/deltas"
+"""Endpoint listing removed certificates and changed UPRNs."""
 CERTIFICATE_URL: Final = f"{API_URL}/api/certificate"
-SEARCH_PAGE_SIZE: Final = 5000  # API maximum
+"""Endpoint returning one certificate as JSON."""
+SEARCH_PAGE_SIZE: Final = 5000
+"""Results per search page (the API maximum)."""
 
 API_TOKEN_ENV_VAR: Final = "EPB_API_TOKEN"
+"""Environment variable holding the API bearer token."""
 
 _CERTIFICATES_FILE: Final = re.compile(r"^certificates-(\d{4})\.csv$")
 
@@ -104,7 +115,7 @@ def download_england_and_wales_epc(
     client: httpx.Client | None = None,
 ) -> Path:
     """
-    Download an England and Wales EPC series and merge it into one Parquet file.
+    Download an England and Wales EPC series into one Parquet file.
 
     Column names are checked against the schema before writing and every value
     before the file is moved into ``data_dir``. An existing file is replaced
@@ -198,7 +209,7 @@ def authorised_client(api_token: str | None = None, **options: Any) -> httpx.Cli
 
 
 def fetch_last_updated(dataset: EnglandWalesEpcDataset, client: httpx.Client) -> str:
-    """Return when the series' bulk file was last regenerated (ISO timestamp)."""
+    """Return when the series' bulk file was last rebuilt (ISO timestamp)."""
     response = client.get(f"{SOURCE_URLS[dataset]}/info")
     response.raise_for_status()
     return response.json()["data"]["lastUpdated"]
@@ -251,7 +262,9 @@ def update_england_and_wales_epc(
     date_to
         Last lodgement date to search; defaults to, and is capped at,
         yesterday (the API rejects ranges that include today).
-    api_token, data_dir, staging_dir, chunk_rows, row_group_rows, schemas_dir, client
+    api_token, data_dir, staging_dir, chunk_rows, row_group_rows
+        As for ``download_england_and_wales_epc``.
+    schemas_dir, client
         As for ``download_england_and_wales_epc``.
 
     Returns
@@ -382,7 +395,7 @@ def fetch_certificate_uprn(
     certificate_number: str, client: httpx.Client
 ) -> tuple[str, str] | None:
     """
-    Return a certificate's current UPRN and its source from the certificate API.
+    Return a certificate's UPRN and the UPRN's source, from the API.
 
     Returns
     -------
@@ -439,7 +452,7 @@ def fetch_deltas(
     date_from: dt.date, date_to: dt.date, client: httpx.Client
 ) -> tuple[set[str], set[str]]:
     """
-    Return certificates removed, and those whose UPRN changed, between two dates.
+    Return the certificates removed, or whose UPRN changed, between two dates.
 
     Returns
     -------
@@ -483,7 +496,7 @@ def _fetch_window_rows(
     chunk_rows: int,
     row_group_rows: int,
 ) -> Path:
-    """Merge the bulk ZIP's yearly CSVs for a date window into one Parquet file."""
+    """Merge the bulk ZIP's yearly CSVs for a date window into one file."""
     years = set(range(date_from.year, date_to.year + 1))
     csv_paths = extract_remote_zip_members(
         SOURCE_URLS[dataset],
@@ -507,7 +520,7 @@ def _fetch_window_rows(
 def _get_json(
     client: httpx.Client, url: str, params: dict[str, Any]
 ) -> dict[str, Any] | None:
-    """GET JSON, retrying when rate limited (429); ``None`` for "not found" (404)."""
+    """GET JSON, retrying when rate limited (429); ``None`` for 404."""
     attempt = 1
     while True:
         response = client.get(url, params=params)

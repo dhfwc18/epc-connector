@@ -186,7 +186,7 @@ def _lookup(phrase: str, vocabulary: Vocabulary, raw: str) -> Mapping[str, Any]:
 def _give(
     fields: dict[str, Any], name: str, value: Any, vocabulary: Vocabulary, raw: str
 ) -> None:
-    """Set a field, sending a second, different value to its second-value field."""
+    """Set a field; a second, different value goes to its second field."""
     if fields.get(name, value) != value:
         second = vocabulary.second_value_fields.get(name)
         if second is None:

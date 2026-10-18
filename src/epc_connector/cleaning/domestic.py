@@ -50,6 +50,7 @@ RAW_PARQUET_NAMES: Final[dict[Nation, str]] = {
         scotland_epc.ScotlandEpcDataset.DOMESTIC
     ],
 }
+"""Raw domestic file name, by nation."""
 
 
 def clean_domestic_epc(
@@ -60,7 +61,7 @@ def clean_domestic_epc(
     vocabularies_dir: Path = DEFAULT_VOCABULARIES_DIR,
 ) -> pl.LazyFrame:
     """
-    Return the raw domestic file with its descriptions cleaned, as a lazy frame.
+    Return a raw domestic file with its descriptions cleaned, as a lazy frame.
 
     Every column of ``data/domestic_epc_certificate_<nation>.parquet`` is kept,
     in order, except that each description column is replaced by its

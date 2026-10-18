@@ -39,15 +39,17 @@ from epc_connector.mapping import (
 logger = logging.getLogger(__name__)
 
 GB_PARQUET_NAME: Final = "domestic_epc_certificate_gb.parquet"
+"""File name of the merged GB domestic file."""
 MAPPING_NAMES: Final[dict[Nation, str]] = {
     Nation.ENGLAND_AND_WALES: "england-and-wales-domestic",
     Nation.SCOTLAND: "scotland-domestic",
 }
-# Provenance copied from each raw file into the GB file's metadata.
+"""Mapping file name (without suffix), by nation."""
 PROVENANCE_KEYS: Final[dict[Nation, str]] = {
     Nation.ENGLAND_AND_WALES: LAST_UPDATED_METADATA_KEY,
     Nation.SCOTLAND: RELEASE_METADATA_KEY,
 }
+"""Raw file metadata key copied into the GB file, by nation."""
 
 
 def canonical_domestic_epc(

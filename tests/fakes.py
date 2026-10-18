@@ -234,7 +234,7 @@ def abc_schema() -> dict:
 
 
 def created_csv(rows: list[tuple[str, str, str]]) -> bytes:
-    """Return a Scottish-style CSV of (report number, CREATED_AT, value) rows."""
+    """Return a Scottish-style CSV of (report number, CREATED_AT, value)."""
     return scottish_csv(
         [",".join(row) for row in rows],
         header="REPORT_REFERENCE_NUMBER,CREATED_AT,VALUE",

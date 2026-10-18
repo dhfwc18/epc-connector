@@ -24,5 +24,5 @@ def yearly_archive(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def vocabularies(tmp_path: Path) -> Path:
-    """Small walls and main-heating vocabularies (see ``fakes.write_vocabularies``)."""
+    """Small walls and main-heating vocabularies (see ``fakes``)."""
     return write_vocabularies(tmp_path / "vocabularies")

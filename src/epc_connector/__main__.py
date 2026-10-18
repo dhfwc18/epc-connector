@@ -43,9 +43,11 @@ from epc_connector import (
 from epc_connector.external.england_wales_epc import authorised_client
 
 SCOTLAND_SERIES: Final = ["non-domestic", "domestic"]
+"""Scottish series, smallest first."""
 ENGLAND_AND_WALES_SERIES: Final = ["non-domestic", "display", "domestic"]
-# Scottish domestic needs about 8 GB of staging disk while it runs.
+"""England and Wales series, smallest first."""
 MIN_FREE_STAGING_BYTES: Final = 10 * 1024**3
+"""Free staging space a Scottish domestic run needs (about 8 GB, plus room)."""
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -196,7 +198,7 @@ def _update(args: argparse.Namespace) -> int:
 
 
 def _setup(args: argparse.Namespace) -> int:
-    """Download both nations' series, then merge, checking prerequisites first."""
+    """Download both nations' series, then merge; check prerequisites first."""
     scotland = ["domestic"] if args.domestic_only else SCOTLAND_SERIES
     england_and_wales = ["domestic"] if args.domestic_only else ENGLAND_AND_WALES_SERIES
     if not _enough_staging_space(argparse.Namespace(**vars(args), series=scotland)):
@@ -264,7 +266,7 @@ def _writing_options(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _enough_staging_space(args: argparse.Namespace) -> bool:
-    """Check free space before a Scottish domestic run, which needs about 8 GB."""
+    """Check for the 8 GB of free space a Scottish domestic run needs."""
     if "domestic" not in args.series:
         return True
     staging = Path(args.staging_dir).resolve()

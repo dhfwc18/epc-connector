@@ -38,14 +38,20 @@ from epc_connector.errors import EpcConnectorError
 logger = logging.getLogger(__name__)
 
 HTTP_TIMEOUT: Final = httpx.Timeout(30.0, read=120.0)
+"""Connect timeout of 30 s; 120 s to wait for each block of a download."""
 STREAM_BLOCK_BYTES: Final = 1024 * 1024
+"""Bytes read from a download or archive member at a time."""
 MAX_DOWNLOAD_ATTEMPTS: Final = 5
+"""Requests made for one file before giving up."""
 RETRY_BASE_DELAY_SECONDS: Final = 1.0
+"""Wait before the first retry; doubled for each further retry."""
 DEFAULT_CHUNK_ROWS: Final = 10_000
+"""Rows each Polars thread processes at a time."""
 DEFAULT_ROW_GROUP_ROWS: Final = 50_000
+"""Rows per Parquet row group (rows buffered before each write)."""
 
-# Bytes written between page cache drops.
 PAGE_CACHE_DROP_BYTES: Final = 64 * 1024 * 1024
+"""Bytes written between page cache drops."""
 
 _CONTENT_RANGE_TOTAL: Final = re.compile(r"/(\d+)$")
 
@@ -129,7 +135,7 @@ class StreamingFile:
 
 
 class _StreamingWriter(Py7zIO):
-    """py7zr writer that extracts a member straight to disk via ``StreamingFile``."""
+    """py7zr writer that extracts a member to disk via ``StreamingFile``."""
 
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -231,7 +237,7 @@ def download_file(
 
 
 def _total_bytes(response: httpx.Response, already_written: int) -> int | None:
-    """Full file size from ``Content-Range`` or ``Content-Length``, if known."""
+    """File size from ``Content-Range`` or ``Content-Length``, if known."""
     if response.status_code == 206:
         match = _CONTENT_RANGE_TOTAL.search(response.headers.get("content-range", ""))
         return int(match[1]) if match else None
@@ -353,7 +359,7 @@ def merge_csvs_to_parquet(
     row_group_rows
         Rows per Parquet row group, i.e. rows buffered before each write.
     schema
-        Source JSON Schema describing one row (see ``epc_connector.validation``).
+        Source JSON Schema of one row (see ``epc_connector.validation``).
     metadata
         Key-value pairs stored in the Parquet file's metadata.
 
@@ -449,7 +455,7 @@ def stream_to_parquet(
 
 
 def read_csv_header(csv_path: Path) -> list[str]:
-    """Return the column names in the first row of a CSV (UTF-8 BOM removed)."""
+    """Return the column names in a CSV's first row (UTF-8 BOM removed)."""
     with csv_path.open(encoding="utf-8-sig", newline="") as csv_file:
         return next(csv.reader(csv_file))
 

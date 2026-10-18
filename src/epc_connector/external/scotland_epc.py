@@ -4,10 +4,10 @@ Download and update Scottish EPC open data as one Parquet file per series.
 Each series is the publisher's "Extended Historic" 7z archive on data.gov.scot:
 every certificate ever lodged, one CSV per year of ``CREATED_AT`` (lodgement
 time), with superseded certificates flagged by ``HISTORIC``. Values stay as
-published strings; the label row (row 2) of each CSV is skipped, and the data is
-checked against ``schemas/source/scotland/<series>.schema.json``. The release
-(e.g. ``2026q2``) is stored in the Parquet file's metadata so updates can tell
-whether a newer release exists.
+published strings; the label row (row 2) of each CSV is skipped, and the data
+is checked against ``schemas/source/scotland/<series>.schema.json``. The
+release (e.g. ``2026q2``) is stored in the Parquet file's metadata so updates
+can tell whether a newer release exists.
 """
 
 import contextlib
@@ -59,20 +59,25 @@ class ScotlandEpcDataset(StrEnum):
 
 
 CKAN_API_URL: Final = "https://api.data.gov.scot/api/3/action"
+"""Base URL of the data.gov.scot CKAN API."""
 DOMESTIC_URL: Final = (
     "https://api.data.gov.scot/resource/b7bc304c-debb-4365-9a86-1c8cb82cc60d/download"
 )
+"""Download URL of the domestic Extended Historic archive."""
 NON_DOMESTIC_URL: Final = (
     "https://api.data.gov.scot/resource/c7873ae4-d19a-43ee-8d9f-415e7d0f05d7/download"
 )
+"""Download URL of the non-domestic Extended Historic archive."""
 SOURCE_URLS: Final[dict[ScotlandEpcDataset, str]] = {
     ScotlandEpcDataset.DOMESTIC: DOMESTIC_URL,
     ScotlandEpcDataset.NON_DOMESTIC: NON_DOMESTIC_URL,
 }
+"""Archive download URL, by series."""
 PARQUET_NAMES: Final[dict[ScotlandEpcDataset, str]] = {
     series: get_dataset(Origin.SCOTLAND, series).parquet_name
     for series in ScotlandEpcDataset
 }
+"""Local file name, by series (from ``datasets.DATASETS``)."""
 
 
 _CREATED_DATE: Final = (
@@ -150,20 +155,21 @@ def update_scotland_epc(
     Refresh a local Parquet file from the latest release.
 
     Works like ``download_scotland_epc``, except that only the yearly CSVs
-    overlapping ``[date_from, date_to]`` (by ``CREATED_AT`` date) are extracted,
-    and only rows in that window are replaced; rows outside it are kept. New
-    certificates are therefore added and re-published ones refreshed, without
-    duplicates. ``HISTORIC`` flags outside the window are not refreshed.
+    overlapping ``[date_from, date_to]`` (by ``CREATED_AT`` date) are
+    extracted, and only rows in that window are replaced; rows outside it are
+    kept. New certificates are therefore added and re-published ones
+    refreshed, without duplicates. ``HISTORIC`` flags outside the window are
+    not refreshed.
 
     Parameters
     ----------
     dataset
         Series to update, e.g. ``"domestic"``.
     date_from
-        First ``CREATED_AT`` date to refresh (date or ``"YYYY-MM-DD"``). Defaults
-        to the latest date in the local file, ignoring future dates (entry
-        errors). Without ``date_from`` and ``date_to`` nothing is downloaded if
-        the local file already holds the latest release.
+        First ``CREATED_AT`` date to refresh (date or ``"YYYY-MM-DD"``).
+        Defaults to the latest date in the local file, ignoring future dates
+        (entry errors). Without ``date_from`` and ``date_to`` nothing is
+        downloaded if the local file already holds the latest release.
     date_to
         Last ``CREATED_AT`` date to refresh; open-ended by default.
     data_dir, staging_dir, chunk_rows, row_group_rows, schemas_dir, client
@@ -233,7 +239,7 @@ def stored_release(parquet_path: Path) -> str | None:
 def latest_created_date(
     parquet_path: Path, *, today: dt.date | None = None
 ) -> dt.date | None:
-    """Return the latest ``CREATED_AT`` date, ignoring dates after ``today``."""
+    """Return the latest ``CREATED_AT`` date that is not after ``today``."""
     today = today or dt.date.today()
     return (
         pl.scan_parquet(parquet_path, low_memory=True)
@@ -342,7 +348,7 @@ def _created_between(start: dt.date, end: dt.date | None) -> pl.Expr:
 
 
 def _year_filter(window: DateWindow) -> Callable[[str], bool]:
-    """Return a member-name filter keeping yearly CSVs that overlap ``window``."""
+    """Return a member-name filter for yearly CSVs overlapping ``window``."""
     start, end = window
 
     def overlaps(name: str) -> bool:

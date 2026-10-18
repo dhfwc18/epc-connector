@@ -131,7 +131,7 @@ def runner(tmp_path: Path) -> SeriesRunner:
 
 
 def two_years_with_recommendations() -> dict[str, bytes]:
-    """Return a bulk ZIP's members, out of year order, with a recommendations file."""
+    """Return bulk ZIP members out of year order, plus recommendations."""
     return {
         "certificates-2024.csv": certificates_csv(
             ["c3,2024-02-01,x", "c4,2024-09-30,"]
@@ -313,7 +313,7 @@ class TestDownloadEnglandAndWalesEpc:
 
 @functools.cache
 def repository_rules(series: str) -> dict[str, pl.Expr]:
-    """Polars rules for the repository's schema of an England and Wales series."""
+    """Polars rules from the repository schema of an E&W series."""
     path = (
         validation.DEFAULT_SCHEMAS_DIR
         / "source"
@@ -503,7 +503,7 @@ class TestLatestLodgementDate:
 class TestUpdateEnglandAndWalesEpc:
     @pytest.fixture
     def downloaded(self, runner: SeriesRunner) -> SeriesRunner:
-        """A local domestic file with c1, c2 (2023) and c3, c4 (2024), all "old"."""
+        """Local domestic file: c1, c2 (2023) and c3, c4 (2024), all "old"."""
         members = {
             "certificates-2023.csv": certificates_csv(
                 ["c1,2023-03-01,old", "c2,2023-06-01,old"]
