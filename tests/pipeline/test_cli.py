@@ -14,7 +14,10 @@ from epc_connector import sources
 from epc_connector.canonical import gb
 from epc_connector.datasets import Origin, Segment
 from epc_connector.pipeline import cli, process
+from epc_connector.pipeline.logs import LogOptions
 from tests.fakes import write_raw_domestic
+
+pytestmark = pytest.mark.usefixtures("restore_logging")
 
 type Call = tuple[Callable[..., Path], tuple[Any, ...], dict[str, Any]]
 
@@ -152,6 +155,49 @@ class TestMain:
         assert status == 1
         assert calls == []
         assert "no display certificates are published for scotland" in caplog.text
+
+    def test_each_step_is_numbered_at_info(
+        self, calls: list, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level(logging.INFO):
+            cli.main(["setup", "--origin", "scotland", "--segment", "domestic"])
+
+        assert "Step 1 of 2: download scotland/domestic" in caplog.text
+        assert "Step 2 of 2: replace scotland in GB domestic" in caplog.text
+        assert "Finished 2 steps" in caplog.text
+
+    def test_log_options_reach_every_step(self, calls: list, tmp_path: Path) -> None:
+        log_file = tmp_path / "run.log"
+
+        cli.main(
+            ["setup", "--segment", "domestic", "--debug", "--log-file", str(log_file)]
+        )
+
+        expected = LogOptions(debug=True, log_file=log_file)
+        assert [kwargs["log_options"] for _, _, kwargs in calls] == [expected] * 3
+
+    def test_error_is_one_line_with_details_in_the_log_file(
+        self, calls: list, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        log_file = tmp_path / "run.log"
+
+        status = cli.main(
+            [
+                "setup",
+                "--origin",
+                "scotland",
+                "--segment",
+                "display",
+                "--log-file",
+                str(log_file),
+            ]
+        )
+
+        console = capsys.readouterr().err
+        assert status == 1
+        assert "ERROR   no display certificates are published" in console
+        assert "Traceback" not in console
+        assert "Traceback" in log_file.read_text()
 
     def test_unknown_segment_is_rejected(self) -> None:
         with pytest.raises(SystemExit):

@@ -204,6 +204,7 @@ def fetch_release(segment: Segment, client: httpx.Client) -> str:
         raise StorageError(f"no resource id in {SOURCE_URLS[segment]}")
     resource = _ckan_get(client, "resource_show", resource_id[1])
     package = _ckan_get(client, "package_show", resource["package_id"])
+    logger.debug("%s: CKAN package %s, %r", segment, package["name"], package["title"])
     return release_from_title(package["title"])
 
 

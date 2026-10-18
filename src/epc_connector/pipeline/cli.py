@@ -15,13 +15,19 @@ selected datasets into ``--data-dir`` (default ``data``) and ``update``
 refreshes them; both then bring the GB file up to date. The England and
 Wales API token is read from ``EPB_API_TOKEN`` or ``.env``.
 
+Every command takes ``--debug`` (show every log message) and ``--log-file
+PATH`` (record every message in a file); see ``pipeline.logs``.
+
 Each download, update and GB step runs in a fresh process, so its memory is
 returned to the operating system when it ends.
 """
 
 import argparse
+import datetime as dt
 import logging
 import shutil
+import sys
+import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Final
@@ -29,8 +35,10 @@ from typing import Final
 from epc_connector import cleaning
 from epc_connector.datasets import Origin, Segment, parse_origins
 from epc_connector.errors import EpcConnectorError
-from epc_connector.pipeline import coverage, plan, process, status
+from epc_connector.pipeline import coverage, logs, plan, process, status
 from epc_connector.sources.england_and_wales import authorised_client
+
+logger = logging.getLogger(__name__)
 
 MIN_FREE_STAGING_BYTES: Final = 10 * 1024**3
 """Free staging space a Scottish domestic run needs (about 8 GB, plus room)."""
@@ -39,24 +47,37 @@ MIN_FREE_STAGING_BYTES: Final = 10 * 1024**3
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line interface; return the exit status."""
     args = build_parser().parse_args(argv)
-    process.configure_logging()
+    logs.configure_logging(_log_options(args))
+    logger.debug("epc-connector %s", " ".join(sys.argv[1:] if argv is None else argv))
     try:
         return args.run(args)
-    except EpcConnectorError as error:
-        logging.error("%s", error)
+    except (EpcConnectorError, FileNotFoundError) as error:
+        logger.error("%s", error)
+        logger.debug("Details of the error", exc_info=True)
         return 1
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Return the parser for every subcommand."""
-    data = argparse.ArgumentParser(add_help=False)
-    data.add_argument("--data-dir", type=Path, default=Path("data"))
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--data-dir", type=Path, default=Path("data"))
+    common.add_argument(
+        "--debug",
+        action="store_true",
+        help="show every log message, with the process and module it came from",
+    )
+    common.add_argument(
+        "--log-file",
+        type=Path,
+        metavar="PATH",
+        help="append every log message, including debug ones, to this file",
+    )
     origin = argparse.ArgumentParser(add_help=False)
     origin.add_argument(
         "--origin",
         help="england-and-wales (or england, wales), scotland or gb (default)",
     )
-    writing = argparse.ArgumentParser(add_help=False, parents=[data, origin])
+    writing = argparse.ArgumentParser(add_help=False, parents=[common, origin])
     writing.add_argument(
         "--segment",
         nargs="+",
@@ -110,7 +131,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     status_command = commands.add_parser(
         "status",
-        parents=[data],
+        parents=[common],
         help="list which datasets and GB files are set up",
         description="List which datasets and GB files exist in --data-dir.",
     )
@@ -118,7 +139,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     coverage_command = commands.add_parser(
         "coverage",
-        parents=[data, origin],
+        parents=[common, origin],
         help="report how the vocabularies cover the raw descriptions",
         description="Report vocabulary coverage of the raw domestic descriptions.",
     )
@@ -142,7 +163,7 @@ def _setup(args: argparse.Namespace) -> int:
         workspace=workspace,
         strict=not args.lenient,
     )
-    return _run(work, workspace)
+    return _run(work, workspace, _log_options(args))
 
 
 def _update(args: argparse.Namespace) -> int:
@@ -155,7 +176,7 @@ def _update(args: argparse.Namespace) -> int:
         workspace=workspace,
         strict=not args.lenient,
     )
-    return _run(work, workspace)
+    return _run(work, workspace, _log_options(args))
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -170,7 +191,9 @@ def _coverage(args: argparse.Namespace) -> int:
     return 0
 
 
-def _run(work: plan.Plan, workspace: plan.Workspace) -> int:
+def _run(
+    work: plan.Plan, workspace: plan.Workspace, log_options: logs.LogOptions
+) -> int:
     """Check prerequisites, then run every step of a plan in order."""
     scottish_domestic = any(
         dataset.origin is Origin.SCOTLAND and dataset.segment is Segment.DOMESTIC
@@ -182,19 +205,33 @@ def _run(work: plan.Plan, workspace: plan.Workspace) -> int:
         try:  # fail now, not after the Scottish download, without a token
             authorised_client().close()
         except ValueError as error:
-            logging.error("%s", error)
+            logger.error("%s", error)
             return 1
-    for step in work.steps:
-        logging.info("Starting: %s", step.name)
-        path = process.run_step(step.function, *step.args, **step.kwargs)
-        logging.info("Done: %s -> %s", step.name, path)
+    started = time.perf_counter()
+    for number, step in enumerate(work.steps, start=1):
+        logger.info("Step %d of %d: %s", number, len(work.steps), step.name)
+        step_started = time.perf_counter()
+        path = process.run_step(
+            step.function, *step.args, log_options=log_options, **step.kwargs
+        )
+        logger.debug("Step %d done in %s: %s", number, _elapsed(step_started), path)
+    logger.info("Finished %d steps in %s", len(work.steps), _elapsed(started))
     for segment in work.not_set_up:
-        logging.warning(
+        logger.warning(
             "GB %s is not set up yet; only the raw %s files were changed",
             segment,
             segment,
         )
     return 0
+
+
+def _elapsed(started: float) -> str:
+    """Time since ``started`` (a ``time.perf_counter`` value) as H:MM:SS."""
+    return str(dt.timedelta(seconds=round(time.perf_counter() - started)))
+
+
+def _log_options(args: argparse.Namespace) -> logs.LogOptions:
+    return logs.LogOptions(debug=args.debug, log_file=args.log_file)
 
 
 def _workspace(args: argparse.Namespace) -> plan.Workspace:
@@ -213,7 +250,7 @@ def _enough_staging_space(staging_dir: Path) -> bool:
     free = shutil.disk_usage(existing).free
     if free >= MIN_FREE_STAGING_BYTES:
         return True
-    logging.error(
+    logger.error(
         "Only %.1f GB free under %s; Scottish domestic needs about 10 GB",
         free / 1024**3,
         staging_dir,

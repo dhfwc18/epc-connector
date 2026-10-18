@@ -189,6 +189,7 @@ def replace_origin_in_gb(
             row_group_rows=row_group_rows,
         )
     changed = Origin(origin)
+    logger.debug("Keeping the other origins' rows of %s", gb_path)
     kept = pl.scan_parquet(gb_path, low_memory=True)
     sources = {
         dataset.origin: (
@@ -236,6 +237,7 @@ def _write_gb(
         dataset = get_dataset(origin, Segment.DOMESTIC)
         frame = sources[origin]
         if frame is None:
+            logger.debug("Cleaning and mapping %s", dataset.name)
             frames.append(canonical_records(origin, data_dir=data_dir, strict=strict))
             provenance = pl.read_parquet_metadata(dataset.path(data_dir))
             cleaned.append(dataset)

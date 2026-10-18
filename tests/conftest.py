@@ -2,6 +2,8 @@
 Shared pytest fixtures.
 """
 
+import logging
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -26,3 +28,17 @@ def yearly_archive(tmp_path: Path) -> Path:
 def vocabularies(tmp_path: Path) -> Path:
     """Small walls and main-heating vocabularies (see ``fakes``)."""
     return write_vocabularies(tmp_path / "vocabularies")
+
+
+@pytest.fixture
+def restore_logging() -> Iterator[None]:
+    """Undo ``pipeline.logs.configure_logging`` after the test."""
+    root = logging.getLogger()
+    handlers, level = root.handlers[:], root.level
+    yield
+    for handler in root.handlers:
+        if handler not in handlers:
+            handler.close()
+    root.handlers[:] = handlers
+    root.setLevel(level)
+    logging.getLogger("httpcore").setLevel(logging.NOTSET)

@@ -281,6 +281,15 @@ def update(
     ):
         searched = set(search_certificates(segment, start, end, http))
         removed, uprn_updated = fetch_deltas(start, end, http)
+        logger.debug(
+            "%s from %s to %s: %d lodged, %d removed, %d UPRNs changed",
+            dataset.name,
+            start,
+            end,
+            len(searched),
+            len(removed),
+            len(uprn_updated),
+        )
         certificate = pl.col("certificate_number")
         local = pl.scan_parquet(parquet_path, low_memory=True)
         affected = set(
@@ -417,7 +426,7 @@ def search_certificates(
             break
         numbers.extend(item["certificateNumber"] for item in body["data"])
         pagination = body["pagination"]
-        logger.info("Search page %s of %s", page, pagination.get("totalPages"))
+        logger.debug("Search page %s of %s", page, pagination.get("totalPages"))
         page = pagination.get("nextPage")
     return numbers
 

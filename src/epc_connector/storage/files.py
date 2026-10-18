@@ -10,6 +10,7 @@ with ``atomic_write``, so a failed run never leaves a half-written file.
 """
 
 import contextlib
+import logging
 import os
 import shutil
 import tempfile
@@ -18,6 +19,8 @@ from pathlib import Path
 from typing import IO, Final, Self
 
 from epc_connector.errors import EpcConnectorError
+
+logger = logging.getLogger(__name__)
 
 STREAM_BLOCK_BYTES: Final = 1024 * 1024
 """Bytes read from a download or archive member at a time."""
@@ -113,6 +116,7 @@ def staging_directory(staging_dir: Path, prefix: str) -> Generator[Path]:
     staging_dir.mkdir(parents=True, exist_ok=True)
     try:
         with tempfile.TemporaryDirectory(prefix=prefix, dir=staging_dir) as run_dir:
+            logger.debug("Working in %s", run_dir)
             yield Path(run_dir)
     finally:
         with contextlib.suppress(OSError):
@@ -141,6 +145,7 @@ def atomic_write(path: Path, work_dir: Path) -> Generator[Path]:
     yield temporary
     path.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(temporary, path)
+    logger.debug("Moved the new %s into place", path)
 
 
 def check_free_space(directory: Path, needed_bytes: int) -> None:

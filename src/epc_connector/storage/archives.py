@@ -61,6 +61,7 @@ def extract_files(
         matching files would not fit in the free space under ``destination``.
     """
     destination.mkdir(parents=True, exist_ok=True)
+    logger.debug("Extracting %s files from %s", suffix, archive_path)
     if py7zr.is_7zfile(archive_path):
         with py7zr.SevenZipFile(archive_path) as archive:
             sizes = {i.filename: i.uncompressed for i in archive.list()}
@@ -84,6 +85,7 @@ def extract_files(
         raise StorageError(f"{archive_path.name} is neither a 7z nor a zip archive")
     if not names:
         raise StorageError(f"no {suffix} files in {archive_path.name}")
+    logger.debug("Extracted %d files: %s", len(names), ", ".join(names))
     return [destination / name for name in names]
 
 
@@ -139,7 +141,7 @@ def extract_remote_zip_members(
             with archive.open(member) as source, StreamingFile(path) as target:
                 shutil.copyfileobj(source, target, read_block_bytes)
             paths.append(path)
-            logger.info("Fetched %s (%d bytes)", member.filename, member.file_size)
+            logger.debug("Fetched %s (%d bytes)", member.filename, member.file_size)
     return paths
 
 

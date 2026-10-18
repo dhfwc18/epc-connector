@@ -130,7 +130,7 @@ class FakeServer:
             return httpx.Response(200, json={"success": True, "result": result})
         if "/action/package_show" in url:
             self.calls["package_show"] += 1
-            result = {"title": self.title}
+            result = {"name": "package-1", "title": self.title}
             return httpx.Response(200, json={"success": True, "result": result})
         path = request.url.path
         api_call = path.endswith("/search") or path in ("/api/deltas", CERTIFICATE)

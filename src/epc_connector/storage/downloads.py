@@ -64,6 +64,7 @@ def download_file(
     """
     if attempts < 1:
         raise ValueError("attempts must be at least 1")
+    logger.debug("Downloading %s to %s", url, destination)
     with contextlib.ExitStack() as stack:
         if client is None:
             client = stack.enter_context(httpx.Client(timeout=HTTP_TIMEOUT))

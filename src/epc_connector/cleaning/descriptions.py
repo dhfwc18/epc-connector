@@ -147,8 +147,14 @@ def clean_values(
         raise UnknownPhraseError(
             f"{len(problems)} descriptions not covered:\n" + "\n".join(problems)
         )
+    if problems:
+        logger.warning(
+            "%d %s descriptions are not in the vocabulary; marked as discarded",
+            len(problems),
+            element,
+        )
     for problem in problems:
-        logger.warning("Not in vocabulary: %s", problem)
+        logger.debug("Not in the %s vocabulary: %s", element, problem)
     return pl.DataFrame(rows, schema={"raw": pl.String, **vocabulary.columns})
 
 

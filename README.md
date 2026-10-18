@@ -19,6 +19,9 @@ uv run epc-connector coverage --element walls                    # vocabulary co
 (`data/domestic_epc_certificate_gb.parquet`); non-domestic and display certificates are downloaded but not merged yet.
 The England and Wales API token is read from `EPB_API_TOKEN` or `.env`.
 
+Every command takes `--debug` to show every log message (HTTP requests, archive members, temporary files) and
+`--log-file PATH` to append every message, debug ones included, to a file whatever the console shows.
+
 `uv run epc-connector <command> --help` lists each command's options; `python -m epc_connector` works too. Each step
 runs in its own process, so memory is released between steps.
 

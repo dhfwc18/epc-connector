@@ -7,6 +7,7 @@ Polars' streaming engine, with explicit chunk and row-group limits.
 """
 
 import csv
+import logging
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Final
@@ -17,6 +18,8 @@ import polars as pl
 from epc_connector import validation
 from epc_connector.storage import archives, downloads
 from epc_connector.storage.files import StorageError, drop_page_cache
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_CHUNK_ROWS: Final = 10_000
 """Rows each Polars thread processes at a time."""
@@ -124,6 +127,7 @@ def merge_csvs_to_parquet(
         except ValueError as error:
             raise StorageError(f"{csv_paths[0].name}: {error}") from error
 
+    logger.debug("Merging %d CSV files into %s", len(csv_paths), output_path)
     frames = [
         pl.scan_csv(
             csv_path,
@@ -142,6 +146,7 @@ def merge_csvs_to_parquet(
         metadata=metadata,
     )
     if schema is not None:
+        logger.debug("Checking %s against the source schema", output_path)
         written = pl.scan_parquet(output_path, low_memory=True)
         with pl.Config(streaming_chunk_size=chunk_rows):
             violations = validation.find_violations(written, schema)
