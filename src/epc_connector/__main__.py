@@ -32,7 +32,7 @@ from typing import Any, Final
 
 import polars as pl
 
-from epc_connector import cleaning, merge_gb_domestic_epc
+from epc_connector import build_gb, cleaning
 from epc_connector.datasets import Origin, Segment, get_dataset
 from epc_connector.sources import england_and_wales, scotland
 from epc_connector.sources.england_and_wales import authorised_client
@@ -208,7 +208,7 @@ def _setup(args: argparse.Namespace) -> int:
 
 
 def _merge(args: argparse.Namespace) -> int:
-    _run_step(merge_gb_domestic_epc, strict=not args.lenient, **_writing_options(args))
+    _run_step(build_gb, strict=not args.lenient, **_writing_options(args))
     return 0
 
 

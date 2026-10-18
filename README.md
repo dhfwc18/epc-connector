@@ -21,8 +21,8 @@ runs in its own process, so memory is released between steps.
 ## Python
 
 ```python
-from epc_connector import download, merge_gb_domestic_epc
+from epc_connector import build_gb, download
 
 download("scotland", "domestic")
-merge_gb_domestic_epc()
+build_gb()
 ```

@@ -35,7 +35,7 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, tuple, dict]]:
     ]:
         name = f"{module.__name__.rsplit('.', 1)[1]}.{function}"
         monkeypatch.setattr(module, function, recorder(name))
-    monkeypatch.setattr(cli, "merge_gb_domestic_epc", recorder("merge_gb_domestic_epc"))
+    monkeypatch.setattr(cli, "build_gb", recorder("build_gb"))
     # Run steps inline: a spawned process would not see these replacements.
     monkeypatch.setattr(cli, "_run_step", lambda function, *a, **k: function(*a, **k))
     monkeypatch.setattr(
@@ -102,7 +102,7 @@ class TestMain:
         assert [(name, args) for name, args, _ in calls] == [
             ("scotland.download", ("domestic",)),
             ("england_and_wales.download", ("domestic",)),
-            ("merge_gb_domestic_epc", ()),
+            ("build_gb", ()),
         ]
         assert calls[-1][2]["strict"] is False
 
