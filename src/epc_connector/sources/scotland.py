@@ -225,6 +225,13 @@ def release_from_title(title: str) -> str:
     return f"{year}q{quarter}"
 
 
+def release_end_date(release: str) -> dt.date:
+    """Return the last day a release covers: ``"2026q2"`` -> 30 June 2026."""
+    year, quarter = int(release[:4]), int(release[-1])
+    first_of_next = dt.date(year + quarter // 4, quarter % 4 * 3 + 1, 1)
+    return first_of_next - dt.timedelta(days=1)
+
+
 def stored_release(parquet_path: Path) -> str | None:
     """Return the release recorded in a Parquet file, if any."""
     return pl.read_parquet_metadata(parquet_path).get(RELEASE_METADATA_KEY)

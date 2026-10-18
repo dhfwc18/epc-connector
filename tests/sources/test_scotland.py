@@ -119,6 +119,19 @@ class TestReleaseFromTitle:
             scotland.release_from_title("Domestic Energy Performance Certificates")
 
 
+class TestReleaseEndDate:
+    @pytest.mark.parametrize(
+        ("release", "expected"),
+        [
+            ("2026q1", dt.date(2026, 3, 31)),
+            ("2026q2", dt.date(2026, 6, 30)),
+            ("2026q4", dt.date(2026, 12, 31)),
+        ],
+    )
+    def test_last_day_of_the_quarter(self, release: str, expected: dt.date) -> None:
+        assert scotland.release_end_date(release) == expected
+
+
 class TestLatestCreatedDate:
     def test_future_dates_are_ignored_as_entry_errors(self, tmp_path: Path) -> None:
         path = tmp_path / "segment.parquet"

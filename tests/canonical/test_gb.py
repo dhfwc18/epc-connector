@@ -18,31 +18,7 @@ from epc_connector.datasets import (
     Segment,
     get_dataset,
 )
-from tests.fakes import write_raw_domestic
-
-ENGLAND_AND_WALES_ROW = {
-    "certificate_number": "0001-0002",
-    "uprn": "100023336956",
-    "local_authority": "W06000015",
-    "lodgement_date": "2024-03-01",
-    "lodgement_datetime": "2024-03-01 10:00:00",
-    "construction_age_band": "England and Wales: 1930-1949",
-    "tenure": "Rental (private)",
-    "total_floor_area": "0",
-    "heating_cost_current": "300",
-    "walls_description": "Cavity wall, filled cavity",
-    "walls_energy_eff": "Good",
-    "mainheat_description": "Electric storage heaters",
-}
-SCOTLAND_ROW = {
-    "REPORT_REFERENCE_NUMBER": "9001-0001",
-    "OSG_REFERENCE_NUMBER": "151101923",
-    "CREATED_AT": "08/12/2008 11:22:22",
-    "HISTORIC": "True",
-    "CONSTRUCTION_AGE_BAND": "2008 onwards",
-    "HEATING_COST_CURRENT": "300",
-    "WALL_DESCRIPTION": "Pitched, 250 mm loft insulation | Cavity wall",
-}
+from tests.fakes import ENGLAND_AND_WALES_ROW, SCOTLAND_ROW, write_raw_domestic
 
 
 @pytest.fixture
@@ -118,12 +94,12 @@ class TestBuildGb:
 
         assert not (data_dir / gb.GB_PARQUET_NAME).exists()
 
-    def test_missing_origin_is_left_out_with_a_warning(
+    def test_missing_origin_is_left_out_and_logged(
         self, data_dir: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         get_dataset(Origin.SCOTLAND, Segment.DOMESTIC).path(data_dir).unlink()
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.INFO):
             frame = pl.read_parquet(build_into(data_dir, tmp_path))
 
         assert frame["source_dataset"].to_list() == ["england-and-wales/domestic"]

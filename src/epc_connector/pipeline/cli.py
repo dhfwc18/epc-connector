@@ -24,26 +24,18 @@ returned to the operating system when it ends.
 """
 
 import argparse
-import datetime as dt
 import logging
-import shutil
 import sys
-import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Final
 
 from epc_connector import cleaning
-from epc_connector.datasets import Origin, Segment, parse_origins
+from epc_connector.datasets import Segment, parse_origins
 from epc_connector.errors import EpcConnectorError
 from epc_connector.locations import DATA_DIR_ENV_VAR, resolve_data_dir
-from epc_connector.pipeline import coverage, logs, plan, process, status
-from epc_connector.sources.england_and_wales import authorised_client
+from epc_connector.pipeline import coverage, logs, plan, run, status
 
 logger = logging.getLogger(__name__)
-
-MIN_FREE_STAGING_BYTES: Final = 10 * 1024**3
-"""Free staging space a Scottish domestic run needs (about 8 GB, plus room)."""
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -179,7 +171,8 @@ def _setup(args: argparse.Namespace) -> int:
         strict=not args.lenient,
         force=args.force,
     )
-    return _run(work, workspace, _log_options(args))
+    run.run_plan(work, workspace, isolated=True, log_options=_log_options(args))
+    return 0
 
 
 def _update(args: argparse.Namespace) -> int:
@@ -192,7 +185,8 @@ def _update(args: argparse.Namespace) -> int:
         workspace=workspace,
         strict=not args.lenient,
     )
-    return _run(work, workspace, _log_options(args))
+    run.run_plan(work, workspace, isolated=True, log_options=_log_options(args))
+    return 0
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -208,55 +202,6 @@ def _coverage(args: argparse.Namespace) -> int:
     return 0
 
 
-def _run(
-    work: plan.Plan, workspace: plan.Workspace, log_options: logs.LogOptions
-) -> int:
-    """Check prerequisites, then run every step of a plan in order."""
-    logger.info("Data directory: %s", workspace.data_dir.resolve())
-    for dataset in work.skipped:
-        logger.info(
-            "%s is already downloaded; run update to refresh it, "
-            "or setup --force to download it again",
-            dataset.name,
-        )
-    if not work.steps:
-        logger.info("Nothing to do")
-        return 0
-    scottish_domestic = any(
-        dataset.origin is Origin.SCOTLAND and dataset.segment is Segment.DOMESTIC
-        for dataset in work.datasets
-    )
-    if scottish_domestic and not _enough_staging_space(workspace.staging_dir):
-        return 1
-    if any(dataset.origin is Origin.ENGLAND_AND_WALES for dataset in work.datasets):
-        try:  # fail now, not after the Scottish download, without a token
-            authorised_client().close()
-        except ValueError as error:
-            logger.error("%s", error)
-            return 1
-    started = time.perf_counter()
-    for number, step in enumerate(work.steps, start=1):
-        logger.info("Step %d of %d: %s", number, len(work.steps), step.name)
-        step_started = time.perf_counter()
-        path = process.run_step(
-            step.function, *step.args, log_options=log_options, **step.kwargs
-        )
-        logger.debug("Step %d done in %s: %s", number, _elapsed(step_started), path)
-    logger.info("Finished %d steps in %s", len(work.steps), _elapsed(started))
-    for segment in work.not_set_up:
-        logger.warning(
-            "GB %s is not set up yet; only the raw %s files were changed",
-            segment,
-            segment,
-        )
-    return 0
-
-
-def _elapsed(started: float) -> str:
-    """Time since ``started`` (a ``time.perf_counter`` value) as H:MM:SS."""
-    return str(dt.timedelta(seconds=round(time.perf_counter() - started)))
-
-
 def _log_options(args: argparse.Namespace) -> logs.LogOptions:
     return logs.LogOptions(debug=args.debug, log_file=args.log_file)
 
@@ -268,18 +213,3 @@ def _workspace(args: argparse.Namespace) -> plan.Workspace:
         chunk_rows=args.chunk_rows,
         row_group_rows=args.row_group_rows,
     )
-
-
-def _enough_staging_space(staging_dir: Path) -> bool:
-    """Check for the free space a Scottish domestic run needs."""
-    staging = Path(staging_dir).resolve()
-    existing = next(p for p in [staging, *staging.parents] if p.exists())
-    free = shutil.disk_usage(existing).free
-    if free >= MIN_FREE_STAGING_BYTES:
-        return True
-    logger.error(
-        "Only %.1f GB free under %s; Scottish domestic needs about 10 GB",
-        free / 1024**3,
-        staging_dir,
-    )
-    return False

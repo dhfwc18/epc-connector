@@ -34,6 +34,7 @@ from epc_connector.datasets import (
     get_dataset,
     select_datasets,
 )
+from epc_connector.errors import EpcConnectorError
 from epc_connector.locations import (
     prepare_data_dir,
     resolve_data_dir,
@@ -168,6 +169,10 @@ def download(
     return parquet_path
 
 
+class ApiTokenError(EpcConnectorError, ValueError):
+    """No England and Wales API token was given or found."""
+
+
 def authorised_client(api_token: str | None = None, **options: Any) -> httpx.Client:
     """
     Return an ``httpx.Client`` that sends the API bearer token.
@@ -186,14 +191,14 @@ def authorised_client(api_token: str | None = None, **options: Any) -> httpx.Cli
 
     Raises
     ------
-    ValueError
+    ApiTokenError
         If no token is given, set in the environment or found in ``.env``.
     """
     if api_token is None and API_TOKEN_ENV_VAR not in os.environ:
         load_dotenv(find_dotenv(usecwd=True))
     token = api_token or os.environ.get(API_TOKEN_ENV_VAR)
     if not token:
-        raise ValueError(f"no API token: pass api_token or set {API_TOKEN_ENV_VAR}")
+        raise ApiTokenError(f"no API token: pass api_token or set {API_TOKEN_ENV_VAR}")
     return httpx.Client(headers={"Authorization": f"Bearer {token}"}, **options)
 
 
@@ -202,6 +207,11 @@ def fetch_last_updated(segment: Segment, client: httpx.Client) -> str:
     response = client.get(f"{SOURCE_URLS[segment]}/info")
     response.raise_for_status()
     return response.json()["data"]["lastUpdated"]
+
+
+def last_updated_date(last_updated: str) -> dt.date:
+    """Return the date of a bulk file's ``lastUpdated`` ISO timestamp."""
+    return dt.datetime.fromisoformat(last_updated).date()
 
 
 def is_certificates_file(name: str) -> bool:

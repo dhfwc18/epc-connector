@@ -199,9 +199,12 @@ class TestAuthorisedClient:
         with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-env"
 
-    def test_missing_token_raises_value_error(self, token_unset: Path) -> None:
-        with pytest.raises(ValueError, match="EPB_API_TOKEN"):
+    def test_missing_token_raises_api_token_error(self, token_unset: Path) -> None:
+        with pytest.raises(england_and_wales.ApiTokenError, match="EPB_API_TOKEN"):
             england_and_wales.authorised_client()
+
+    def test_api_token_error_is_still_a_value_error(self) -> None:
+        assert issubclass(england_and_wales.ApiTokenError, ValueError)
 
 
 class TestIsCertificatesFile:
@@ -640,3 +643,10 @@ class TestUpdate:
     def test_empty_window_raises_value_error(self, downloaded: SegmentRunner) -> None:
         with pytest.raises(ValueError, match="empty window"):
             downloaded.update(FakeServer(b""), "2024-10-31", "2024-09-01")
+
+
+class TestLastUpdatedDate:
+    def test_date_of_the_timestamp(self) -> None:
+        stamp = "2026-10-13T09:29:37.000+00:00"
+
+        assert england_and_wales.last_updated_date(stamp) == dt.date(2026, 10, 13)

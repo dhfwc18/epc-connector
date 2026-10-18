@@ -15,6 +15,7 @@ from epc_connector.canonical.gb import (
     GbNotSetUpError,
     build_gb,
     canonical_records,
+    gb_origins,
     replace_origin_in_gb,
     require_gb_segment,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "MappingError",
     "build_gb",
     "canonical_records",
+    "gb_origins",
     "replace_origin_in_gb",
     "require_gb_segment",
 ]

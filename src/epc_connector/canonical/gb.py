@@ -82,6 +82,25 @@ def canonical_records(
     return apply_mapping(cleaned, mapping, list(canonical_dtypes()))
 
 
+def gb_origins(data_dir: Path | str | None = None) -> dict[Origin, str]:
+    """
+    Return the origins in the GB file, with the version each was built from.
+
+    The version is the release or last update of the origin's raw file, as
+    stored in the GB file's metadata; only the metadata is read. Empty if
+    there is no GB file.
+    """
+    gb_path = resolve_data_dir(data_dir) / GB_PARQUET_NAME
+    if not gb_path.is_file():
+        return {}
+    stored = pl.read_parquet_metadata(gb_path)
+    return {
+        dataset.origin: stored[dataset.provenance_key]
+        for dataset in _domestic_datasets()
+        if dataset.provenance_key in stored
+    }
+
+
 def require_gb_segment(segment: Segment | str) -> None:
     """
     Raise unless ``segment`` has a GB file.
@@ -106,8 +125,9 @@ def build_gb(
     """
     Write the GB domestic file from every raw domestic file present.
 
-    An origin whose raw file is missing is left out, with a warning. Each raw
-    file's release or last-update metadata is copied into the GB file.
+    An origin whose raw file is missing is left out (logged at ``INFO``).
+    Each raw file's release or last-update metadata is copied into the GB
+    file.
 
     Parameters
     ----------
@@ -141,9 +161,7 @@ def build_gb(
         raise FileNotFoundError(f"no raw domestic files in {data_dir}")
     for dataset in _domestic_datasets():
         if dataset not in present:
-            logger.warning(
-                "%s is not downloaded; left out of the GB file", dataset.name
-            )
+            logger.info("%s is not downloaded; left out of the GB file", dataset.name)
     return _write_gb(
         {dataset.origin: None for dataset in present},
         data_dir=data_dir,

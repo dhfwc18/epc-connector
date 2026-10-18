@@ -335,3 +335,29 @@ def write_raw_domestic(
         path, metadata=metadata
     )
     return path
+
+
+# One raw domestic row per origin that every mapping and vocabulary covers.
+ENGLAND_AND_WALES_ROW = {
+    "certificate_number": "0001-0002",
+    "uprn": "100023336956",
+    "local_authority": "W06000015",
+    "lodgement_date": "2024-03-01",
+    "lodgement_datetime": "2024-03-01 10:00:00",
+    "construction_age_band": "England and Wales: 1930-1949",
+    "tenure": "Rental (private)",
+    "total_floor_area": "0",
+    "heating_cost_current": "300",
+    "walls_description": "Cavity wall, filled cavity",
+    "walls_energy_eff": "Good",
+    "mainheat_description": "Electric storage heaters",
+}
+SCOTLAND_ROW = {
+    "REPORT_REFERENCE_NUMBER": "9001-0001",
+    "OSG_REFERENCE_NUMBER": "151101923",
+    "CREATED_AT": "08/12/2008 11:22:22",
+    "HISTORIC": "True",
+    "CONSTRUCTION_AGE_BAND": "2008 onwards",
+    "HEATING_COST_CURRENT": "300",
+    "WALL_DESCRIPTION": "Pitched, 250 mm loft insulation | Cavity wall",
+}

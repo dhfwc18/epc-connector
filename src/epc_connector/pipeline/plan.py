@@ -5,8 +5,10 @@ A plan downloads (``setup``) or updates (``update``) each selected dataset,
 smallest first, then brings the GB file up to date: one ``build_gb`` when
 every origin's domestic data changed, otherwise ``replace_origin_in_gb`` for
 the origin that did. ``setup`` skips datasets already in the data directory
-unless forced, so running it again only fills the gaps. Segments without a
-GB file are listed as not set up. Plans are plain data, so they can be
+unless forced, so running it again only fills the gaps, and ``update`` skips
+datasets never downloaded. ``plan_domestic`` sets up only what loading one
+origin's domestic data needs. Segments without a GB file are listed as not
+set up. Plans are plain data, so they can be
 checked before anything runs.
 """
 
@@ -16,9 +18,17 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Self
 
+import polars as pl
+
 from epc_connector import sources
 from epc_connector.canonical import gb
-from epc_connector.datasets import Dataset, Origin, Segment, select_datasets
+from epc_connector.datasets import (
+    Dataset,
+    Origin,
+    Segment,
+    get_dataset,
+    select_datasets,
+)
 from epc_connector.locations import resolve_data_dir, resolve_staging_dir
 from epc_connector.storage import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
 
@@ -114,12 +124,15 @@ class Plan:
         Segments of ``datasets`` that have no GB file yet.
     skipped
         Selected datasets already downloaded, which ``setup`` leaves alone.
+    not_downloaded
+        Selected datasets never downloaded, which ``update`` leaves alone.
     """
 
     datasets: list[Dataset]
     steps: list[Step]
     not_set_up: list[Segment]
     skipped: list[Dataset] = field(default_factory=list)
+    not_downloaded: list[Dataset] = field(default_factory=list)
 
 
 def plan_setup(
@@ -186,6 +199,8 @@ def plan_update(
     """
     Plan updating downloaded datasets and the GB file.
 
+    Selected datasets that were never downloaded are left out.
+
     Parameters
     ----------
     origins, segments
@@ -202,7 +217,9 @@ def plan_update(
         If no published dataset matches.
     """
     workspace = workspace or Workspace.resolve()
-    datasets = select_datasets(origins, segments)
+    selected = select_datasets(origins, segments)
+    datasets = [d for d in selected if d.path(workspace.data_dir).is_file()]
+    not_downloaded = [dataset for dataset in selected if dataset not in datasets]
     window = {"date_from": date_from, "date_to": date_to}
     steps = [
         Step(
@@ -213,7 +230,55 @@ def plan_update(
         )
         for dataset in datasets
     ]
-    return _with_gb_steps(datasets, steps, workspace, strict)
+    plan = _with_gb_steps(datasets, steps, workspace, strict)
+    return replace(plan, not_downloaded=not_downloaded)
+
+
+def plan_domestic(
+    origin: Origin,
+    *,
+    workspace: Workspace | None = None,
+    strict: bool = True,
+) -> Plan:
+    """
+    Plan what loading one origin's domestic certificates needs, and no more.
+
+    The origin's raw domestic file is downloaded if missing. Its rows in the
+    GB file are rebuilt if they are missing or were built from another
+    version of the raw file (compared through the files' metadata). Other
+    origins and segments are not downloaded.
+
+    Parameters
+    ----------
+    origin
+        Origin to load.
+    workspace, strict
+        As for ``plan_setup``.
+    """
+    workspace = workspace or Workspace.resolve()
+    dataset = get_dataset(origin, Segment.DOMESTIC)
+    raw_path = dataset.path(workspace.data_dir)
+    datasets = [] if raw_path.is_file() else [dataset]
+    steps = [
+        Step(
+            f"download {dataset.name}",
+            sources.download,
+            (dataset.origin, dataset.segment),
+            workspace.options(),
+        )
+        for dataset in datasets
+    ]
+    in_gb = gb.gb_origins(workspace.data_dir).get(dataset.origin)
+    current = (
+        not datasets
+        and in_gb is not None
+        and in_gb == pl.read_parquet_metadata(raw_path).get(dataset.provenance_key)
+    )
+    if not current:
+        options = workspace.options() | {"strict": strict}
+        name = f"replace {dataset.origin} in GB domestic"
+        steps.append(Step(name, gb.replace_origin_in_gb, (dataset.origin,), options))
+    return Plan(datasets=datasets, steps=steps, not_set_up=[])
 
 
 def _with_gb_steps(

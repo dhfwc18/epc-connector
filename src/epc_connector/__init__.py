@@ -1,36 +1,41 @@
 """
-Download, update, clean and merge UK domestic Energy Performance Certificates.
+Load UK domestic Energy Performance Certificates as one Great Britain dataset.
 
-Typical use, writing Parquet files to ``.epc_data/`` (see ``locations``)::
+Typical use::
 
-    from epc_connector import build_gb, download, replace_origin_in_gb, update
+    import epc_connector as epc
 
-    download("scotland", "domestic")
-    download("england-and-wales", "domestic")  # token in EPB_API_TOKEN
-    build_gb()  # .epc_data/domestic_epc_certificate_gb.parquet
+    homes = epc.load_domestic_certificates(
+        "scotland", columns=["uprn", "current_energy_rating"]
+    )
+    epc.update()  # fetch newer data
+    epc.status()  # what is set up
 
-    update("scotland", "domestic", date_from="2026-07-01")
-    replace_origin_in_gb("scotland")  # the England and Wales rows are kept
-
-``clean_domestic_epc`` returns one origin's raw file with its descriptions
-cleaned, as a lazy frame. Every error the package raises on purpose is an
-``EpcConnectorError``. The ``epc-connector`` command line wraps these
-functions; see ``epc_connector.pipeline``.
+The first load downloads and builds what it needs (several GB, into
+``.epc_data/``; see ``locations``). The ``epc-connector`` command does the
+same from a shell. Every error the package raises on purpose is an
+``EpcConnectorError``.
 """
 
-from epc_connector.canonical import build_gb, replace_origin_in_gb
-from epc_connector.cleaning import clean_domestic_epc
+from epc_connector.api import (
+    NotSetUpError,
+    UnknownColumnError,
+    load_domestic_certificates,
+    status,
+    update,
+)
 from epc_connector.datasets import Origin, Segment
 from epc_connector.errors import EpcConnectorError
-from epc_connector.sources import download, update
+from epc_connector.pipeline.status import DatasetStatus
 
 __all__ = [
+    "DatasetStatus",
     "EpcConnectorError",
+    "NotSetUpError",
     "Origin",
     "Segment",
-    "build_gb",
-    "clean_domestic_epc",
-    "download",
-    "replace_origin_in_gb",
+    "UnknownColumnError",
+    "load_domestic_certificates",
+    "status",
     "update",
 ]

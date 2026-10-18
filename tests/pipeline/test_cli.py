@@ -13,8 +13,9 @@ import pytest
 from epc_connector import sources
 from epc_connector.canonical import gb
 from epc_connector.datasets import Origin, Segment, get_dataset
-from epc_connector.pipeline import cli, process
+from epc_connector.pipeline import cli, process, run
 from epc_connector.pipeline.logs import LogOptions
+from epc_connector.sources.england_and_wales import ApiTokenError
 from tests.fakes import write_raw_domestic
 
 pytestmark = pytest.mark.usefixtures("restore_logging")
@@ -33,7 +34,7 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> list[Call]:
 
     monkeypatch.setattr(process, "run_step", record)
     monkeypatch.setattr(
-        cli, "authorised_client", lambda: SimpleNamespace(close=lambda: None)
+        run, "authorised_client", lambda: SimpleNamespace(close=lambda: None)
     )
     monkeypatch.setattr(
         "shutil.disk_usage", lambda path: SimpleNamespace(free=100 * 1024**3)
@@ -89,7 +90,11 @@ class TestMain:
         ]
         assert "GB display is not set up yet" in caplog.text
 
-    def test_update_passes_the_window_and_options(self, calls: list) -> None:
+    def test_update_passes_the_window_and_options(
+        self, calls: list, tmp_path: Path
+    ) -> None:
+        get_dataset("scotland", "domestic").path(tmp_path).touch()
+
         cli.main(
             [
                 "update",
@@ -100,7 +105,7 @@ class TestMain:
                 "--date-from",
                 "2025-01-01",
                 "--data-dir",
-                "elsewhere",
+                str(tmp_path),
                 "--lenient",
             ]
         )
@@ -112,7 +117,7 @@ class TestMain:
         )
         assert kwargs["date_from"] == "2025-01-01"
         assert kwargs["date_to"] is None
-        assert kwargs["data_dir"] == Path("elsewhere")
+        assert kwargs["data_dir"] == tmp_path
         assert replace is gb.replace_origin_in_gb
         assert gb_kwargs["strict"] is False
 
@@ -130,9 +135,9 @@ class TestMain:
         self, calls: list, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         def no_token() -> None:
-            raise ValueError("no API token")
+            raise ApiTokenError("no API token")
 
-        monkeypatch.setattr(cli, "authorised_client", no_token)
+        monkeypatch.setattr(run, "authorised_client", no_token)
 
         assert cli.main(["setup"]) == 1
         assert calls == []
@@ -141,9 +146,9 @@ class TestMain:
         self, calls: list, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         def no_token() -> None:
-            raise ValueError("no API token")
+            raise ApiTokenError("no API token")
 
-        monkeypatch.setattr(cli, "authorised_client", no_token)
+        monkeypatch.setattr(run, "authorised_client", no_token)
 
         assert cli.main(["setup", "--origin", "scotland"]) == 0
 
@@ -233,6 +238,21 @@ class TestMain:
         kwargs = calls[0][2]
         assert kwargs["data_dir"] == default_data_dir
         assert kwargs["staging_dir"] == default_data_dir / ".staging"
+
+    def test_update_leaves_undownloaded_datasets_alone(
+        self, calls: list, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        get_dataset("scotland", "domestic").path(tmp_path).touch()
+
+        with caplog.at_level(logging.WARNING):
+            status = cli.main(["update", "--data-dir", str(tmp_path)])
+
+        assert status == 0
+        assert summary(calls) == [
+            (sources.update, (Origin.SCOTLAND, Segment.DOMESTIC)),
+            (gb.replace_origin_in_gb, (Origin.SCOTLAND,)),
+        ]
+        assert "england-and-wales/domestic is not downloaded" in caplog.text
 
     def test_unknown_segment_is_rejected(self) -> None:
         with pytest.raises(SystemExit):

@@ -4,11 +4,18 @@ Tests for ``epc_connector.pipeline.plan``.
 
 from pathlib import Path
 
+import polars as pl
 import pytest
 
 from epc_connector import sources
 from epc_connector.canonical import gb
-from epc_connector.datasets import DatasetError, Origin, Segment, get_dataset
+from epc_connector.datasets import (
+    RELEASE_METADATA_KEY,
+    DatasetError,
+    Origin,
+    Segment,
+    get_dataset,
+)
 from epc_connector.pipeline import plan
 
 
@@ -128,11 +135,14 @@ class TestPlanSetup:
 
 
 class TestPlanUpdate:
-    def test_window_reaches_every_update_step(self) -> None:
+    def test_window_reaches_every_update_step(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "england-and-wales/domestic")
+
         work = plan.plan_update(
             [Origin.ENGLAND_AND_WALES],
             [Segment.DOMESTIC],
             date_from="2026-09-01",
+            workspace=plan.Workspace.resolve(tmp_path),
         )
 
         update, gb_step = work.steps
@@ -144,3 +154,72 @@ class TestPlanUpdate:
         assert update.kwargs["date_to"] is None
         assert "date_from" not in gb_step.kwargs
         assert gb_step.args == (Origin.ENGLAND_AND_WALES,)
+
+    def test_datasets_never_downloaded_are_left_out(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+
+        work = plan.plan_update(
+            list(Origin), [Segment.DOMESTIC], workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert [d.name for d in work.datasets] == ["scotland/domestic"]
+        assert [d.name for d in work.not_downloaded] == ["england-and-wales/domestic"]
+
+
+def write_gb_metadata(data_dir: Path, metadata: dict[str, str]) -> None:
+    """Write a stand-in GB file that carries only provenance metadata."""
+    pl.DataFrame({"a": [1]}).write_parquet(
+        data_dir / gb.GB_PARQUET_NAME, metadata=metadata
+    )
+
+
+def write_raw_metadata(data_dir: Path, name: str, metadata: dict[str, str]) -> None:
+    """Write a stand-in raw file that carries only provenance metadata."""
+    data_dir.mkdir(parents=True, exist_ok=True)
+    path = get_dataset(*name.split("/")).path(data_dir)
+    pl.DataFrame({"a": [1]}).write_parquet(path, metadata=metadata)
+
+
+class TestPlanDomestic:
+    def test_missing_origin_is_downloaded_and_added_to_gb(self, tmp_path: Path) -> None:
+        work = plan.plan_domestic(
+            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert step_summary(work) == [
+            (sources.download, (Origin.SCOTLAND, Segment.DOMESTIC)),
+            (gb.replace_origin_in_gb, (Origin.SCOTLAND,)),
+        ]
+
+    def test_origin_in_gb_at_its_raw_version_needs_nothing(
+        self, tmp_path: Path
+    ) -> None:
+        write_raw_metadata(
+            tmp_path, "scotland/domestic", {RELEASE_METADATA_KEY: "2026q2"}
+        )
+        write_gb_metadata(tmp_path, {RELEASE_METADATA_KEY: "2026q2"})
+
+        work = plan.plan_domestic(
+            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert work.steps == []
+
+    def test_gb_rows_from_another_raw_version_are_rebuilt(self, tmp_path: Path) -> None:
+        write_raw_metadata(
+            tmp_path, "scotland/domestic", {RELEASE_METADATA_KEY: "2026q3"}
+        )
+        write_gb_metadata(tmp_path, {RELEASE_METADATA_KEY: "2026q2"})
+
+        work = plan.plan_domestic(
+            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert step_summary(work) == [(gb.replace_origin_in_gb, (Origin.SCOTLAND,))]
+
+    def test_other_origins_and_segments_are_not_touched(self, tmp_path: Path) -> None:
+        work = plan.plan_domestic(
+            Origin.ENGLAND_AND_WALES, workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert [d.name for d in work.datasets] == ["england-and-wales/domestic"]
