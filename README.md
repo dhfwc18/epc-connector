@@ -7,24 +7,30 @@ Scotland into one Great Britain Parquet file.
 
 England and Wales data needs an API token from
 [Get energy performance of buildings data](https://get-energy-performance-data.communities.gov.uk/) (sign in with GOV.UK
-One Login). Scottish data needs none. The token must be either:
+One Login). Scottish data needs none.
 
-- in the environment variable `EPB_API_TOKEN`, or
-- in a `.env` file in your project, as `EPB_API_TOKEN=<your token>`. The file is looked for in the directory you run
-  from, then in each parent directory, so the project root works from any subdirectory.
+**Command line.** The first command that needs the token asks for it (input hidden), checks it with the API and saves it
+to your user configuration directory (`~/.config/epc-connector/token` on Linux), readable by you only, as git's
+credential store does. Later runs use the saved token. `epc-connector login` replaces it and `epc-connector logout`
+deletes it. In CI or scripts, where nothing can be typed, set `EPB_API_TOKEN` instead; it takes precedence over the
+saved token.
 
-From Python, you can also set the variable before the first call that needs it, without writing the token into your
-code:
+**Python.** Pass the token explicitly:
 
 ```python
 import os
-from getpass import getpass
 
-os.environ["EPB_API_TOKEN"] = getpass("England and Wales API token: ")
+import epc_connector as epc
+
+# If you use a .env file load it first (python-dotenv):
+# from dotenv import load_dotenv
+# load_dotenv()
+token = os.environ["EPB_API_TOKEN"]
+homes = epc.load_domestic_certificates(api_token=token)
+epc.update(api_token=token)
 ```
 
-A token already in the environment is used rather than the one in `.env`. This applies to the command line and to the
-Python functions alike. Keep `.env` out of version control (add it to your `.gitignore`): the token is personal.
+Without `api_token`, the functions use `EPB_API_TOKEN`, then the token saved by the command line.
 
 ## Command line
 

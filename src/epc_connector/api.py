@@ -60,6 +60,7 @@ def load_domestic_certificates(
     lazy: Literal[False] = False,
     data_dir: Path | str | None = None,
     strict: bool = True,
+    api_token: str | None = None,
 ) -> pl.DataFrame: ...
 
 
@@ -71,6 +72,7 @@ def load_domestic_certificates(
     lazy: Literal[True],
     data_dir: Path | str | None = None,
     strict: bool = True,
+    api_token: str | None = None,
 ) -> pl.LazyFrame: ...
 
 
@@ -81,6 +83,7 @@ def load_domestic_certificates(
     lazy: bool = False,
     data_dir: Path | str | None = None,
     strict: bool = True,
+    api_token: str | None = None,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Load domestic EPCs as canonical GB records, setting them up if needed.
@@ -109,6 +112,10 @@ def load_domestic_certificates(
     strict
         When building GB rows, raise if a description is not covered by the
         vocabularies instead of marking it.
+    api_token
+        England and Wales API token, needed only to download or update its
+        data. If ``None``: ``EPB_API_TOKEN``, then the token saved by the
+        ``epc-connector`` command (see ``credentials``).
 
     Returns
     -------
@@ -127,9 +134,11 @@ def load_domestic_certificates(
     whole_gb = len(origins) > 1
     for each in origins:
         try:
-            work = plan_domestic(each, workspace=workspace, strict=strict)
+            work = plan_domestic(
+                each, workspace=workspace, strict=strict, api_token=api_token
+            )
             if work.steps:
-                run_plan(work, workspace)
+                run_plan(work, workspace, api_token=api_token)
         except _SETUP_ERRORS as error:
             if not whole_gb:
                 raise
@@ -162,6 +171,7 @@ def update(
     data_dir: Path | str | None = None,
     staging_dir: Path | str | None = None,
     strict: bool = True,
+    api_token: str | None = None,
 ) -> None:
     """
     Update downloaded datasets from their publishers, then the GB file.
@@ -182,7 +192,7 @@ def update(
     data_dir, staging_dir
         See ``locations.resolve_data_dir`` and
         ``locations.resolve_staging_dir``.
-    strict
+    strict, api_token
         As for ``load_domestic_certificates``.
     """
     workspace = Workspace.resolve(data_dir, staging_dir)
@@ -193,8 +203,9 @@ def update(
         date_to=date_to,
         workspace=workspace,
         strict=strict,
+        api_token=api_token,
     )
-    run_plan(work, workspace)
+    run_plan(work, workspace, api_token=api_token)
 
 
 def status(data_dir: Path | str | None = None) -> list[DatasetStatus]:

@@ -5,7 +5,6 @@ Tests for ``epc_connector.api``.
 import datetime as dt
 import logging
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import polars as pl
@@ -13,6 +12,7 @@ import pytest
 
 from epc_connector import api, sources
 from epc_connector.canonical import GB_PARQUET_NAME, gb_origins
+from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError
 from epc_connector.datasets import (
     LAST_UPDATED_METADATA_KEY,
     RELEASE_METADATA_KEY,
@@ -20,7 +20,6 @@ from epc_connector.datasets import (
     Segment,
 )
 from epc_connector.pipeline import run
-from epc_connector.sources.england_and_wales import ApiTokenError
 from tests.fakes import ENGLAND_AND_WALES_ROW, SCOTLAND_ROW, write_raw_domestic
 
 TODAY = dt.date.today()
@@ -42,12 +41,14 @@ class FakeDownloads:
 
     def __init__(self) -> None:
         self.calls: list[tuple[Origin, Segment]] = []
+        self.options: list[dict[str, Any]] = []
         self.failing: set[Origin] = set()
 
     def __call__(
         self, origin: Origin, segment: Segment, *, data_dir: Path, **options: Any
     ) -> Path:
         self.calls.append((Origin(origin), Segment(segment)))
+        self.options.append(options)
         if origin in self.failing:
             raise ApiTokenError("no API token")
         return write_raw(data_dir, Origin(origin))
@@ -57,9 +58,7 @@ class FakeDownloads:
 def downloads(monkeypatch: pytest.MonkeyPatch) -> FakeDownloads:
     fake = FakeDownloads()
     monkeypatch.setattr(sources, "download", fake)
-    monkeypatch.setattr(
-        run, "authorised_client", lambda: SimpleNamespace(close=lambda: None)
-    )
+    monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
     monkeypatch.setattr(run, "check_staging_space", lambda staging_dir: None)
     return fake
 
@@ -123,6 +122,37 @@ class TestLoadDomesticCertificates:
 
         with pytest.raises(api.NotSetUpError):
             api.load_domestic_certificates(data_dir=tmp_path)
+
+    def test_api_token_reaches_only_england_and_wales_downloads(
+        self,
+        downloads: FakeDownloads,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delenv(API_TOKEN_ENV_VAR)
+
+        api.load_domestic_certificates(data_dir=tmp_path, api_token="arg-token")
+
+        tokens = {
+            origin: options.get("api_token")
+            for (origin, _), options in zip(
+                downloads.calls, downloads.options, strict=True
+            )
+        }
+        assert tokens == {Origin.ENGLAND_AND_WALES: "arg-token", Origin.SCOTLAND: None}
+
+    def test_without_any_token_england_and_wales_raises(
+        self,
+        downloads: FakeDownloads,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delenv(API_TOKEN_ENV_VAR)
+
+        with pytest.raises(ApiTokenError, match="pass api_token"):
+            api.load_domestic_certificates("england-and-wales", data_dir=tmp_path)
+
+        assert downloads.calls == []
 
     def test_raw_file_newer_than_the_gb_rows_is_rebuilt(
         self, downloads: FakeDownloads, tmp_path: Path

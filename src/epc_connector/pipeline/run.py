@@ -15,11 +15,11 @@ import time
 from pathlib import Path
 from typing import Final
 
+from epc_connector.credentials import require_api_token
 from epc_connector.datasets import Origin, Segment
 from epc_connector.pipeline import process
 from epc_connector.pipeline.logs import DEFAULT_LOG_OPTIONS, LogOptions
 from epc_connector.pipeline.plan import Plan, Workspace
-from epc_connector.sources.england_and_wales import authorised_client
 from epc_connector.storage import StorageError
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ def run_plan(
     *,
     isolated: bool = False,
     log_options: LogOptions = DEFAULT_LOG_OPTIONS,
+    api_token: str | None = None,
 ) -> None:
     """
     Check a plan's prerequisites, then run its steps in order.
@@ -49,6 +50,9 @@ def run_plan(
         this one.
     log_options
         How isolated steps log; see ``logs.configure_logging``.
+    api_token
+        England and Wales API token to check for; if ``None``, one is found
+        as ``credentials`` describes.
 
     Raises
     ------
@@ -75,7 +79,7 @@ def run_plan(
     ):
         check_staging_space(workspace.staging_dir)
     if any(dataset.origin is Origin.ENGLAND_AND_WALES for dataset in work.datasets):
-        authorised_client().close()  # fail before any download without a token
+        require_api_token(api_token)  # fail before any download without one
 
     started = time.perf_counter()
     for number, step in enumerate(work.steps, start=1):

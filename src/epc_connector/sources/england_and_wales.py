@@ -17,7 +17,6 @@ patching changed UPRNs from the certificate API.
 import contextlib
 import datetime as dt
 import logging
-import os
 import re
 import time
 from pathlib import Path
@@ -25,8 +24,11 @@ from typing import Any, Final
 
 import httpx
 import polars as pl
-from dotenv import find_dotenv, load_dotenv
 
+from epc_connector.credentials import (
+    ApiTokenError,
+    require_api_token,
+)
 from epc_connector.datasets import (
     LAST_UPDATED_METADATA_KEY,
     Origin,
@@ -34,7 +36,6 @@ from epc_connector.datasets import (
     get_dataset,
     select_datasets,
 )
-from epc_connector.errors import EpcConnectorError
 from epc_connector.locations import (
     prepare_data_dir,
     resolve_data_dir,
@@ -84,8 +85,6 @@ CERTIFICATE_URL: Final = f"{API_URL}/api/certificate"
 SEARCH_PAGE_SIZE: Final = 5000
 """Results per search page (the API maximum)."""
 
-API_TOKEN_ENV_VAR: Final = "EPB_API_TOKEN"
-"""Environment variable holding the API bearer token."""
 
 _CERTIFICATES_FILE: Final = re.compile(r"^certificates-(\d{4})\.csv$")
 
@@ -114,8 +113,8 @@ def download(
         Segment to download: ``"domestic"``, ``"non-domestic"`` or
         ``"display"``.
     api_token
-        API bearer token; defaults to the ``EPB_API_TOKEN`` environment
-        variable (or ``.env``). Ignored when ``client`` is given.
+        API bearer token; if ``None``, found as ``credentials`` describes.
+        Ignored when ``client`` is given.
     data_dir
         Directory for the Parquet file, created if missing; see
         ``locations.resolve_data_dir``.
@@ -169,10 +168,6 @@ def download(
     return parquet_path
 
 
-class ApiTokenError(EpcConnectorError, ValueError):
-    """No England and Wales API token was given or found."""
-
-
 def authorised_client(api_token: str | None = None, **options: Any) -> httpx.Client:
     """
     Return an ``httpx.Client`` that sends the API bearer token.
@@ -183,23 +178,44 @@ def authorised_client(api_token: str | None = None, **options: Any) -> httpx.Cli
     Parameters
     ----------
     api_token
-        Bearer token; defaults to the ``EPB_API_TOKEN`` environment variable,
-        loaded from the nearest ``.env`` (searching up from the working
-        directory) if it is not already set.
+        Bearer token; if ``None``, found as ``credentials`` describes.
     **options
         Passed on to ``httpx.Client``.
 
     Raises
     ------
     ApiTokenError
-        If no token is given, set in the environment or found in ``.env``.
+        If no token is given or found.
     """
-    if api_token is None and API_TOKEN_ENV_VAR not in os.environ:
-        load_dotenv(find_dotenv(usecwd=True))
-    token = api_token or os.environ.get(API_TOKEN_ENV_VAR)
-    if not token:
-        raise ApiTokenError(f"no API token: pass api_token or set {API_TOKEN_ENV_VAR}")
+    token = require_api_token(api_token)
     return httpx.Client(headers={"Authorization": f"Bearer {token}"}, **options)
+
+
+def verify_api_token(api_token: str, client: httpx.Client | None = None) -> None:
+    """
+    Check with one request that the API accepts a token.
+
+    Parameters
+    ----------
+    api_token
+        Token to check.
+    client
+        HTTP client to use (the token is added to each request); a new one
+        is created if omitted.
+
+    Raises
+    ------
+    ApiTokenError
+        If the API answers 401 or 403.
+    """
+    with client_or_new(client, lambda: httpx.Client(timeout=HTTP_TIMEOUT)) as http:
+        response = http.get(
+            f"{SOURCE_URLS[Segment.DOMESTIC]}/info",
+            headers={"Authorization": f"Bearer {api_token}"},
+        )
+    if response.status_code in (401, 403):
+        raise ApiTokenError("the England and Wales API rejected this token")
+    response.raise_for_status()
 
 
 def fetch_last_updated(segment: Segment, client: httpx.Client) -> str:

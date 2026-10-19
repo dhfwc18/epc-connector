@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from epc_connector.credentials import ApiTokenError
 from epc_connector.datasets import get_dataset
 from epc_connector.pipeline import plan, run
 from epc_connector.storage import StorageError
@@ -77,14 +78,20 @@ class TestRunPlan:
         with pytest.raises(StorageError, match="about 10 GB"):
             run.run_plan(one_step_plan("scotland/domestic"), workspace)
 
-    @pytest.mark.usefixtures("enough_space")
-    def test_england_and_wales_checks_the_token_first(
-        self, workspace: plan.Workspace, monkeypatch: pytest.MonkeyPatch
+    def test_england_and_wales_without_a_token_raises_before_any_step(
+        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
     ) -> None:
-        checked: list[bool] = []
-        client = SimpleNamespace(close=lambda: checked.append(True))
-        monkeypatch.setattr(run, "authorised_client", lambda: client)
+        with caplog.at_level(logging.INFO), pytest.raises(ApiTokenError):
+            run.run_plan(one_step_plan("england-and-wales/domestic"), workspace)
 
-        run.run_plan(one_step_plan("england-and-wales/domestic"), workspace)
+        assert "Step 1" not in caplog.text
 
-        assert checked == [True]
+    def test_england_and_wales_runs_with_a_token(
+        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        work = one_step_plan("england-and-wales/domestic")
+
+        with caplog.at_level(logging.INFO):
+            run.run_plan(work, workspace, api_token="token")
+
+        assert "Step 1 of 1" in caplog.text

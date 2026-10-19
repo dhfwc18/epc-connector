@@ -223,3 +223,35 @@ class TestPlanDomestic:
         )
 
         assert [d.name for d in work.datasets] == ["england-and-wales/domestic"]
+
+
+class TestApiToken:
+    def test_token_reaches_england_and_wales_steps_only(self, tmp_path: Path) -> None:
+        work = plan.plan_setup(
+            list(Origin),
+            [Segment.DOMESTIC],
+            workspace=plan.Workspace.resolve(tmp_path),
+            api_token="secret-token",
+        )
+
+        tokens = {
+            step.args[0]: step.kwargs.get("api_token")
+            for step in work.steps
+            if step.function is sources.download
+        }
+        assert tokens == {
+            Origin.SCOTLAND: None,
+            Origin.ENGLAND_AND_WALES: "secret-token",
+        }
+
+    def test_step_repr_hides_the_token(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "england-and-wales/domestic")
+        work = plan.plan_update(
+            [Origin.ENGLAND_AND_WALES],
+            [Segment.DOMESTIC],
+            workspace=plan.Workspace.resolve(tmp_path),
+            api_token="secret-token",
+        )
+
+        assert "secret-token" in str(work.steps[0].kwargs)
+        assert "secret-token" not in repr(work)

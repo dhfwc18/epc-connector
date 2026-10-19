@@ -12,10 +12,10 @@ import pytest
 
 from epc_connector import sources
 from epc_connector.canonical import gb
+from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError, save_api_token
 from epc_connector.datasets import Origin, Segment, get_dataset
-from epc_connector.pipeline import cli, process, run
+from epc_connector.pipeline import cli, process
 from epc_connector.pipeline.logs import LogOptions
-from epc_connector.sources.england_and_wales import ApiTokenError
 from tests.fakes import write_raw_domestic
 
 pytestmark = pytest.mark.usefixtures("restore_logging")
@@ -33,9 +33,8 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> list[Call]:
         return Path("data")
 
     monkeypatch.setattr(process, "run_step", record)
-    monkeypatch.setattr(
-        run, "authorised_client", lambda: SimpleNamespace(close=lambda: None)
-    )
+    monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
+    monkeypatch.setattr(cli, "_can_ask", lambda: False)
     monkeypatch.setattr(
         "shutil.disk_usage", lambda path: SimpleNamespace(free=100 * 1024**3)
     )
@@ -131,24 +130,22 @@ class TestMain:
         assert cli.main(["setup", "--origin", "scotland"]) == 1
         assert calls == []
 
-    def test_missing_token_stops_before_any_download(
-        self, calls: list, monkeypatch: pytest.MonkeyPatch
+    def test_missing_token_without_a_terminal_stops_before_any_download(
+        self,
+        calls: list,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        def no_token() -> None:
-            raise ApiTokenError("no API token")
-
-        monkeypatch.setattr(run, "authorised_client", no_token)
+        monkeypatch.delenv(API_TOKEN_ENV_VAR)
 
         assert cli.main(["setup"]) == 1
         assert calls == []
+        assert "epc-connector login" in caplog.text
 
     def test_scotland_alone_needs_no_token(
         self, calls: list, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        def no_token() -> None:
-            raise ApiTokenError("no API token")
-
-        monkeypatch.setattr(run, "authorised_client", no_token)
+        monkeypatch.delenv(API_TOKEN_ENV_VAR)
 
         assert cli.main(["setup", "--origin", "scotland"]) == 0
 
@@ -289,3 +286,101 @@ class TestMain:
         output = capsys.readouterr().out
         assert status == 0
         assert "rows 2, distinct 2" in output
+
+
+class Prompt:
+    """Stand-in for typing a token and for the API checking it."""
+
+    def __init__(self, typed: str = " typed-token ") -> None:
+        self.typed = typed
+        self.asked = 0
+        self.verified: list[str] = []
+        self.rejected = False
+
+    def getpass(self, prompt: str = "") -> str:
+        self.asked += 1
+        return self.typed
+
+    def verify(self, api_token: str) -> None:
+        self.verified.append(api_token)
+        if self.rejected:
+            raise ApiTokenError("the England and Wales API rejected this token")
+
+
+@pytest.fixture
+def prompt(calls: list, monkeypatch: pytest.MonkeyPatch) -> Prompt:
+    """No token anywhere, someone at a terminal, and a fake API check."""
+    fake = Prompt()
+    monkeypatch.delenv(API_TOKEN_ENV_VAR)
+    monkeypatch.setattr(cli, "_can_ask", lambda: True)
+    monkeypatch.setattr(cli.getpass, "getpass", fake.getpass)
+    monkeypatch.setattr(cli, "verify_api_token", fake.verify)
+    return fake
+
+
+EW_DOMESTIC = ["setup", "--origin", "england-and-wales", "--segment", "domestic"]
+
+
+class TestApiTokenPrompt:
+    def test_missing_token_is_asked_for_checked_and_saved(
+        self, prompt: Prompt, calls: list, saved_token_path: Path
+    ) -> None:
+        assert cli.main(EW_DOMESTIC) == 0
+
+        assert prompt.verified == ["typed-token"]
+        assert saved_token_path.read_text() == "typed-token\n"
+        assert saved_token_path.stat().st_mode & 0o777 == 0o600
+        assert calls
+
+    def test_saved_token_is_not_asked_for_again(
+        self, prompt: Prompt, calls: list
+    ) -> None:
+        save_api_token("saved-token")
+
+        assert cli.main(EW_DOMESTIC) == 0
+        assert prompt.asked == 0
+
+    def test_environment_token_is_not_asked_for(
+        self, prompt: Prompt, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
+
+        assert cli.main(EW_DOMESTIC) == 0
+        assert prompt.asked == 0
+
+    def test_rejected_token_is_not_saved(
+        self, prompt: Prompt, calls: list, saved_token_path: Path
+    ) -> None:
+        prompt.rejected = True
+
+        assert cli.main(EW_DOMESTIC) == 1
+        assert not saved_token_path.exists()
+        assert calls == []
+
+    def test_scotland_alone_is_not_asked(self, prompt: Prompt) -> None:
+        assert cli.main(["setup", "--origin", "scotland"]) == 0
+        assert prompt.asked == 0
+
+    def test_login_replaces_the_saved_token(
+        self, prompt: Prompt, saved_token_path: Path
+    ) -> None:
+        save_api_token("old-token")
+
+        assert cli.main(["login"]) == 0
+        assert saved_token_path.read_text() == "typed-token\n"
+
+    def test_logout_deletes_the_saved_token(
+        self, prompt: Prompt, saved_token_path: Path
+    ) -> None:
+        save_api_token("old-token")
+
+        assert cli.main(["logout"]) == 0
+        assert not saved_token_path.exists()
+
+    def test_logout_without_a_saved_token_says_so(
+        self, prompt: Prompt, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        with caplog.at_level(logging.INFO):
+            assert cli.main(["logout"]) == 0
+
+        assert "No saved API token" in caplog.text

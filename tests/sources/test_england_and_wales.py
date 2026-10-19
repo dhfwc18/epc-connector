@@ -15,6 +15,7 @@ import polars as pl
 import pytest
 
 from epc_connector import validation
+from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError
 from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
 from epc_connector.sources import england_and_wales
 from epc_connector.storage import StorageError
@@ -155,20 +156,6 @@ class TestSourceConstants:
         assert set(england_and_wales.SOURCE_URLS) == published
 
 
-@pytest.fixture
-def token_unset(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    """
-    Remove ``EPB_API_TOKEN`` and work in an empty directory (no ``.env``).
-
-    Setting then deleting registers the variable with monkeypatch, so a value
-    written by ``load_dotenv`` is removed again after the test.
-    """
-    monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "placeholder")
-    monkeypatch.delenv(england_and_wales.API_TOKEN_ENV_VAR)
-    monkeypatch.chdir(tmp_path)
-    return tmp_path
-
-
 class TestAuthorisedClient:
     def test_token_argument_sets_bearer_header(self) -> None:
         with england_and_wales.authorised_client("abc") as client:
@@ -177,34 +164,39 @@ class TestAuthorisedClient:
     def test_environment_variable_is_used_without_argument(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "from-env")
+        monkeypatch.setenv(API_TOKEN_ENV_VAR, "from-env")
 
         with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-env"
 
-    def test_dotenv_file_is_loaded_when_variable_is_unset(
-        self, token_unset: Path
-    ) -> None:
-        (token_unset / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
-
-        with england_and_wales.authorised_client() as client:
-            assert client.headers["Authorization"] == "Bearer from-dotenv"
-
-    def test_environment_variable_takes_precedence_over_dotenv(
-        self, token_unset: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        (token_unset / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
-        monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "from-env")
-
-        with england_and_wales.authorised_client() as client:
-            assert client.headers["Authorization"] == "Bearer from-env"
-
-    def test_missing_token_raises_api_token_error(self, token_unset: Path) -> None:
-        with pytest.raises(england_and_wales.ApiTokenError, match="EPB_API_TOKEN"):
+    def test_missing_token_raises_api_token_error(self) -> None:
+        with pytest.raises(ApiTokenError, match="epc-connector login"):
             england_and_wales.authorised_client()
 
-    def test_api_token_error_is_still_a_value_error(self) -> None:
-        assert issubclass(england_and_wales.ApiTokenError, ValueError)
+
+def info_server(status: int) -> httpx.Client:
+    """A client whose every request gets ``status`` and an info body."""
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        body = {"data": {"lastUpdated": "2026-10-13T09:29:37+00:00"}}
+        return httpx.Response(status, json=body, request=request)
+
+    return httpx.Client(transport=httpx.MockTransport(answer))
+
+
+class TestVerifyApiToken:
+    def test_accepted_token_passes(self) -> None:
+        with info_server(200) as client:
+            england_and_wales.verify_api_token("good", client)
+
+    @pytest.mark.parametrize("status", [401, 403])
+    def test_rejected_token_raises_api_token_error(self, status: int) -> None:
+        with info_server(status) as client, pytest.raises(ApiTokenError):
+            england_and_wales.verify_api_token("bad", client)
+
+    def test_other_errors_are_raised_as_http_errors(self) -> None:
+        with info_server(500) as client, pytest.raises(httpx.HTTPStatusError):
+            england_and_wales.verify_api_token("good", client)
 
 
 class TestIsCertificatesFile:

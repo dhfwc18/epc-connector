@@ -100,13 +100,14 @@ class Step:
     function
         Module-level function to call.
     args, kwargs
-        Arguments for ``function``.
+        Arguments for ``function``; left out of the step's ``repr`` so an
+        API token never reaches a log or traceback.
     """
 
     name: str
     function: Callable[..., Path]
-    args: tuple[Any, ...] = ()
-    kwargs: Mapping[str, Any] = field(default_factory=dict)
+    args: tuple[Any, ...] = field(default=(), repr=False)
+    kwargs: Mapping[str, Any] = field(default_factory=dict, repr=False)
 
 
 @dataclass(frozen=True)
@@ -142,6 +143,7 @@ def plan_setup(
     workspace: Workspace | None = None,
     strict: bool = True,
     force: bool = False,
+    api_token: str | None = None,
 ) -> Plan:
     """
     Plan downloading datasets and bringing the GB file up to date.
@@ -160,6 +162,9 @@ def plan_setup(
         Whether descriptions the vocabularies do not cover stop the GB step.
     force
         Download every selected dataset, even one already downloaded.
+    api_token
+        England and Wales API token for its steps; if ``None``, each step
+        finds one as ``credentials`` describes.
 
     Raises
     ------
@@ -179,7 +184,7 @@ def plan_setup(
             f"download {dataset.name}",
             sources.download,
             (dataset.origin, dataset.segment),
-            workspace.options(),
+            _source_options(dataset, workspace, api_token),
         )
         for dataset in datasets
     ]
@@ -195,6 +200,7 @@ def plan_update(
     date_to: dt.date | str | None = None,
     workspace: Workspace | None = None,
     strict: bool = True,
+    api_token: str | None = None,
 ) -> Plan:
     """
     Plan updating downloaded datasets and the GB file.
@@ -208,7 +214,7 @@ def plan_update(
     date_from, date_to
         Window to refresh: lodgement date for England and Wales,
         ``CREATED_AT`` date for Scotland; see each source's ``update``.
-    workspace, strict
+    workspace, strict, api_token
         As for ``plan_setup``.
 
     Raises
@@ -226,7 +232,7 @@ def plan_update(
             f"update {dataset.name}",
             sources.update,
             (dataset.origin, dataset.segment),
-            window | workspace.options(),
+            window | _source_options(dataset, workspace, api_token),
         )
         for dataset in datasets
     ]
@@ -239,6 +245,7 @@ def plan_domestic(
     *,
     workspace: Workspace | None = None,
     strict: bool = True,
+    api_token: str | None = None,
 ) -> Plan:
     """
     Plan what loading one origin's domestic certificates needs, and no more.
@@ -252,7 +259,7 @@ def plan_domestic(
     ----------
     origin
         Origin to load.
-    workspace, strict
+    workspace, strict, api_token
         As for ``plan_setup``.
     """
     workspace = workspace or Workspace.resolve()
@@ -264,7 +271,7 @@ def plan_domestic(
             f"download {dataset.name}",
             sources.download,
             (dataset.origin, dataset.segment),
-            workspace.options(),
+            _source_options(dataset, workspace, api_token),
         )
         for dataset in datasets
     ]
@@ -279,6 +286,16 @@ def plan_domestic(
         name = f"replace {dataset.origin} in GB domestic"
         steps.append(Step(name, gb.replace_origin_in_gb, (dataset.origin,), options))
     return Plan(datasets=datasets, steps=steps, not_set_up=[])
+
+
+def _source_options(
+    dataset: Dataset, workspace: Workspace, api_token: str | None
+) -> dict[str, Any]:
+    """Keyword arguments of a download or update step for ``dataset``."""
+    options = workspace.options()
+    if api_token is not None and dataset.origin is Origin.ENGLAND_AND_WALES:
+        options["api_token"] = api_token
+    return options
 
 
 def _with_gb_steps(
