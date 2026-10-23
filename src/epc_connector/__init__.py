@@ -12,7 +12,7 @@ Typical use::
     )
     # Keeping the token in a .env file? Load it first (python-dotenv):
     # from dotenv import load_dotenv; load_dotenv()
-    token = os.environ["EPB_API_TOKEN"]
+    token = os.environ["EPC_CONNECTOR_API_TOKEN"]
     homes = epc.load_domestic_certificates(api_token=token)
     epc.update(api_token=token)  # fetch newer data
     epc.status()  # what is set up

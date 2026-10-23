@@ -14,13 +14,14 @@ import pytest
 
 from epc_connector import api, sources
 from epc_connector.canonical import GB_PARQUET_NAME, gb_origins
-from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError
+from epc_connector.credentials import ApiTokenError
 from epc_connector.datasets import (
     LAST_UPDATED_METADATA_KEY,
     RELEASE_METADATA_KEY,
     Origin,
     Segment,
 )
+from epc_connector.environment import EnvVar
 from epc_connector.pipeline import run
 from tests.fakes import ENGLAND_AND_WALES_ROW, SCOTLAND_ROW, write_raw_domestic
 
@@ -60,7 +61,7 @@ class FakeDownloads:
 def downloads(monkeypatch: pytest.MonkeyPatch) -> FakeDownloads:
     fake = FakeDownloads()
     monkeypatch.setattr(sources, "download", fake)
-    monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
+    monkeypatch.setenv(EnvVar.API_TOKEN, "env-token")
     monkeypatch.setattr(run, "check_staging_space", lambda staging_dir: None)
     return fake
 
@@ -131,7 +132,7 @@ class TestLoadDomesticCertificates:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        monkeypatch.delenv(API_TOKEN_ENV_VAR)
+        monkeypatch.delenv(EnvVar.API_TOKEN)
 
         api.load_domestic_certificates(data_dir=tmp_path, api_token="arg-token")
 
@@ -149,7 +150,7 @@ class TestLoadDomesticCertificates:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        monkeypatch.delenv(API_TOKEN_ENV_VAR)
+        monkeypatch.delenv(EnvVar.API_TOKEN)
 
         with pytest.raises(ApiTokenError, match="pass api_token"):
             api.load_domestic_certificates("england-and-wales", data_dir=tmp_path)

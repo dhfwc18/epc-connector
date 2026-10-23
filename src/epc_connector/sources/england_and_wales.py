@@ -4,9 +4,10 @@ Download England and Wales EPC open data, one Parquet file per segment.
 Each segment is a bulk ZIP from Get energy performance of buildings data,
 regenerated monthly: one ``certificates-YYYY.csv`` per year of
 ``lodgement_date``, plus ``recommendations-YYYY.csv`` files for some segments,
-which are skipped. The API needs a bearer token, taken from ``EPB_API_TOKEN``
-unless passed explicitly. Values stay as published strings and are checked
-against ``schemas/source/england-and-wales/<segment>.schema.json``. The file's
+which are skipped. The API needs a bearer token, taken from
+``EPC_CONNECTOR_API_TOKEN`` unless passed explicitly. Values stay as published
+strings and are checked against
+``schemas/source/england-and-wales/<segment>.schema.json``. The file's
 ``lastUpdated`` timestamp is stored in the Parquet metadata.
 
 ``update`` refreshes a local file from the search and

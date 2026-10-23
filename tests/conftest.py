@@ -9,9 +9,8 @@ from pathlib import Path
 import pytest
 
 from epc_connector.cli import logs
-from epc_connector.credentials import API_TOKEN_ENV_VAR, TOKEN_PATH_ENV_VAR
+from epc_connector.environment import EnvVar
 from epc_connector.io import downloads
-from epc_connector.workspace import DATA_DIR_ENV_VAR
 from tests.fakes import write_7z, write_vocabularies, yearly_members
 
 
@@ -19,20 +18,20 @@ from tests.fakes import write_7z, write_vocabularies, yearly_members
 def default_data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     """Point the default data directory at ``tmp_path``, never the project."""
     path = tmp_path / "default-data"
-    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(path))
+    monkeypatch.setenv(EnvVar.DATA_DIR, str(path))
     return path
 
 
 @pytest.fixture(autouse=True)
 def saved_token_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     """
-    Hide the user's API token: unset ``EPB_API_TOKEN`` and save to tmp_path.
+    Hide the user's API token: unset its variable and save to tmp_path.
 
     Returns where the command line would save a token.
     """
-    monkeypatch.delenv(API_TOKEN_ENV_VAR, raising=False)
+    monkeypatch.delenv(EnvVar.API_TOKEN, raising=False)
     path = tmp_path / "config" / "token"
-    monkeypatch.setenv(TOKEN_PATH_ENV_VAR, str(path))
+    monkeypatch.setenv(EnvVar.TOKEN_PATH, str(path))
     return path
 
 

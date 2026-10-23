@@ -17,10 +17,10 @@ selected datasets that are not there yet (all with ``--force``) and
 ``update`` refreshes them; both then bring the GB file up to date. Data goes
 to ``--data-dir``, else ``$EPC_CONNECTOR_DATA_DIR``, else ``./.epc_data``.
 
-England and Wales data needs an API token: ``EPB_API_TOKEN`` if set (for CI
-and scripts), else the saved token. If a command needs one and none is
-found, it asks for it once (input hidden), checks it with the API and saves
-it for later runs (see ``credentials``). ``login`` asks for a new token;
+England and Wales data needs an API token: ``EPC_CONNECTOR_API_TOKEN`` if set
+(for CI and scripts), else the saved token. If a command needs one and none is
+found, it asks for it once (input hidden), checks it with the API and saves it
+for later runs (see ``credentials``). ``login`` asks for a new token;
 ``logout`` deletes the saved one. Without a terminal to ask in, the command
 fails instead.
 
@@ -52,11 +52,11 @@ from epc_connector.credentials import (
     token_path,
 )
 from epc_connector.datasets import Origin, Segment, parse_origins
+from epc_connector.environment import EnvVar, report_unknown_variables
 from epc_connector.errors import EpcConnectorError
 from epc_connector.pipeline import plan, run, status
 from epc_connector.sources.england_and_wales import verify_api_token
 from epc_connector.workspace import (
-    DATA_DIR_ENV_VAR,
     Workspace,
     lock_data_dir,
     resolve_data_dir,
@@ -72,6 +72,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line interface; return the exit status."""
     args = build_parser().parse_args(argv)
     logs.configure_logging(_log_options(args))
+    report_unknown_variables()
     logger.debug("epc-connector %s", " ".join(sys.argv[1:] if argv is None else argv))
     try:
         return args.run(args)
@@ -102,7 +103,7 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument(
         "--data-dir",
         type=Path,
-        help=f"data directory (default: ${DATA_DIR_ENV_VAR}, else ./.epc_data)",
+        help=f"data directory (default: ${EnvVar.DATA_DIR}, else ./.epc_data)",
     )
     origin = argparse.ArgumentParser(add_help=False)
     origin.add_argument(
@@ -270,7 +271,7 @@ def _logout(args: argparse.Namespace) -> int:
     else:
         logger.info("No saved API token to delete")
     if resolve_api_token() is not None:
-        logger.warning("A token is still set through EPB_API_TOKEN")
+        logger.warning("A token is still set through %s", EnvVar.API_TOKEN)
     return 0
 
 

@@ -12,8 +12,8 @@ One Login). Scottish data needs none.
 **Command line.** The first command that needs the token asks for it (input hidden), checks it with the API and saves it
 to your user configuration directory (`~/.config/epc-connector/token` on Linux), readable by you only, as git's
 credential store does. Later runs use the saved token. `epc-connector login` replaces it and `epc-connector logout`
-deletes it. In CI or scripts, where nothing can be typed, set `EPB_API_TOKEN` instead; it takes precedence over the
-saved token.
+deletes it. In CI or scripts, where nothing can be typed, set `EPC_CONNECTOR_API_TOKEN` instead; it takes precedence
+over the saved token.
 
 **Python.** Pass the token explicitly:
 
@@ -25,12 +25,12 @@ import epc_connector as epc
 # If you use a .env file load it first (python-dotenv):
 # from dotenv import load_dotenv
 # load_dotenv()
-token = os.environ["EPB_API_TOKEN"]
+token = os.environ["EPC_CONNECTOR_API_TOKEN"]
 homes = epc.load_domestic_certificates(api_token=token)
 epc.update(api_token=token)
 ```
 
-Without `api_token`, the functions use `EPB_API_TOKEN`, then the token saved by the command line.
+Without `api_token`, the functions use `EPC_CONNECTOR_API_TOKEN`, then the token saved by the command line.
 
 ## Command line
 
@@ -65,6 +65,17 @@ To share one copy between projects, set `EPC_CONNECTOR_DATA_DIR` to a directory,
 `--data-dir` (or `data_dir=` in Python) overrides both. Only one run at a time downloads or rebuilds files in a data
 directory; a second run waits, then uses what the first left, so nothing is downloaded twice. Downloads are staged in
 `.staging/` inside the data directory, which is removed when each step ends; `--staging-dir` puts it elsewhere.
+
+## Environment variables
+
+| Variable                   | What it sets                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `EPC_CONNECTOR_DATA_DIR`   | Data directory, unless `--data-dir` / `data_dir=` is given                    |
+| `EPC_CONNECTOR_API_TOKEN`  | England and Wales API token, unless `api_token=` is given; for CI and scripts |
+| `EPC_CONNECTOR_TOKEN_PATH` | Where the command line saves the API token                                    |
+
+They are read when needed, so setting one while a program runs takes effect. Surrounding spaces are ignored and an empty
+value counts as unset. Any other `EPC_CONNECTOR_*` variable is reported as unknown, which catches typos.
 
 ## Python
 

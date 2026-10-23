@@ -4,7 +4,7 @@ The England and Wales API token: where it comes from and where it is saved.
 A token is looked for in this order, as ``huggingface_hub`` does:
 
 1. the ``api_token`` argument of the function called;
-2. the ``EPB_API_TOKEN`` environment variable (for CI and scripts);
+2. the ``EPC_CONNECTOR_API_TOKEN`` environment variable (CI and scripts);
 3. the token saved by the command line (``save_api_token``), in the user's
    configuration directory, e.g. ``~/.config/epc-connector/token``.
 
@@ -19,12 +19,9 @@ from typing import Final
 
 import platformdirs
 
+from epc_connector.environment import EnvVar, read_path, read_text
 from epc_connector.errors import EpcConnectorError
 
-API_TOKEN_ENV_VAR: Final = "EPB_API_TOKEN"
-"""Environment variable holding the API token."""
-TOKEN_PATH_ENV_VAR: Final = "EPC_CONNECTOR_TOKEN_PATH"
-"""Environment variable naming the saved-token file, to move it."""
 APP_NAME: Final = "epc-connector"
 """Name of the user configuration directory."""
 
@@ -40,17 +37,16 @@ def token_path() -> Path:
     ``EPC_CONNECTOR_TOKEN_PATH`` if set, otherwise ``token`` in the user
     configuration directory (``platformdirs.user_config_path``).
     """
-    override = os.environ.get(TOKEN_PATH_ENV_VAR)
-    if override:
-        return Path(override).expanduser()
-    return platformdirs.user_config_path(APP_NAME) / "token"
+    return read_path(EnvVar.TOKEN_PATH) or (
+        platformdirs.user_config_path(APP_NAME) / "token"
+    )
 
 
 def resolve_api_token(api_token: str | None = None) -> str | None:
     """Return the first token found, in the module's order, or ``None``."""
-    if api_token:
-        return api_token
-    if token := os.environ.get(API_TOKEN_ENV_VAR):
+    if api_token and api_token.strip():
+        return api_token.strip()
+    if token := read_text(EnvVar.API_TOKEN):
         return token
     path = token_path()
     if path.is_file() and (token := path.read_text(encoding="ascii").strip()):
@@ -71,7 +67,7 @@ def require_api_token(api_token: str | None = None) -> str:
     if token is None:
         raise ApiTokenError(
             f"no England and Wales API token: pass api_token, set "
-            f"{API_TOKEN_ENV_VAR}, or run epc-connector login"
+            f"{EnvVar.API_TOKEN}, or run epc-connector login"
         )
     return token
 

@@ -11,12 +11,13 @@ from typing import Any
 
 import pytest
 
-from epc_connector import sources
+from epc_connector import environment, sources
 from epc_connector.canonical import gb
 from epc_connector.cli import commands, process
 from epc_connector.cli.logs import LogOptions
-from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError, save_api_token
+from epc_connector.credentials import ApiTokenError, save_api_token
 from epc_connector.datasets import Origin, Segment, get_dataset
+from epc_connector.environment import EnvVar
 from tests.fakes import write_raw_domestic
 
 pytestmark = pytest.mark.usefixtures("restore_logging")
@@ -34,7 +35,7 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> list[Call]:
         return Path("data")
 
     monkeypatch.setattr(process, "run_step", record)
-    monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
+    monkeypatch.setenv(EnvVar.API_TOKEN, "env-token")
     monkeypatch.setattr(commands, "_can_ask", lambda: False)
     monkeypatch.setattr(
         "shutil.disk_usage", lambda path: SimpleNamespace(free=100 * 1024**3)
@@ -137,7 +138,7 @@ class TestMain:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        monkeypatch.delenv(API_TOKEN_ENV_VAR)
+        monkeypatch.delenv(EnvVar.API_TOKEN)
 
         assert commands.main(["setup"]) == 1
         assert calls == []
@@ -146,7 +147,7 @@ class TestMain:
     def test_scotland_alone_needs_no_token(
         self, calls: list, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv(API_TOKEN_ENV_VAR)
+        monkeypatch.delenv(EnvVar.API_TOKEN)
 
         assert commands.main(["setup", "--origin", "scotland"]) == 0
 
@@ -270,6 +271,22 @@ class TestMain:
 
         assert locked == [default_data_dir]
 
+    def test_unknown_environment_variable_is_reported(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        monkeypatch.setenv("EPC_CONNECTOR_DATADIR", str(tmp_path))
+        environment._warn_once.cache_clear()
+
+        with caplog.at_level(logging.WARNING):
+            commands.main(["status", "--data-dir", str(tmp_path)])
+
+        assert "Ignoring unknown environment variable(s) EPC_CONNECTOR_DATADIR" in (
+            caplog.text
+        )
+
     def test_unknown_segment_is_rejected(self) -> None:
         with pytest.raises(SystemExit):
             commands.main(["setup", "--segment", "commercial"])
@@ -330,7 +347,7 @@ class Prompt:
 def prompt(calls: list, monkeypatch: pytest.MonkeyPatch) -> Prompt:
     """No token anywhere, someone at a terminal, and a fake API check."""
     fake = Prompt()
-    monkeypatch.delenv(API_TOKEN_ENV_VAR)
+    monkeypatch.delenv(EnvVar.API_TOKEN)
     monkeypatch.setattr(commands, "_can_ask", lambda: True)
     monkeypatch.setattr(commands.getpass, "getpass", fake.getpass)
     monkeypatch.setattr(commands, "verify_api_token", fake.verify)
@@ -362,7 +379,7 @@ class TestApiTokenPrompt:
     def test_environment_token_is_not_asked_for(
         self, prompt: Prompt, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
+        monkeypatch.setenv(EnvVar.API_TOKEN, "env-token")
 
         assert commands.main(EW_DOMESTIC) == 0
         assert prompt.asked == 0

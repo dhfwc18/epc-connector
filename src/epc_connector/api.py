@@ -29,6 +29,7 @@ from epc_connector.datasets import (
     get_dataset,
     parse_origins,
 )
+from epc_connector.environment import report_unknown_variables
 from epc_connector.errors import EpcConnectorError
 from epc_connector.pipeline.plan import plan_domestic, plan_update
 from epc_connector.pipeline.run import run_plan
@@ -135,8 +136,8 @@ def load_domestic_certificates(
         there, then rebuild their GB rows; overrides ``download_if_missing``.
     api_token
         England and Wales API token, needed only to download or update its
-        data. If ``None``: ``EPB_API_TOKEN``, then the token saved by the
-        ``epc-connector`` command (see ``credentials``).
+        data. If ``None``: ``EPC_CONNECTOR_API_TOKEN``, then the token saved by
+        the ``epc-connector`` command (see ``credentials``).
 
     Returns
     -------
@@ -151,6 +152,7 @@ def load_domestic_certificates(
         If no origin asked for could be set up, or one is missing and
         ``download_if_missing`` is false.
     """
+    report_unknown_variables()
     workspace = Workspace.resolve(data_dir)
     origins = parse_origins(origin)
     whole_gb = len(origins) > 1
@@ -226,6 +228,7 @@ def update(
     strict, api_token
         As for ``load_domestic_certificates``.
     """
+    report_unknown_variables()
     workspace = Workspace.resolve(data_dir, staging_dir)
     with lock_data_dir(workspace.data_dir):
         work = plan_update(
@@ -246,6 +249,7 @@ def status(data_dir: Path | str | None = None) -> list[DatasetStatus]:
 
     The same as ``epc-connector status``.
     """
+    report_unknown_variables()
     return dataset_statuses(resolve_data_dir(data_dir))
 
 

@@ -17,7 +17,6 @@ are. Runs that download or rebuild files hold the directory's lock
 
 import contextlib
 import logging
-import os
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,12 +24,11 @@ from typing import Any, Final, Self
 
 from filelock import FileLock, Timeout
 
+from epc_connector.environment import EnvVar, read_path
 from epc_connector.io import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR_ENV_VAR: Final = "EPC_CONNECTOR_DATA_DIR"
-"""Environment variable naming the data directory."""
 DEFAULT_DATA_DIR: Final = Path(".epc_data")
 """Data directory, relative to the working directory, if none is given."""
 LOCK_FILE_NAME: Final = ".lock"
@@ -55,9 +53,9 @@ def resolve_data_dir(data_dir: Path | str | None = None) -> Path:
     In order: ``data_dir`` if given, then ``EPC_CONNECTOR_DATA_DIR`` if set,
     then ``.epc_data`` in the working directory. ``~`` is expanded.
     """
-    if data_dir is None:
-        data_dir = os.environ.get(DATA_DIR_ENV_VAR) or DEFAULT_DATA_DIR
-    return Path(data_dir).expanduser()
+    if data_dir is not None:
+        return Path(data_dir).expanduser()
+    return read_path(EnvVar.DATA_DIR) or DEFAULT_DATA_DIR
 
 
 def resolve_staging_dir(staging_dir: Path | str | None, data_dir: Path) -> Path:

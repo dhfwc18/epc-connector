@@ -15,8 +15,9 @@ import polars as pl
 import pytest
 
 from epc_connector import validation
-from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError
+from epc_connector.credentials import ApiTokenError
 from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector.environment import EnvVar
 from epc_connector.io import StorageError
 from epc_connector.sources import england_and_wales
 from tests.fakes import FakeServer, write_zip
@@ -164,7 +165,7 @@ class TestAuthorisedClient:
     def test_environment_variable_is_used_without_argument(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(API_TOKEN_ENV_VAR, "from-env")
+        monkeypatch.setenv(EnvVar.API_TOKEN, "from-env")
 
         with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-env"

@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from epc_connector import workspace
+from epc_connector.environment import EnvVar
 
 
 class TestResolveDataDir:
@@ -23,7 +24,7 @@ class TestResolveDataDir:
     def test_without_either_it_is_epc_data_in_the_working_directory(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv(workspace.DATA_DIR_ENV_VAR)
+        monkeypatch.delenv(EnvVar.DATA_DIR)
 
         assert workspace.resolve_data_dir() == Path(".epc_data")
 

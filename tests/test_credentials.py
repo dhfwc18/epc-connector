@@ -7,11 +7,12 @@ from pathlib import Path
 import pytest
 
 from epc_connector import credentials
+from epc_connector.environment import EnvVar
 
 
 class TestResolveApiToken:
     def test_argument_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv(credentials.API_TOKEN_ENV_VAR, "env")
+        monkeypatch.setenv(EnvVar.API_TOKEN, "env")
         credentials.save_api_token("saved")
 
         assert credentials.resolve_api_token("argument") == "argument"
@@ -19,7 +20,7 @@ class TestResolveApiToken:
     def test_environment_wins_over_the_saved_token(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(credentials.API_TOKEN_ENV_VAR, "env")
+        monkeypatch.setenv(EnvVar.API_TOKEN, "env")
         credentials.save_api_token("saved")
 
         assert credentials.resolve_api_token() == "env"
@@ -32,10 +33,17 @@ class TestResolveApiToken:
     def test_nothing_found_returns_none(self) -> None:
         assert credentials.resolve_api_token() is None
 
+    def test_old_variable_name_is_not_read(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("EPB_API_TOKEN", "old-name")
+
+        assert credentials.resolve_api_token() is None
+
     def test_dotenv_file_is_not_read(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        (tmp_path / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
+        (tmp_path / ".env").write_text("EPC_CONNECTOR_API_TOKEN=from-dotenv\n")
         monkeypatch.chdir(tmp_path)
 
         assert credentials.resolve_api_token() is None
@@ -46,7 +54,7 @@ class TestRequireApiToken:
         with pytest.raises(credentials.ApiTokenError) as error:
             credentials.require_api_token()
 
-        for hint in ["api_token", "EPB_API_TOKEN", "epc-connector login"]:
+        for hint in ["api_token", "EPC_CONNECTOR_API_TOKEN", "epc-connector login"]:
             assert hint in str(error.value)
 
     def test_error_is_still_a_value_error(self) -> None:
@@ -104,7 +112,7 @@ class TestTokenPath:
     def test_default_is_in_the_user_configuration_directory(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.delenv(credentials.TOKEN_PATH_ENV_VAR)
+        monkeypatch.delenv(EnvVar.TOKEN_PATH)
 
         path = credentials.token_path()
 
