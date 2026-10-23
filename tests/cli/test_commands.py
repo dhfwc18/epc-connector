@@ -420,3 +420,39 @@ class TestApiTokenPrompt:
             assert commands.main(["logout"]) == 0
 
         assert "No saved API token" in caplog.text
+
+    def test_login_without_a_terminal_fails_with_one_line(
+        self,
+        prompt: Prompt,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+        saved_token_path: Path,
+    ) -> None:
+        monkeypatch.setattr(commands, "_can_ask", lambda: False)
+
+        assert commands.main(["login"]) == 1
+
+        console = capsys.readouterr().err
+        assert "login needs a terminal" in console
+        assert "Traceback" not in console
+        assert prompt.asked == 0
+        assert not saved_token_path.exists()
+
+    def test_end_of_input_at_the_prompt_is_no_token(
+        self,
+        prompt: Prompt,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+        saved_token_path: Path,
+    ) -> None:
+        def end_of_input(prompt_text: str = "") -> str:
+            raise EOFError
+
+        monkeypatch.setattr(commands.getpass, "getpass", end_of_input)
+
+        assert commands.main(["login"]) == 1
+
+        console = capsys.readouterr().err
+        assert "no token entered" in console
+        assert "Traceback" not in console
+        assert not saved_token_path.exists()

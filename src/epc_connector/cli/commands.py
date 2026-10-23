@@ -46,6 +46,7 @@ import httpx
 from epc_connector import cleaning
 from epc_connector.cli import coverage, logs, process
 from epc_connector.credentials import (
+    ApiTokenError,
     checked_api_token,
     delete_api_token,
     resolve_api_token,
@@ -266,6 +267,11 @@ def _coverage(args: argparse.Namespace) -> int:
 
 
 def _login(args: argparse.Namespace) -> int:
+    if not _can_ask():
+        raise ApiTokenError(
+            "login needs a terminal to type the token in; "
+            f"set {EnvVar.API_TOKEN} instead"
+        )
     _ask_and_save_api_token()
     return 0
 
@@ -300,7 +306,11 @@ def _ask_and_save_api_token() -> None:
         "England and Wales data needs an API token: sign in at %s to get one",
         TOKEN_URL,
     )
-    token = checked_api_token(getpass.getpass("API token (input hidden): "))
+    try:
+        typed = getpass.getpass("API token (input hidden): ")
+    except EOFError:
+        raise ApiTokenError("no token entered") from None
+    token = checked_api_token(typed)
     verify_api_token(token)
     logger.info("Token accepted; saved to %s", save_api_token(token))
 
