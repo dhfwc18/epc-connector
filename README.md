@@ -68,17 +68,18 @@ It is a data directory rather than a cache one, so cache clean-ups leave it alon
 what is missing (`--force` downloads everything again); `update` refreshes what is there. `epc-connector status` shows
 the directory and what is in it.
 
-For a per-project copy, set `EPC_CONNECTOR_DATA_DIR` (for example to `.epc_data`), or pass `--data-dir` (`data_dir=` in
-Python), which overrides it. A folder the package creates gets a `.gitignore` (`*`) and a `CACHEDIR.TAG`, so git and
-backup tools skip it without any change to your project. Only one run at a time downloads or rebuilds files in a data
-directory; a second run waits, then uses what the first left, so nothing is downloaded twice. Downloads are staged in
-`.staging/` inside the data directory, which is removed when each step ends; `--staging-dir` puts it elsewhere.
+To keep it somewhere else, for example on a larger drive, in a shared directory on a server, or in a directory a CI
+cache keeps, set `EPC_CONNECTOR_DATA_DIR`, or pass `--data-dir` (`data_dir=` in Python), which takes precedence. A
+folder the package creates gets a `.gitignore` (`*`) and a `CACHEDIR.TAG`, so git and backup tools skip it even if it is
+inside a repository. Only one run at a time downloads or rebuilds files in a data directory; a second run waits, then
+uses what the first left, so nothing is downloaded twice. Downloads are staged in `.staging/` inside the data directory,
+which is removed when each step ends; `--staging-dir` puts it elsewhere.
 
 ## Environment variables
 
 | Variable                   | What it sets                                                                  |
 | -------------------------- | ----------------------------------------------------------------------------- |
-| `EPC_CONNECTOR_DATA_DIR`   | Data directory, unless `--data-dir` / `data_dir=` is given                    |
+| `EPC_CONNECTOR_DATA_DIR`   | Moves the data directory, unless `--data-dir` / `data_dir=` is given          |
 | `EPC_CONNECTOR_API_TOKEN`  | England and Wales API token, unless `api_token=` is given; for CI and scripts |
 | `EPC_CONNECTOR_TOKEN_PATH` | Where the command line saves the API token                                    |
 

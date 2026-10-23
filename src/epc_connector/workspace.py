@@ -8,15 +8,16 @@ Data goes to the per-user data directory (``environment.user_data_dir``,
 e.g. ``~/.local/share/epc-connector``), so one setup serves every project
 on the machine, as with scikit-learn's and Hugging Face's data. It is a data
 directory, not a cache one: cache directories are meant for files that are
-cheap to recreate, and these take an hour and a token. Set
-``EPC_CONNECTOR_DATA_DIR`` (or pass ``data_dir``) for a per-project copy,
-e.g. ``.epc_data`` next to a project's ``.venv``.
+cheap to recreate, and these take an hour and a token.
+``EPC_CONNECTOR_DATA_DIR`` (or ``data_dir``) moves it, e.g. to a larger
+drive, a shared directory on a server, or a directory a CI cache keeps.
 
 When the package creates a data directory it adds a ``.gitignore`` holding
-``*`` and a ``CACHEDIR.TAG``, so version control and backup tools skip it,
-as with ``.pytest_cache``. Existing directories and files are left as they
-are. Runs that download or rebuild files hold the directory's lock
-(``lock_data_dir``), so two runs never fetch the same data at once.
+``*`` and a ``CACHEDIR.TAG``, so version control and backup tools skip it, as
+with ``.pytest_cache``, even if it is moved inside a repository. Existing
+directories and files are left as they are. Runs that download or rebuild files
+hold the directory's lock (``lock_data_dir``), so two runs never fetch the same
+data at once.
 """
 
 import contextlib
