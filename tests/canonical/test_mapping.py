@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.canonical.mapping``.
+Tests for ``epc_connector._canonical.mapping``.
 """
 
 import datetime as dt
@@ -10,8 +10,8 @@ from typing import Any
 import polars as pl
 import pytest
 
-from epc_connector.canonical import mapping
-from epc_connector.cleaning import Element, load_vocabulary
+from epc_connector._canonical import mapping
+from epc_connector._cleaning import Element, load_vocabulary
 
 
 def compile_mapping(tmp_path: Path, fields: dict[str, Any]) -> mapping.CompiledMapping:

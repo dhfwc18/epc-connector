@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.pipeline.run``.
+Tests for ``epc_connector._pipeline.run``.
 """
 
 import logging
@@ -11,11 +11,11 @@ from typing import Any
 
 import pytest
 
-from epc_connector.credentials import ApiTokenError
-from epc_connector.datasets import get_dataset
-from epc_connector.io import StorageError
-from epc_connector.pipeline import plan, run
-from epc_connector.workspace import Workspace
+from epc_connector._credentials import ApiTokenError
+from epc_connector._datasets import get_dataset
+from epc_connector._io import StorageError
+from epc_connector._pipeline import plan, run
+from epc_connector._workspace import Workspace
 
 
 def path_of_process(name: str) -> Path:

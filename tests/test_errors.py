@@ -1,15 +1,15 @@
 """
-Tests for ``epc_connector.errors``.
+Tests for ``epc_connector._errors``.
 """
 
 import pytest
 
-from epc_connector.canonical import GbNotSetUpError, MappingError
-from epc_connector.cleaning import PhraseConflictError, UnknownPhraseError
-from epc_connector.datasets import DatasetError
-from epc_connector.errors import EpcConnectorError
-from epc_connector.io import StorageError
-from epc_connector.validation import UnsupportedSchemaError
+from epc_connector._canonical import GbNotSetUpError, MappingError
+from epc_connector._cleaning import PhraseConflictError, UnknownPhraseError
+from epc_connector._datasets import DatasetError
+from epc_connector._errors import EpcConnectorError
+from epc_connector._io import StorageError
+from epc_connector._validation import UnsupportedSchemaError
 
 
 class TestEpcConnectorError:

@@ -18,27 +18,28 @@ Typical use::
     epc.status()  # what is set up
 
 The first load downloads and builds what it needs (several GB, into the
-per-user data directory; see ``workspace``). Only England and Wales data needs
-the API token; without ``api_token`` it is found as ``credentials`` describes.
+per-user data directory; see ``_workspace``). Only England and Wales data needs
+the API token; without ``api_token`` it is found as ``_credentials`` describes.
 The ``epc-connector`` command does the same from a shell. Every error the
 package raises on purpose is an ``EpcConnectorError``.
 
-Only the names in ``__all__`` below are the public API. Submodules such as
-``sources``, ``io``, ``cleaning``, ``canonical``, ``pipeline`` and
-``cli`` are internal and may change in any release.
+Only the names in ``__all__`` below are the public API. Everything else
+lives in underscore-prefixed modules (``_sources``, ``_io``, ``_cli`` and
+so on), which are internal, as PEP 8 recommends, and may change in any
+release.
 """
 
-from epc_connector.api import (
+from epc_connector._api import (
     NotSetUpError,
     UnknownColumnError,
     load_domestic_certificates,
     status,
     update,
 )
-from epc_connector.credentials import ApiTokenError
-from epc_connector.datasets import Origin, Segment
-from epc_connector.errors import EpcConnectorError
-from epc_connector.pipeline.status import DatasetStatus
+from epc_connector._credentials import ApiTokenError
+from epc_connector._datasets import Origin, Segment
+from epc_connector._errors import EpcConnectorError
+from epc_connector._pipeline.status import DatasetStatus
 
 __all__ = [
     "ApiTokenError",

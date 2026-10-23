@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.sources`` (the ``download`` and ``update`` entry).
+Tests for ``epc_connector._sources`` (the ``download`` and ``update`` entry).
 """
 
 from pathlib import Path
@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from epc_connector import sources
-from epc_connector.datasets import DatasetError, Origin, Segment
+from epc_connector import _sources as sources
+from epc_connector._datasets import DatasetError, Origin, Segment
 
 
 @pytest.fixture

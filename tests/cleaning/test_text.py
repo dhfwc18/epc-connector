@@ -1,11 +1,11 @@
 """
-Tests for ``epc_connector.cleaning.text``.
+Tests for ``epc_connector._cleaning.text``.
 """
 
 import pytest
 
-from epc_connector.cleaning.text import normalise, split_elements
-from epc_connector.datasets import Origin
+from epc_connector._cleaning.text import normalise, split_elements
+from epc_connector._datasets import Origin
 
 EW = Origin.ENGLAND_AND_WALES
 SCOTLAND = Origin.SCOTLAND

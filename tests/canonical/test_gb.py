@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.canonical.gb``.
+Tests for ``epc_connector._canonical.gb``.
 """
 
 import datetime as dt
@@ -9,9 +9,9 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from epc_connector.canonical import gb
-from epc_connector.canonical.mapping import MappingError, canonical_dtypes
-from epc_connector.datasets import (
+from epc_connector._canonical import gb
+from epc_connector._canonical.mapping import MappingError, canonical_dtypes
+from epc_connector._datasets import (
     LAST_UPDATED_METADATA_KEY,
     RELEASE_METADATA_KEY,
     Origin,

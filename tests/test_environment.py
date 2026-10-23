@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.environment``.
+Tests for ``epc_connector._environment``.
 """
 
 import logging
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector import environment
-from epc_connector.environment import EnvVar
+from epc_connector import _environment as environment
+from epc_connector._environment import EnvVar
 
 
 class TestEnvVar:

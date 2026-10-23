@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.api``.
+Tests for ``epc_connector._api``.
 """
 
 import contextlib
@@ -12,17 +12,18 @@ from typing import Any
 import polars as pl
 import pytest
 
-from epc_connector import api, sources
-from epc_connector.canonical import GB_PARQUET_NAME, gb_origins
-from epc_connector.credentials import ApiTokenError
-from epc_connector.datasets import (
+from epc_connector import _api as api
+from epc_connector import _sources as sources
+from epc_connector._canonical import GB_PARQUET_NAME, gb_origins
+from epc_connector._credentials import ApiTokenError
+from epc_connector._datasets import (
     LAST_UPDATED_METADATA_KEY,
     RELEASE_METADATA_KEY,
     Origin,
     Segment,
 )
-from epc_connector.environment import EnvVar
-from epc_connector.pipeline import run
+from epc_connector._environment import EnvVar
+from epc_connector._pipeline import run
 from tests.fakes import ENGLAND_AND_WALES_ROW, SCOTLAND_ROW, write_raw_domestic
 
 TODAY = dt.date.today()

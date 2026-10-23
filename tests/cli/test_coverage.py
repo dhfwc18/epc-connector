@@ -1,12 +1,12 @@
 """
-Tests for ``epc_connector.cli.coverage``.
+Tests for ``epc_connector._cli.coverage``.
 """
 
 from pathlib import Path
 
-from epc_connector.cleaning import Element
-from epc_connector.cli import coverage
-from epc_connector.datasets import Origin
+from epc_connector._cleaning import Element
+from epc_connector._cli import coverage
+from epc_connector._datasets import Origin
 from tests.fakes import write_raw_domestic
 
 

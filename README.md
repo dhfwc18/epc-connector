@@ -117,5 +117,5 @@ GB data holds one origin only (for example without an [England and Wales API tok
 Every error the package raises on purpose is an `EpcConnectorError`.
 
 Only the names exported from `epc_connector` (`load_domestic_certificates`, `update`, `status`, `DatasetStatus`,
-`Origin`, `Segment` and the errors) are the public API. Submodules such as `epc_connector.sources` or
-`epc_connector.canonical` are internal and may change in any release.
+`Origin`, `Segment` and the errors) are the public API. Everything else lives in underscore-prefixed modules such as
+`epc_connector._sources`, which are internal and may change in any release.

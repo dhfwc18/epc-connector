@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.pipeline.plan``.
+Tests for ``epc_connector._pipeline.plan``.
 """
 
 from pathlib import Path
@@ -7,17 +7,17 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from epc_connector import sources
-from epc_connector.canonical import gb
-from epc_connector.datasets import (
+from epc_connector import _sources as sources
+from epc_connector._canonical import gb
+from epc_connector._datasets import (
     RELEASE_METADATA_KEY,
     DatasetError,
     Origin,
     Segment,
     get_dataset,
 )
-from epc_connector.pipeline import plan
-from epc_connector.workspace import Workspace
+from epc_connector._pipeline import plan
+from epc_connector._workspace import Workspace
 
 
 def touch_datasets(data_dir: Path, *names: str) -> None:

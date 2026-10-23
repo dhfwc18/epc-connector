@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.sources.scotland``.
+Tests for ``epc_connector._sources.scotland``.
 """
 
 import datetime as dt
@@ -11,11 +11,11 @@ from typing import Any
 import polars as pl
 import pytest
 
-from epc_connector import validation
-from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
-from epc_connector.io import StorageError
-from epc_connector.io.archives import extract_files
-from epc_connector.sources import scotland
+from epc_connector import _validation as validation
+from epc_connector._datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector._io import StorageError
+from epc_connector._io.archives import extract_files
+from epc_connector._sources import scotland
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,
@@ -316,7 +316,7 @@ class TestUpdate:
             return paths
 
         monkeypatch.setattr(
-            "epc_connector.io.archives.extract_files", recording_extract
+            "epc_connector._io.archives.extract_files", recording_extract
         )
 
         downloaded.update(self.new_release(downloaded), date_from="2026-01-01")

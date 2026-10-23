@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.io.parquet``.
+Tests for ``epc_connector._io.parquet``.
 """
 
 from pathlib import Path
@@ -7,8 +7,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from epc_connector.io import parquet
-from epc_connector.io.files import StorageError
+from epc_connector._io import parquet
+from epc_connector._io.files import StorageError
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,

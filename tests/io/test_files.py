@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.io.files``.
+Tests for ``epc_connector._io.files``.
 """
 
 import os
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector.io import files
+from epc_connector._io import files
 
 
 class TestStreamingFile:

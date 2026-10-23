@@ -8,7 +8,7 @@ import sys
 import pytest
 
 import epc_connector
-from epc_connector import api
+from epc_connector import _api as api
 
 
 class TestPackage:
@@ -46,7 +46,7 @@ class TestPackage:
 
     def test_import_leaves_the_command_line_unloaded(self) -> None:
         # A fresh interpreter: this test session has imported the CLI already.
-        code = "import sys, epc_connector; " "print('epc_connector.cli' in sys.modules)"
+        code = "import sys, epc_connector; print('epc_connector._cli' in sys.modules)"
 
         result = subprocess.run(
             [sys.executable, "-c", code], capture_output=True, text=True, check=True

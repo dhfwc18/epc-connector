@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.sources.england_and_wales``.
+Tests for ``epc_connector._sources.england_and_wales``.
 """
 
 import datetime as dt
@@ -14,12 +14,12 @@ import httpx
 import polars as pl
 import pytest
 
-from epc_connector import validation
-from epc_connector.credentials import ApiTokenError
-from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
-from epc_connector.environment import EnvVar
-from epc_connector.io import StorageError
-from epc_connector.sources import england_and_wales
+from epc_connector import _validation as validation
+from epc_connector._credentials import ApiTokenError
+from epc_connector._datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector._environment import EnvVar
+from epc_connector._io import StorageError
+from epc_connector._sources import england_and_wales
 from tests.fakes import FakeServer, write_zip
 
 TOKEN = "test-token"

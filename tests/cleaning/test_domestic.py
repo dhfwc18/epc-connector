@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.cleaning.domestic``.
+Tests for ``epc_connector._cleaning.domestic``.
 """
 
 from pathlib import Path
@@ -7,9 +7,9 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from epc_connector.cleaning import domestic
-from epc_connector.cleaning.descriptions import UnknownPhraseError
-from epc_connector.datasets import Origin, Segment, get_dataset
+from epc_connector._cleaning import domestic
+from epc_connector._cleaning.descriptions import UnknownPhraseError
+from epc_connector._datasets import Origin, Segment, get_dataset
 from tests.fakes import write_raw_domestic
 
 EW = Origin.ENGLAND_AND_WALES

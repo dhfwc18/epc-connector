@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.cli.process``.
+Tests for ``epc_connector._cli.process``.
 """
 
 import logging
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector.cli import process
-from epc_connector.cli.logs import LogOptions
+from epc_connector._cli import process
+from epc_connector._cli.logs import LogOptions
 
 
 def path_of_process(name: str) -> Path:

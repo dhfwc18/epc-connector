@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-epc-connector = "epc_connector.cli:main"
+epc-connector = "epc_connector._cli:main"
 
 [dependency-groups]
 dev = [

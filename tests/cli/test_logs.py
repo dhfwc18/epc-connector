@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.cli.logs``.
+Tests for ``epc_connector._cli.logs``.
 """
 
 import logging
@@ -8,11 +8,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from epc_connector.cli import logs
+from epc_connector._cli import logs
 
 pytestmark = pytest.mark.usefixtures("restore_logging")
 
-package = logging.getLogger("epc_connector.io.files")
+package = logging.getLogger("epc_connector._io.files")
 library = logging.getLogger("httpx")
 
 
@@ -50,7 +50,7 @@ class TestConfigureLogging:
         library.info("HTTP Request: GET ...")
 
         console = capsys.readouterr().err
-        assert "epc_connector.io.files: detail" in console
+        assert "epc_connector._io.files: detail" in console
         assert "httpx: HTTP Request: GET ..." in console
 
     def test_log_file_records_debug_whatever_the_console_shows(

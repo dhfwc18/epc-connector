@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.validation``.
+Tests for ``epc_connector._validation``.
 """
 
 from pathlib import Path
@@ -8,8 +8,8 @@ import polars as pl
 import pytest
 
 import epc_connector
-from epc_connector import validation
-from epc_connector.validation import DEFAULT_SCHEMAS_DIR, UnsupportedSchemaError
+from epc_connector import _validation as validation
+from epc_connector._validation import DEFAULT_SCHEMAS_DIR, UnsupportedSchemaError
 from tests.fakes import abc_schema
 
 SOURCE_SCHEMAS = sorted((DEFAULT_SCHEMAS_DIR / "source").rglob("*.json"))

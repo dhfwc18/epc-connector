@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.cleaning.vocabulary``.
+Tests for ``epc_connector._cleaning.vocabulary``.
 """
 
 import json
@@ -8,9 +8,9 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from epc_connector.cleaning import descriptions, vocabulary
-from epc_connector.cleaning.vocabulary import Element
-from epc_connector.datasets import Origin
+from epc_connector._cleaning import descriptions, vocabulary
+from epc_connector._cleaning.vocabulary import Element
+from epc_connector._datasets import Origin
 
 EW = Origin.ENGLAND_AND_WALES
 SCOTLAND = Origin.SCOTLAND

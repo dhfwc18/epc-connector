@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.cleaning.descriptions``.
+Tests for ``epc_connector._cleaning.descriptions``.
 """
 
 import logging
@@ -8,8 +8,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from epc_connector.cleaning import descriptions
-from epc_connector.datasets import Origin
+from epc_connector._cleaning import descriptions
+from epc_connector._datasets import Origin
 
 EW = Origin.ENGLAND_AND_WALES
 SCOTLAND = Origin.SCOTLAND

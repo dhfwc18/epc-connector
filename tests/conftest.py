@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector.cli import logs
-from epc_connector.environment import EnvVar
-from epc_connector.io import downloads
+from epc_connector._cli import logs
+from epc_connector._environment import EnvVar
+from epc_connector._io import downloads
 from tests.fakes import write_7z, write_vocabularies, yearly_members
 
 

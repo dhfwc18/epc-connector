@@ -14,8 +14,8 @@ import httpx
 import polars as pl
 import py7zr
 
-from epc_connector.datasets import Origin, Segment, get_dataset
-from epc_connector.validation import load_schema
+from epc_connector._datasets import Origin, Segment, get_dataset
+from epc_connector._validation import load_schema
 
 UTF8_BOM = "\ufeff"
 LABEL_ROW = "Label A,Total floor area (m\ufffd),Label C"

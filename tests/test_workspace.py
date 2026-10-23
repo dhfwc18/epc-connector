@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.workspace``.
+Tests for ``epc_connector._workspace``.
 """
 
 import logging
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector import workspace
-from epc_connector.environment import EnvVar, user_data_dir
+from epc_connector import _workspace as workspace
+from epc_connector._environment import EnvVar, user_data_dir
 
 
 class TestResolveDataDir:

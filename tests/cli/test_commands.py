@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.cli.commands`` (the command line).
+Tests for ``epc_connector._cli.commands`` (the command line).
 """
 
 import contextlib
@@ -11,13 +11,14 @@ from typing import Any
 
 import pytest
 
-from epc_connector import environment, sources
-from epc_connector.canonical import gb
-from epc_connector.cli import commands, process
-from epc_connector.cli.logs import LogOptions
-from epc_connector.credentials import ApiTokenError, save_api_token
-from epc_connector.datasets import Origin, Segment, get_dataset
-from epc_connector.environment import EnvVar
+from epc_connector import _environment as environment
+from epc_connector import _sources as sources
+from epc_connector._canonical import gb
+from epc_connector._cli import commands, process
+from epc_connector._cli.logs import LogOptions
+from epc_connector._credentials import ApiTokenError, save_api_token
+from epc_connector._datasets import Origin, Segment, get_dataset
+from epc_connector._environment import EnvVar
 from tests.fakes import write_raw_domestic
 
 pytestmark = pytest.mark.usefixtures("restore_logging")

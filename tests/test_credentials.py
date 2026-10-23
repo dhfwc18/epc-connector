@@ -1,13 +1,13 @@
 """
-Tests for ``epc_connector.credentials``.
+Tests for ``epc_connector._credentials``.
 """
 
 from pathlib import Path
 
 import pytest
 
-from epc_connector import credentials
-from epc_connector.environment import EnvVar
+from epc_connector import _credentials as credentials
+from epc_connector._environment import EnvVar
 
 
 class TestResolveApiToken:
