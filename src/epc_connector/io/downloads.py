@@ -16,7 +16,7 @@ from typing import Any, Final
 
 import httpx
 
-from epc_connector.storage.files import STREAM_BLOCK_BYTES, StorageError, StreamingFile
+from epc_connector.io.files import STREAM_BLOCK_BYTES, StorageError, StreamingFile
 
 logger = logging.getLogger(__name__)
 

@@ -13,8 +13,9 @@ import pytest
 
 from epc_connector.credentials import ApiTokenError
 from epc_connector.datasets import get_dataset
+from epc_connector.io import StorageError
 from epc_connector.pipeline import plan, run
-from epc_connector.storage import StorageError
+from epc_connector.workspace import Workspace
 
 
 def path_of_process(name: str) -> Path:
@@ -31,8 +32,8 @@ def one_step_plan(*datasets: str) -> plan.Plan:
 
 
 @pytest.fixture
-def workspace(tmp_path: Path) -> plan.Workspace:
-    return plan.Workspace.resolve(tmp_path)
+def workspace(tmp_path: Path) -> Workspace:
+    return Workspace.resolve(tmp_path)
 
 
 @pytest.fixture
@@ -44,14 +45,14 @@ def enough_space(monkeypatch: pytest.MonkeyPatch) -> None:
 
 class TestRunPlan:
     def test_steps_run_in_this_process_by_default(
-        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
+        self, workspace: Workspace, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.DEBUG):
             run.run_plan(one_step_plan(), workspace)
 
         assert f"out/{os.getpid()}" in caplog.text
 
-    def test_given_runner_calls_every_step(self, workspace: plan.Workspace) -> None:
+    def test_given_runner_calls_every_step(self, workspace: Workspace) -> None:
         called: list[tuple[object, tuple[object, ...]]] = []
 
         def runner(function: Callable[..., Path], /, *args: Any, **kwargs: Any) -> Path:
@@ -63,7 +64,7 @@ class TestRunPlan:
         assert called == [(path_of_process, ("out",))]
 
     def test_empty_plan_does_nothing(
-        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
+        self, workspace: Workspace, caplog: pytest.LogCaptureFixture
     ) -> None:
         work = plan.Plan(datasets=[], steps=[], not_set_up=[])
 
@@ -73,7 +74,7 @@ class TestRunPlan:
         assert "Nothing to do" in caplog.text
 
     def test_scottish_domestic_without_space_raises_before_any_step(
-        self, workspace: plan.Workspace, monkeypatch: pytest.MonkeyPatch
+        self, workspace: Workspace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
             "shutil.disk_usage", lambda path: SimpleNamespace(free=1024**3)
@@ -83,7 +84,7 @@ class TestRunPlan:
             run.run_plan(one_step_plan("scotland/domestic"), workspace)
 
     def test_england_and_wales_without_a_token_raises_before_any_step(
-        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
+        self, workspace: Workspace, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO), pytest.raises(ApiTokenError):
             run.run_plan(one_step_plan("england-and-wales/domestic"), workspace)
@@ -91,7 +92,7 @@ class TestRunPlan:
         assert "Step 1" not in caplog.text
 
     def test_england_and_wales_runs_with_a_token(
-        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
+        self, workspace: Workspace, caplog: pytest.LogCaptureFixture
     ) -> None:
         work = one_step_plan("england-and-wales/domestic")
 

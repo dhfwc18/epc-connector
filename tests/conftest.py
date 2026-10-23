@@ -10,8 +10,8 @@ import pytest
 
 from epc_connector.cli import logs
 from epc_connector.credentials import API_TOKEN_ENV_VAR, TOKEN_PATH_ENV_VAR
-from epc_connector.locations import DATA_DIR_ENV_VAR
-from epc_connector.storage import downloads
+from epc_connector.io import downloads
+from epc_connector.workspace import DATA_DIR_ENV_VAR
 from tests.fakes import write_7z, write_vocabularies, yearly_members
 
 

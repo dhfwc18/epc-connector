@@ -17,8 +17,8 @@ import httpx
 import py7zr
 from py7zr.io import Py7zIO, WriterFactory
 
-from epc_connector.storage.downloads import RemoteFile, resolve_download_url
-from epc_connector.storage.files import (
+from epc_connector.io.downloads import RemoteFile, resolve_download_url
+from epc_connector.io.files import (
     STREAM_BLOCK_BYTES,
     StorageError,
     StreamingFile,

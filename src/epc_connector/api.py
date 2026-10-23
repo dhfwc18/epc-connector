@@ -5,7 +5,7 @@ The library: load domestic certificates, update the data, see what is set up.
 domestic file of each origin asked for and that origin's rows in the GB file.
 Other origins and segments are never downloaded. ``update`` refreshes the
 data, exactly as ``epc-connector update`` does. Files live in the data
-directory (see ``locations``).
+directory (see ``workspace``).
 
 Steps run in the calling process; the ``epc-connector`` command runs each in
 a fresh one.
@@ -30,11 +30,11 @@ from epc_connector.datasets import (
     parse_origins,
 )
 from epc_connector.errors import EpcConnectorError
-from epc_connector.locations import lock_data_dir, resolve_data_dir
-from epc_connector.pipeline.plan import Workspace, plan_domestic, plan_update
+from epc_connector.pipeline.plan import plan_domestic, plan_update
 from epc_connector.pipeline.run import run_plan
 from epc_connector.pipeline.status import DatasetStatus, dataset_statuses
 from epc_connector.sources import england_and_wales, scotland
+from epc_connector.workspace import Workspace, lock_data_dir, resolve_data_dir
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ def load_domestic_certificates(
         far more memory than the file on disk: pass ``columns``, or use
         ``lazy=True`` and filter before collecting.
     data_dir
-        Data directory; see ``locations.resolve_data_dir``.
+        Data directory; see ``workspace.resolve_data_dir``.
     strict
         When building GB rows, raise if a description is not covered by the
         vocabularies instead of marking it.
@@ -221,8 +221,8 @@ def update(
         England and Wales, ``CREATED_AT`` date for Scotland. By default,
         from the latest date in each local file.
     data_dir, staging_dir
-        See ``locations.resolve_data_dir`` and
-        ``locations.resolve_staging_dir``.
+        See ``workspace.resolve_data_dir`` and
+        ``workspace.resolve_staging_dir``.
     strict, api_token
         As for ``load_domestic_certificates``.
     """

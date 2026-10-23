@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.storage.archives``.
+Tests for ``epc_connector.io.archives``.
 """
 
 import lzma
@@ -10,8 +10,8 @@ from types import SimpleNamespace
 import pytest
 from py7zr.exceptions import CrcError
 
-from epc_connector.storage import archives
-from epc_connector.storage.files import StorageError
+from epc_connector.io import archives
+from epc_connector.io.files import StorageError
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,

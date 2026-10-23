@@ -17,8 +17,8 @@ import pytest
 from epc_connector import validation
 from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError
 from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector.io import StorageError
 from epc_connector.sources import england_and_wales
-from epc_connector.storage import StorageError
 from tests.fakes import FakeServer, write_zip
 
 TOKEN = "test-token"

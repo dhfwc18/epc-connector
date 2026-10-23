@@ -18,13 +18,13 @@ Typical use::
     epc.status()  # what is set up
 
 The first load downloads and builds what it needs (several GB, into
-``.epc_data/``; see ``locations``). Only England and Wales data needs the
+``.epc_data/``; see ``workspace``). Only England and Wales data needs the
 API token; without ``api_token`` it is found as ``credentials`` describes.
 The ``epc-connector`` command does the same from a shell. Every error the
 package raises on purpose is an ``EpcConnectorError``.
 
 Only the names in ``__all__`` below are the public API. Submodules such as
-``sources``, ``storage``, ``cleaning``, ``canonical``, ``pipeline`` and
+``sources``, ``io``, ``cleaning``, ``canonical``, ``pipeline`` and
 ``cli`` are internal and may change in any release.
 """
 

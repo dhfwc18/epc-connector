@@ -35,8 +35,7 @@ from epc_connector.canonical.mapping import (
 from epc_connector.cleaning import clean_domestic_epc
 from epc_connector.datasets import Dataset, Origin, Segment, get_dataset
 from epc_connector.errors import EpcConnectorError
-from epc_connector.locations import resolve_data_dir, resolve_staging_dir
-from epc_connector.storage import (
+from epc_connector.io import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
     atomic_write,
@@ -44,6 +43,7 @@ from epc_connector.storage import (
     staging_directory,
     stream_to_parquet,
 )
+from epc_connector.workspace import resolve_data_dir, resolve_staging_dir
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def build_gb(
     ----------
     data_dir
         Directory holding the raw files; the GB file is written there. See
-        ``locations.resolve_data_dir``.
+        ``workspace.resolve_data_dir``.
     staging_dir
         Parent of the temporary directory used while writing (default
         ``<data_dir>/.staging``).
@@ -141,7 +141,7 @@ def build_gb(
         Raise if a description is not covered by the vocabularies; if false,
         mark it ``"not in vocabulary"`` and log a warning instead.
     chunk_rows, row_group_rows
-        Memory limits; see ``storage.stream_to_parquet``.
+        Memory limits; see ``io.stream_to_parquet``.
 
     Returns
     -------

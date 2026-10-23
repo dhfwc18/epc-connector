@@ -17,6 +17,7 @@ from epc_connector.datasets import (
     get_dataset,
 )
 from epc_connector.pipeline import plan
+from epc_connector.workspace import Workspace
 
 
 def touch_datasets(data_dir: Path, *names: str) -> None:
@@ -62,7 +63,7 @@ class TestPlanSetup:
         assert work.not_set_up == [Segment.DISPLAY]
 
     def test_workspace_and_strictness_reach_the_steps(self, tmp_path: Path) -> None:
-        workspace = plan.Workspace.resolve(tmp_path / "elsewhere", chunk_rows=5)
+        workspace = Workspace.resolve(tmp_path / "elsewhere", chunk_rows=5)
 
         work = plan.plan_setup(
             [Origin.SCOTLAND], [Segment.DOMESTIC], workspace=workspace, strict=False
@@ -75,7 +76,7 @@ class TestPlanSetup:
     def test_downloaded_datasets_are_skipped(self, tmp_path: Path) -> None:
         touch_datasets(tmp_path, "scotland/domestic")
         (tmp_path / gb.GB_PARQUET_NAME).touch()
-        workspace = plan.Workspace.resolve(tmp_path)
+        workspace = Workspace.resolve(tmp_path)
 
         work = plan.plan_setup(list(Origin), [Segment.DOMESTIC], workspace=workspace)
 
@@ -88,7 +89,7 @@ class TestPlanSetup:
     def test_everything_downloaded_plans_no_steps(self, tmp_path: Path) -> None:
         touch_datasets(tmp_path, "scotland/domestic", "england-and-wales/domestic")
         (tmp_path / gb.GB_PARQUET_NAME).touch()
-        workspace = plan.Workspace.resolve(tmp_path)
+        workspace = Workspace.resolve(tmp_path)
 
         work = plan.plan_setup(list(Origin), [Segment.DOMESTIC], workspace=workspace)
 
@@ -99,7 +100,7 @@ class TestPlanSetup:
         self, tmp_path: Path
     ) -> None:
         touch_datasets(tmp_path, "scotland/domestic")
-        workspace = plan.Workspace.resolve(tmp_path)
+        workspace = Workspace.resolve(tmp_path)
 
         work = plan.plan_setup(
             [Origin.SCOTLAND], [Segment.DOMESTIC], workspace=workspace
@@ -109,7 +110,7 @@ class TestPlanSetup:
 
     def test_force_downloads_again(self, tmp_path: Path) -> None:
         touch_datasets(tmp_path, "scotland/domestic")
-        workspace = plan.Workspace.resolve(tmp_path)
+        workspace = Workspace.resolve(tmp_path)
 
         work = plan.plan_setup(
             [Origin.SCOTLAND], [Segment.DOMESTIC], workspace=workspace, force=True
@@ -142,7 +143,7 @@ class TestPlanUpdate:
             [Origin.ENGLAND_AND_WALES],
             [Segment.DOMESTIC],
             date_from="2026-09-01",
-            workspace=plan.Workspace.resolve(tmp_path),
+            workspace=Workspace.resolve(tmp_path),
         )
 
         update, gb_step = work.steps
@@ -159,7 +160,7 @@ class TestPlanUpdate:
         touch_datasets(tmp_path, "scotland/domestic")
 
         work = plan.plan_update(
-            list(Origin), [Segment.DOMESTIC], workspace=plan.Workspace.resolve(tmp_path)
+            list(Origin), [Segment.DOMESTIC], workspace=Workspace.resolve(tmp_path)
         )
 
         assert [d.name for d in work.datasets] == ["scotland/domestic"]
@@ -183,7 +184,7 @@ def write_raw_metadata(data_dir: Path, name: str, metadata: dict[str, str]) -> N
 class TestPlanDomestic:
     def test_missing_origin_is_downloaded_and_added_to_gb(self, tmp_path: Path) -> None:
         work = plan.plan_domestic(
-            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+            Origin.SCOTLAND, workspace=Workspace.resolve(tmp_path)
         )
 
         assert step_summary(work) == [
@@ -200,7 +201,7 @@ class TestPlanDomestic:
         write_gb_metadata(tmp_path, {RELEASE_METADATA_KEY: "2026q2"})
 
         work = plan.plan_domestic(
-            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+            Origin.SCOTLAND, workspace=Workspace.resolve(tmp_path)
         )
 
         assert work.steps == []
@@ -212,14 +213,14 @@ class TestPlanDomestic:
         write_gb_metadata(tmp_path, {RELEASE_METADATA_KEY: "2026q2"})
 
         work = plan.plan_domestic(
-            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+            Origin.SCOTLAND, workspace=Workspace.resolve(tmp_path)
         )
 
         assert step_summary(work) == [(gb.replace_origin_in_gb, (Origin.SCOTLAND,))]
 
     def test_other_origins_and_segments_are_not_touched(self, tmp_path: Path) -> None:
         work = plan.plan_domestic(
-            Origin.ENGLAND_AND_WALES, workspace=plan.Workspace.resolve(tmp_path)
+            Origin.ENGLAND_AND_WALES, workspace=Workspace.resolve(tmp_path)
         )
 
         assert [d.name for d in work.datasets] == ["england-and-wales/domestic"]
@@ -230,7 +231,7 @@ class TestApiToken:
         work = plan.plan_setup(
             list(Origin),
             [Segment.DOMESTIC],
-            workspace=plan.Workspace.resolve(tmp_path),
+            workspace=Workspace.resolve(tmp_path),
             api_token="secret-token",
         )
 
@@ -249,7 +250,7 @@ class TestApiToken:
         work = plan.plan_update(
             [Origin.ENGLAND_AND_WALES],
             [Segment.DOMESTIC],
-            workspace=plan.Workspace.resolve(tmp_path),
+            workspace=Workspace.resolve(tmp_path),
             api_token="secret-token",
         )
 
@@ -262,7 +263,7 @@ class TestDownloads:
         touch_datasets(tmp_path, "scotland/domestic")
 
         work = plan.plan_setup(
-            list(Origin), [Segment.DOMESTIC], workspace=plan.Workspace.resolve(tmp_path)
+            list(Origin), [Segment.DOMESTIC], workspace=Workspace.resolve(tmp_path)
         )
 
         assert [d.name for d in work.downloads] == ["england-and-wales/domestic"]
@@ -271,14 +272,14 @@ class TestDownloads:
         touch_datasets(tmp_path, "scotland/domestic")
 
         work = plan.plan_update(
-            [Origin.SCOTLAND], workspace=plan.Workspace.resolve(tmp_path)
+            [Origin.SCOTLAND], workspace=Workspace.resolve(tmp_path)
         )
 
         assert work.downloads == []
 
     def test_domestic_lists_a_missing_raw_file(self, tmp_path: Path) -> None:
         work = plan.plan_domestic(
-            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+            Origin.SCOTLAND, workspace=Workspace.resolve(tmp_path)
         )
 
         assert [d.name for d in work.downloads] == ["scotland/domestic"]
@@ -287,7 +288,7 @@ class TestDownloads:
         touch_datasets(tmp_path, "scotland/domestic")
 
         work = plan.plan_domestic(
-            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path), force=True
+            Origin.SCOTLAND, workspace=Workspace.resolve(tmp_path), force=True
         )
 
         assert [d.name for d in work.downloads] == ["scotland/domestic"]

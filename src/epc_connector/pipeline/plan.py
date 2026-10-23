@@ -16,7 +16,7 @@ import datetime as dt
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
 
 import polars as pl
 
@@ -29,63 +29,7 @@ from epc_connector.datasets import (
     get_dataset,
     select_datasets,
 )
-from epc_connector.locations import resolve_data_dir, resolve_staging_dir
-from epc_connector.storage import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
-
-
-@dataclass(frozen=True)
-class Workspace:
-    """
-    Where the pipeline reads and writes, and its memory limits.
-
-    Build one with ``Workspace.resolve`` to apply the default directories.
-
-    Attributes
-    ----------
-    data_dir
-        Directory of the raw and GB Parquet files.
-    staging_dir
-        Parent of the temporary directories used while writing.
-    chunk_rows, row_group_rows
-        Memory limits; see ``storage.stream_to_parquet``.
-    """
-
-    data_dir: Path
-    staging_dir: Path
-    chunk_rows: int = DEFAULT_CHUNK_ROWS
-    row_group_rows: int = DEFAULT_ROW_GROUP_ROWS
-
-    @classmethod
-    def resolve(
-        cls,
-        data_dir: Path | str | None = None,
-        staging_dir: Path | str | None = None,
-        *,
-        chunk_rows: int = DEFAULT_CHUNK_ROWS,
-        row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
-    ) -> Self:
-        """
-        Return a workspace, filling in the default directories.
-
-        See ``locations.resolve_data_dir`` and
-        ``locations.resolve_staging_dir``.
-        """
-        resolved = resolve_data_dir(data_dir)
-        return cls(
-            data_dir=resolved,
-            staging_dir=resolve_staging_dir(staging_dir, resolved),
-            chunk_rows=chunk_rows,
-            row_group_rows=row_group_rows,
-        )
-
-    def options(self) -> dict[str, Any]:
-        """Keyword arguments every download, update and GB function takes."""
-        return {
-            "data_dir": self.data_dir,
-            "staging_dir": self.staging_dir,
-            "chunk_rows": self.chunk_rows,
-            "row_group_rows": self.row_group_rows,
-        }
+from epc_connector.workspace import Workspace
 
 
 @dataclass(frozen=True)

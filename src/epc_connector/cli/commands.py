@@ -53,9 +53,14 @@ from epc_connector.credentials import (
 )
 from epc_connector.datasets import Origin, Segment, parse_origins
 from epc_connector.errors import EpcConnectorError
-from epc_connector.locations import DATA_DIR_ENV_VAR, lock_data_dir, resolve_data_dir
 from epc_connector.pipeline import plan, run, status
 from epc_connector.sources.england_and_wales import verify_api_token
+from epc_connector.workspace import (
+    DATA_DIR_ENV_VAR,
+    Workspace,
+    lock_data_dir,
+    resolve_data_dir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -303,8 +308,8 @@ def _log_options(args: argparse.Namespace) -> logs.LogOptions:
     return logs.LogOptions(debug=args.debug, log_file=args.log_file)
 
 
-def _workspace(args: argparse.Namespace) -> plan.Workspace:
-    return plan.Workspace.resolve(
+def _workspace(args: argparse.Namespace) -> Workspace:
+    return Workspace.resolve(
         args.data_dir,
         args.staging_dir,
         chunk_rows=args.chunk_rows,

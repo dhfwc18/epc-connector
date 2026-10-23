@@ -1,5 +1,8 @@
 """
-Where the package keeps its data when no directory is given.
+The workspace: where data is kept, staged and locked, and memory limits.
+
+``Workspace`` bundles the directories and limits a plan runs with;
+``Workspace.resolve`` fills in the defaults below.
 
 Downloads go to ``.epc_data/`` in the working directory, so each project
 keeps its own copy next to its ``.venv`` and a second ``setup`` finds it
@@ -16,10 +19,13 @@ import contextlib
 import logging
 import os
 from collections.abc import Generator
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Any, Final, Self
 
 from filelock import FileLock, Timeout
+
+from epc_connector.io import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +70,60 @@ def resolve_staging_dir(staging_dir: Path | str | None, data_dir: Path) -> Path:
     if staging_dir is None:
         return data_dir / STAGING_DIR_NAME
     return Path(staging_dir).expanduser()
+
+
+@dataclass(frozen=True)
+class Workspace:
+    """
+    Where the pipeline reads and writes, and its memory limits.
+
+    Build one with ``Workspace.resolve`` to apply the default directories.
+
+    Attributes
+    ----------
+    data_dir
+        Directory of the raw and GB Parquet files.
+    staging_dir
+        Parent of the temporary directories used while writing.
+    chunk_rows, row_group_rows
+        Memory limits; see ``io.stream_to_parquet``.
+    """
+
+    data_dir: Path
+    staging_dir: Path
+    chunk_rows: int = DEFAULT_CHUNK_ROWS
+    row_group_rows: int = DEFAULT_ROW_GROUP_ROWS
+
+    @classmethod
+    def resolve(
+        cls,
+        data_dir: Path | str | None = None,
+        staging_dir: Path | str | None = None,
+        *,
+        chunk_rows: int = DEFAULT_CHUNK_ROWS,
+        row_group_rows: int = DEFAULT_ROW_GROUP_ROWS,
+    ) -> Self:
+        """
+        Return a workspace, filling in the default directories.
+
+        See ``resolve_data_dir`` and ``resolve_staging_dir``.
+        """
+        resolved = resolve_data_dir(data_dir)
+        return cls(
+            data_dir=resolved,
+            staging_dir=resolve_staging_dir(staging_dir, resolved),
+            chunk_rows=chunk_rows,
+            row_group_rows=row_group_rows,
+        )
+
+    def options(self) -> dict[str, Any]:
+        """Keyword arguments every download, update and GB function takes."""
+        return {
+            "data_dir": self.data_dir,
+            "staging_dir": self.staging_dir,
+            "chunk_rows": self.chunk_rows,
+            "row_group_rows": self.row_group_rows,
+        }
 
 
 def prepare_data_dir(data_dir: Path) -> Path:

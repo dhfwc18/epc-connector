@@ -15,21 +15,21 @@ parquet
     CSV to Parquet conversion and streaming Parquet writes.
 """
 
-from epc_connector.storage.archives import extract_files, extract_remote_zip_members
-from epc_connector.storage.downloads import (
+from epc_connector.io.archives import extract_files, extract_remote_zip_members
+from epc_connector.io.downloads import (
     HTTP_TIMEOUT,
     RemoteFile,
     download_file,
     resolve_download_url,
 )
-from epc_connector.storage.files import (
+from epc_connector.io.files import (
     StorageError,
     StreamingFile,
     atomic_write,
     drop_page_cache,
     staging_directory,
 )
-from epc_connector.storage.parquet import (
+from epc_connector.io.parquet import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
     archive_url_to_parquet,

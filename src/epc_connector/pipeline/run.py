@@ -19,8 +19,9 @@ from typing import Any, Final
 
 from epc_connector.credentials import require_api_token
 from epc_connector.datasets import Origin, Segment
-from epc_connector.pipeline.plan import Plan, Workspace
-from epc_connector.storage import StorageError
+from epc_connector.io import StorageError
+from epc_connector.pipeline.plan import Plan
+from epc_connector.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 

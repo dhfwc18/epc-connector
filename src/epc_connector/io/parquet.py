@@ -16,8 +16,8 @@ import httpx
 import polars as pl
 
 from epc_connector import validation
-from epc_connector.storage import archives, downloads
-from epc_connector.storage.files import StorageError, drop_page_cache
+from epc_connector.io import archives, downloads
+from epc_connector.io.files import StorageError, drop_page_cache
 
 logger = logging.getLogger(__name__)
 

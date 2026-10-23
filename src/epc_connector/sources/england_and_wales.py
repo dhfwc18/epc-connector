@@ -36,13 +36,7 @@ from epc_connector.datasets import (
     get_dataset,
     select_datasets,
 )
-from epc_connector.locations import (
-    prepare_data_dir,
-    resolve_data_dir,
-    resolve_staging_dir,
-)
-from epc_connector.sources._shared import as_date, client_or_new
-from epc_connector.storage import (
+from epc_connector.io import (
     DEFAULT_CHUNK_ROWS,
     DEFAULT_ROW_GROUP_ROWS,
     HTTP_TIMEOUT,
@@ -55,7 +49,13 @@ from epc_connector.storage import (
     staging_directory,
     stream_to_parquet,
 )
+from epc_connector.sources._shared import as_date, client_or_new
 from epc_connector.validation import DEFAULT_SCHEMAS_DIR, load_schema
+from epc_connector.workspace import (
+    prepare_data_dir,
+    resolve_data_dir,
+    resolve_staging_dir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ def download(
         Ignored when ``client`` is given.
     data_dir
         Directory for the Parquet file, created if missing; see
-        ``locations.resolve_data_dir``.
+        ``workspace.resolve_data_dir``.
     staging_dir
         Directory for the archive and extracted CSVs (default
         ``<data_dir>/.staging``); emptied afterwards.

@@ -13,9 +13,9 @@ import pytest
 
 from epc_connector import validation
 from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector.io import StorageError
+from epc_connector.io.archives import extract_files
 from epc_connector.sources import scotland
-from epc_connector.storage import StorageError
-from epc_connector.storage.archives import extract_files
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,
@@ -316,7 +316,7 @@ class TestUpdate:
             return paths
 
         monkeypatch.setattr(
-            "epc_connector.storage.archives.extract_files", recording_extract
+            "epc_connector.io.archives.extract_files", recording_extract
         )
 
         downloaded.update(self.new_release(downloaded), date_from="2026-01-01")

@@ -8,7 +8,7 @@ from epc_connector.canonical import GbNotSetUpError, MappingError
 from epc_connector.cleaning import PhraseConflictError, UnknownPhraseError
 from epc_connector.datasets import DatasetError
 from epc_connector.errors import EpcConnectorError
-from epc_connector.storage import StorageError
+from epc_connector.io import StorageError
 from epc_connector.validation import UnsupportedSchemaError
 
 

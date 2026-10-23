@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.storage.downloads``.
+Tests for ``epc_connector.io.downloads``.
 """
 
 import io
@@ -9,8 +9,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from epc_connector.storage import downloads
-from epc_connector.storage.files import StorageError
+from epc_connector.io import downloads
+from epc_connector.io.files import StorageError
 from tests.fakes import (
     PRESIGNED_URL,
     SOURCE_URL,
