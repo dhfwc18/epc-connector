@@ -1,6 +1,8 @@
 """
 Download and update EPC data from each publisher.
 
+Internal: not part of the public API (see ``epc_connector``).
+
 Each origin has a module with the same two functions, ``download(segment)``
 and ``update(segment)``; ``download`` and ``update`` here pick the module for
 an origin.

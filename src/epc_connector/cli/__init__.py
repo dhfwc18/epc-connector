@@ -1,6 +1,8 @@
 """
 The ``epc-connector`` command line, kept apart from the library.
 
+Internal: not part of the public API (see ``epc_connector``).
+
 Importing ``epc_connector`` does not load this package. It drives the same
 plans as the library (``pipeline``), but runs each step in a fresh process.
 

@@ -1,6 +1,8 @@
 """
 Map raw rows to the canonical GB record and build the GB file.
 
+Internal: not part of the public API (see ``epc_connector``).
+
 Modules
 -------
 mapping

@@ -1,6 +1,8 @@
 """
 Clean the free-text building descriptions of domestic EPCs into typed columns.
 
+Internal: not part of the public API (see ``epc_connector``).
+
 Each described element (walls, roof, main heating, ...) has a vocabulary file,
 ``schemas/vocabularies/<element>.vocabulary.json``, that lists for every
 output field which phrases give which value. A description is cleaned in four

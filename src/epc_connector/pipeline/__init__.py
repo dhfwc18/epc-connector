@@ -1,6 +1,8 @@
 """
 Plan and run setup and update steps, for the library and the command line.
 
+Internal: not part of the public API (see ``epc_connector``).
+
 Modules
 -------
 plan

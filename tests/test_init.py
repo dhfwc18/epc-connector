@@ -16,6 +16,21 @@ class TestPackage:
         for name in epc_connector.__all__:
             assert hasattr(epc_connector, name), name
 
+    def test_public_api_is_exactly_these_names(self) -> None:
+        # Adding a name here is an API change: update the README with it.
+        assert sorted(epc_connector.__all__) == [
+            "ApiTokenError",
+            "DatasetStatus",
+            "EpcConnectorError",
+            "NotSetUpError",
+            "Origin",
+            "Segment",
+            "UnknownColumnError",
+            "load_domestic_certificates",
+            "status",
+            "update",
+        ]
+
     def test_functions_are_the_api_ones(self) -> None:
         assert (
             epc_connector.load_domestic_certificates is api.load_domestic_certificates

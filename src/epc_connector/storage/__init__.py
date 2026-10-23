@@ -1,6 +1,8 @@
 """
 Download, unpack and convert raw source files with bounded memory.
 
+Internal: not part of the public API (see ``epc_connector``).
+
 Modules
 -------
 files

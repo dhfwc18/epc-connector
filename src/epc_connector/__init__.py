@@ -22,6 +22,10 @@ The first load downloads and builds what it needs (several GB, into
 API token; without ``api_token`` it is found as ``credentials`` describes.
 The ``epc-connector`` command does the same from a shell. Every error the
 package raises on purpose is an ``EpcConnectorError``.
+
+Only the names in ``__all__`` below are the public API. Submodules such as
+``sources``, ``storage``, ``cleaning``, ``canonical``, ``pipeline`` and
+``cli`` are internal and may change in any release.
 """
 
 from epc_connector.api import (

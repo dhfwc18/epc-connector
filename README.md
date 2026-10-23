@@ -93,3 +93,7 @@ file; non-domestic and display data are never downloaded by it. It warns when an
 old, and when GB data holds one origin only (for example without an
 [England and Wales API token](#england-and-wales-api-token)). Every error the package raises on purpose is an
 `EpcConnectorError`.
+
+Only the names exported from `epc_connector` (`load_domestic_certificates`, `update`, `status`, `DatasetStatus`,
+`Origin`, `Segment` and the errors) are the public API. Submodules such as `epc_connector.sources` or
+`epc_connector.canonical` are internal and may change in any release.
