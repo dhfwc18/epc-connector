@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.pipeline.logs``.
+Tests for ``epc_connector.cli.logs``.
 """
 
 import logging
@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from epc_connector.pipeline import logs
+from epc_connector.cli import logs
 
 pytestmark = pytest.mark.usefixtures("restore_logging")
 

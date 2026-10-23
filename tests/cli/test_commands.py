@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.pipeline.cli`` (the ``epc-connector`` command line).
+Tests for ``epc_connector.cli.commands`` (the command line).
 """
 
 import logging
@@ -12,10 +12,10 @@ import pytest
 
 from epc_connector import sources
 from epc_connector.canonical import gb
+from epc_connector.cli import commands, process
+from epc_connector.cli.logs import LogOptions
 from epc_connector.credentials import API_TOKEN_ENV_VAR, ApiTokenError, save_api_token
 from epc_connector.datasets import Origin, Segment, get_dataset
-from epc_connector.pipeline import cli, process
-from epc_connector.pipeline.logs import LogOptions
 from tests.fakes import write_raw_domestic
 
 pytestmark = pytest.mark.usefixtures("restore_logging")
@@ -34,7 +34,7 @@ def calls(monkeypatch: pytest.MonkeyPatch) -> list[Call]:
 
     monkeypatch.setattr(process, "run_step", record)
     monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
-    monkeypatch.setattr(cli, "_can_ask", lambda: False)
+    monkeypatch.setattr(commands, "_can_ask", lambda: False)
     monkeypatch.setattr(
         "shutil.disk_usage", lambda path: SimpleNamespace(free=100 * 1024**3)
     )
@@ -47,7 +47,7 @@ def summary(calls: list[Call]) -> list[tuple[Callable[..., Path], tuple[Any, ...
 
 class TestMain:
     def test_setup_downloads_everything_then_builds_gb(self, calls: list) -> None:
-        status = cli.main(["setup"])
+        status = commands.main(["setup"])
 
         assert status == 0
         assert [args for _, args in summary(calls)[:-1]] == [
@@ -61,7 +61,7 @@ class TestMain:
         assert calls[-1][2]["strict"] is True
 
     def test_setup_one_origin_replaces_it_in_gb(self, calls: list) -> None:
-        cli.main(["setup", "--origin", "scotland", "--segment", "domestic"])
+        commands.main(["setup", "--origin", "scotland", "--segment", "domestic"])
 
         assert summary(calls) == [
             (sources.download, (Origin.SCOTLAND, Segment.DOMESTIC)),
@@ -72,7 +72,7 @@ class TestMain:
         self, calls: list, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.WARNING):
-            cli.main(["setup", "--origin", "wales", "--segment", "domestic"])
+            commands.main(["setup", "--origin", "wales", "--segment", "domestic"])
 
         assert calls[0][1] == (Origin.ENGLAND_AND_WALES, Segment.DOMESTIC)
         assert "england-and-wales" in caplog.text
@@ -81,7 +81,7 @@ class TestMain:
         self, calls: list, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.WARNING):
-            status = cli.main(["setup", "--segment", "display"])
+            status = commands.main(["setup", "--segment", "display"])
 
         assert status == 0
         assert summary(calls) == [
@@ -94,7 +94,7 @@ class TestMain:
     ) -> None:
         get_dataset("scotland", "domestic").path(tmp_path).touch()
 
-        cli.main(
+        commands.main(
             [
                 "update",
                 "--origin",
@@ -127,7 +127,7 @@ class TestMain:
             "shutil.disk_usage", lambda path: SimpleNamespace(free=1024**3)
         )
 
-        assert cli.main(["setup", "--origin", "scotland"]) == 1
+        assert commands.main(["setup", "--origin", "scotland"]) == 1
         assert calls == []
 
     def test_missing_token_without_a_terminal_stops_before_any_download(
@@ -138,7 +138,7 @@ class TestMain:
     ) -> None:
         monkeypatch.delenv(API_TOKEN_ENV_VAR)
 
-        assert cli.main(["setup"]) == 1
+        assert commands.main(["setup"]) == 1
         assert calls == []
         assert "epc-connector login" in caplog.text
 
@@ -147,12 +147,14 @@ class TestMain:
     ) -> None:
         monkeypatch.delenv(API_TOKEN_ENV_VAR)
 
-        assert cli.main(["setup", "--origin", "scotland"]) == 0
+        assert commands.main(["setup", "--origin", "scotland"]) == 0
 
     def test_unpublished_pair_fails_with_one_line(
         self, calls: list, caplog: pytest.LogCaptureFixture
     ) -> None:
-        status = cli.main(["setup", "--origin", "scotland", "--segment", "display"])
+        status = commands.main(
+            ["setup", "--origin", "scotland", "--segment", "display"]
+        )
 
         assert status == 1
         assert calls == []
@@ -162,7 +164,7 @@ class TestMain:
         self, calls: list, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO):
-            cli.main(["setup", "--origin", "scotland", "--segment", "domestic"])
+            commands.main(["setup", "--origin", "scotland", "--segment", "domestic"])
 
         assert "Step 1 of 2: download scotland/domestic" in caplog.text
         assert "Step 2 of 2: replace scotland in GB domestic" in caplog.text
@@ -171,7 +173,7 @@ class TestMain:
     def test_log_options_reach_every_step(self, calls: list, tmp_path: Path) -> None:
         log_file = tmp_path / "run.log"
 
-        cli.main(
+        commands.main(
             ["setup", "--segment", "domestic", "--debug", "--log-file", str(log_file)]
         )
 
@@ -183,7 +185,7 @@ class TestMain:
     ) -> None:
         log_file = tmp_path / "run.log"
 
-        status = cli.main(
+        status = commands.main(
             [
                 "setup",
                 "--origin",
@@ -209,7 +211,7 @@ class TestMain:
         argv = ["setup", "--origin", "scotland", "--segment", "domestic"]
 
         with caplog.at_level(logging.INFO):
-            status = cli.main([*argv, "--data-dir", str(tmp_path)])
+            status = commands.main([*argv, "--data-dir", str(tmp_path)])
 
         assert status == 0
         assert calls == []
@@ -220,7 +222,7 @@ class TestMain:
         get_dataset("scotland", "domestic").path(tmp_path).touch()
         argv = ["setup", "--origin", "scotland", "--segment", "domestic", "--force"]
 
-        cli.main([*argv, "--data-dir", str(tmp_path)])
+        commands.main([*argv, "--data-dir", str(tmp_path)])
 
         assert summary(calls)[0] == (
             sources.download,
@@ -230,7 +232,7 @@ class TestMain:
     def test_data_directory_defaults_to_the_environment(
         self, calls: list, default_data_dir: Path
     ) -> None:
-        cli.main(["setup", "--origin", "scotland", "--segment", "domestic"])
+        commands.main(["setup", "--origin", "scotland", "--segment", "domestic"])
 
         kwargs = calls[0][2]
         assert kwargs["data_dir"] == default_data_dir
@@ -242,7 +244,7 @@ class TestMain:
         get_dataset("scotland", "domestic").path(tmp_path).touch()
 
         with caplog.at_level(logging.WARNING):
-            status = cli.main(["update", "--data-dir", str(tmp_path)])
+            status = commands.main(["update", "--data-dir", str(tmp_path)])
 
         assert status == 0
         assert summary(calls) == [
@@ -253,12 +255,12 @@ class TestMain:
 
     def test_unknown_segment_is_rejected(self) -> None:
         with pytest.raises(SystemExit):
-            cli.main(["setup", "--segment", "commercial"])
+            commands.main(["setup", "--segment", "commercial"])
 
     def test_status_lists_datasets(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        status = cli.main(["status", "--data-dir", str(tmp_path)])
+        status = commands.main(["status", "--data-dir", str(tmp_path)])
 
         output = capsys.readouterr().out
         assert status == 0
@@ -271,7 +273,7 @@ class TestMain:
         rows = [{"MAIN_FUEL": "mains gas (not community)"}, {"MAIN_FUEL": ""}]
         write_raw_domestic(tmp_path, Origin.SCOTLAND, rows, {})
 
-        status = cli.main(
+        status = commands.main(
             [
                 "coverage",
                 "--data-dir",
@@ -312,9 +314,9 @@ def prompt(calls: list, monkeypatch: pytest.MonkeyPatch) -> Prompt:
     """No token anywhere, someone at a terminal, and a fake API check."""
     fake = Prompt()
     monkeypatch.delenv(API_TOKEN_ENV_VAR)
-    monkeypatch.setattr(cli, "_can_ask", lambda: True)
-    monkeypatch.setattr(cli.getpass, "getpass", fake.getpass)
-    monkeypatch.setattr(cli, "verify_api_token", fake.verify)
+    monkeypatch.setattr(commands, "_can_ask", lambda: True)
+    monkeypatch.setattr(commands.getpass, "getpass", fake.getpass)
+    monkeypatch.setattr(commands, "verify_api_token", fake.verify)
     return fake
 
 
@@ -325,7 +327,7 @@ class TestApiTokenPrompt:
     def test_missing_token_is_asked_for_checked_and_saved(
         self, prompt: Prompt, calls: list, saved_token_path: Path
     ) -> None:
-        assert cli.main(EW_DOMESTIC) == 0
+        assert commands.main(EW_DOMESTIC) == 0
 
         assert prompt.verified == ["typed-token"]
         assert saved_token_path.read_text() == "typed-token\n"
@@ -337,7 +339,7 @@ class TestApiTokenPrompt:
     ) -> None:
         save_api_token("saved-token")
 
-        assert cli.main(EW_DOMESTIC) == 0
+        assert commands.main(EW_DOMESTIC) == 0
         assert prompt.asked == 0
 
     def test_environment_token_is_not_asked_for(
@@ -345,7 +347,7 @@ class TestApiTokenPrompt:
     ) -> None:
         monkeypatch.setenv(API_TOKEN_ENV_VAR, "env-token")
 
-        assert cli.main(EW_DOMESTIC) == 0
+        assert commands.main(EW_DOMESTIC) == 0
         assert prompt.asked == 0
 
     def test_rejected_token_is_not_saved(
@@ -353,12 +355,12 @@ class TestApiTokenPrompt:
     ) -> None:
         prompt.rejected = True
 
-        assert cli.main(EW_DOMESTIC) == 1
+        assert commands.main(EW_DOMESTIC) == 1
         assert not saved_token_path.exists()
         assert calls == []
 
     def test_scotland_alone_is_not_asked(self, prompt: Prompt) -> None:
-        assert cli.main(["setup", "--origin", "scotland"]) == 0
+        assert commands.main(["setup", "--origin", "scotland"]) == 0
         assert prompt.asked == 0
 
     def test_login_replaces_the_saved_token(
@@ -366,7 +368,7 @@ class TestApiTokenPrompt:
     ) -> None:
         save_api_token("old-token")
 
-        assert cli.main(["login"]) == 0
+        assert commands.main(["login"]) == 0
         assert saved_token_path.read_text() == "typed-token\n"
 
     def test_logout_deletes_the_saved_token(
@@ -374,13 +376,13 @@ class TestApiTokenPrompt:
     ) -> None:
         save_api_token("old-token")
 
-        assert cli.main(["logout"]) == 0
+        assert commands.main(["logout"]) == 0
         assert not saved_token_path.exists()
 
     def test_logout_without_a_saved_token_says_so(
         self, prompt: Prompt, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO):
-            assert cli.main(["logout"]) == 0
+            assert commands.main(["logout"]) == 0
 
         assert "No saved API token" in caplog.text

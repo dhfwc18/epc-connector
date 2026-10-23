@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from epc_connector.cli import logs
 from epc_connector.credentials import API_TOKEN_ENV_VAR, TOKEN_PATH_ENV_VAR
 from epc_connector.locations import DATA_DIR_ENV_VAR
-from epc_connector.pipeline import logs
 from epc_connector.storage import downloads
 from tests.fakes import write_7z, write_vocabularies, yearly_members
 
@@ -56,7 +56,7 @@ def vocabularies(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def restore_logging() -> Iterator[None]:
-    """Undo ``pipeline.logs.configure_logging`` after the test."""
+    """Undo ``cli.logs.configure_logging`` after the test."""
     root = logging.getLogger()
     handlers, level = root.handlers[:], root.level
     yield

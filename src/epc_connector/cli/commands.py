@@ -25,13 +25,14 @@ it for later runs (see ``credentials``). ``login`` asks for a new token;
 fails instead.
 
 Every command takes ``--debug`` (show every log message) and ``--log-file
-PATH`` (record every message in a file); see ``pipeline.logs``.
+PATH`` (record every message in a file); see ``cli.logs``.
 
 Each download, update and GB step runs in a fresh process, so its memory is
 returned to the operating system when it ends.
 """
 
 import argparse
+import functools
 import getpass
 import logging
 import sys
@@ -42,6 +43,7 @@ from typing import Final
 import httpx
 
 from epc_connector import cleaning
+from epc_connector.cli import coverage, logs, process
 from epc_connector.credentials import (
     checked_api_token,
     delete_api_token,
@@ -52,7 +54,7 @@ from epc_connector.credentials import (
 from epc_connector.datasets import Origin, Segment, parse_origins
 from epc_connector.errors import EpcConnectorError
 from epc_connector.locations import DATA_DIR_ENV_VAR, resolve_data_dir
-from epc_connector.pipeline import coverage, logs, plan, run, status
+from epc_connector.pipeline import plan, run, status
 from epc_connector.sources.england_and_wales import verify_api_token
 
 logger = logging.getLogger(__name__)
@@ -218,7 +220,7 @@ def _setup(args: argparse.Namespace) -> int:
         force=args.force,
     )
     _ensure_api_token(work)
-    run.run_plan(work, workspace, isolated=True, log_options=_log_options(args))
+    run.run_plan(work, workspace, run_step=_fresh_process_runner(args))
     return 0
 
 
@@ -233,7 +235,7 @@ def _update(args: argparse.Namespace) -> int:
         strict=not args.lenient,
     )
     _ensure_api_token(work)
-    run.run_plan(work, workspace, isolated=True, log_options=_log_options(args))
+    run.run_plan(work, workspace, run_step=_fresh_process_runner(args))
     return 0
 
 
@@ -288,6 +290,11 @@ def _ask_and_save_api_token() -> None:
     token = checked_api_token(getpass.getpass("API token (input hidden): "))
     verify_api_token(token)
     logger.info("Token accepted; saved to %s", save_api_token(token))
+
+
+def _fresh_process_runner(args: argparse.Namespace) -> run.StepRunner:
+    """Run each step in a fresh process that logs like this one."""
+    return functools.partial(process.run_step, log_options=_log_options(args))
 
 
 def _log_options(args: argparse.Namespace) -> logs.LogOptions:

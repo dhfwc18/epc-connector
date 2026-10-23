@@ -1,24 +1,24 @@
 """
 Run a plan: check what it needs, then carry out its steps in order.
 
-The command line runs each step in a fresh process (``process.run_step``),
-so its memory goes back to the operating system when it ends. Library calls
-run steps in the calling process instead: a spawned process re-imports the
+How each step is called is up to the caller. Library calls run steps in the
+calling process (``run_in_process``): a spawned process re-imports the
 caller's main script, which would need an ``if __name__ == "__main__":``
-guard in every script that loads data.
+guard in every script that loads data. The command line passes a runner
+that starts a fresh process per step (``cli.process.run_step``), so each
+step's memory goes back to the operating system when it ends.
 """
 
 import datetime as dt
 import logging
 import shutil
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from epc_connector.credentials import require_api_token
 from epc_connector.datasets import Origin, Segment
-from epc_connector.pipeline import process
-from epc_connector.pipeline.logs import DEFAULT_LOG_OPTIONS, LogOptions
 from epc_connector.pipeline.plan import Plan, Workspace
 from epc_connector.storage import StorageError
 
@@ -27,13 +27,20 @@ logger = logging.getLogger(__name__)
 MIN_FREE_STAGING_BYTES: Final = 10 * 1024**3
 """Free staging space a Scottish domestic run needs (about 8 GB, plus room)."""
 
+type StepRunner = Callable[..., Path]
+"""Calls ``runner(function, *args, **kwargs)`` and returns its result."""
+
+
+def run_in_process(function: Callable[..., Path], /, *args: Any, **kwargs: Any) -> Path:
+    """Run a step in the calling process: the default ``StepRunner``."""
+    return function(*args, **kwargs)
+
 
 def run_plan(
     work: Plan,
     workspace: Workspace,
     *,
-    isolated: bool = False,
-    log_options: LogOptions = DEFAULT_LOG_OPTIONS,
+    run_step: StepRunner = run_in_process,
     api_token: str | None = None,
 ) -> None:
     """
@@ -45,11 +52,8 @@ def run_plan(
         Plan to run.
     workspace
         Directories the plan was made for.
-    isolated
-        Run each step in a fresh process (the command line) rather than in
-        this one.
-    log_options
-        How isolated steps log; see ``logs.configure_logging``.
+    run_step
+        How each step is called; in this process by default.
     api_token
         England and Wales API token to check for; if ``None``, one is found
         as ``credentials`` describes.
@@ -85,12 +89,7 @@ def run_plan(
     for number, step in enumerate(work.steps, start=1):
         logger.info("Step %d of %d: %s", number, len(work.steps), step.name)
         step_started = time.perf_counter()
-        if isolated:
-            path = process.run_step(
-                step.function, *step.args, log_options=log_options, **step.kwargs
-            )
-        else:
-            path = step.function(*step.args, **step.kwargs)
+        path = run_step(step.function, *step.args, **step.kwargs)
         logger.debug("Step %d done in %s: %s", number, _elapsed(step_started), path)
     logger.info("Finished %d steps in %s", len(work.steps), _elapsed(started))
     for segment in work.not_set_up:

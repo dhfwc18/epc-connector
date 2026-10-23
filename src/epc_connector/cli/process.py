@@ -12,7 +12,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from epc_connector.pipeline.logs import (
+from epc_connector.cli.logs import (
     DEFAULT_LOG_OPTIONS,
     LogOptions,
     configure_logging,

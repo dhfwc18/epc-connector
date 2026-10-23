@@ -4,8 +4,10 @@ Tests for ``epc_connector.pipeline.run``.
 
 import logging
 import os
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -49,14 +51,16 @@ class TestRunPlan:
 
         assert f"out/{os.getpid()}" in caplog.text
 
-    def test_isolated_steps_run_in_another_process(
-        self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        with caplog.at_level(logging.DEBUG):
-            run.run_plan(one_step_plan(), workspace, isolated=True)
+    def test_given_runner_calls_every_step(self, workspace: plan.Workspace) -> None:
+        called: list[tuple[object, tuple[object, ...]]] = []
 
-        assert "Step 1 done" in caplog.text
-        assert f"out/{os.getpid()}" not in caplog.text
+        def runner(function: Callable[..., Path], /, *args: Any, **kwargs: Any) -> Path:
+            called.append((function, args))
+            return Path("ran")
+
+        run.run_plan(one_step_plan(), workspace, run_step=runner)
+
+        assert called == [(path_of_process, ("out",))]
 
     def test_empty_plan_does_nothing(
         self, workspace: plan.Workspace, caplog: pytest.LogCaptureFixture

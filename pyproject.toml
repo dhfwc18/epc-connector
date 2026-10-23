@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-epc-connector = "epc_connector.pipeline.cli:main"
+epc-connector = "epc_connector.cli:main"
 
 [dependency-groups]
 dev = [

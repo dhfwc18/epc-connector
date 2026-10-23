@@ -31,10 +31,7 @@ class TestPackage:
 
     def test_import_leaves_the_command_line_unloaded(self) -> None:
         # A fresh interpreter: this test session has imported the CLI already.
-        code = (
-            "import sys, epc_connector; "
-            "print('epc_connector.pipeline.cli' in sys.modules)"
-        )
+        code = "import sys, epc_connector; " "print('epc_connector.cli' in sys.modules)"
 
         result = subprocess.run(
             [sys.executable, "-c", code], capture_output=True, text=True, check=True
