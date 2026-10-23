@@ -1,5 +1,5 @@
 """
-Validate tabular data against the JSON Schemas in ``schemas/``.
+Validate tabular data against the package's JSON Schemas (``schemas/``).
 
 Each source schema describes one CSV row as an object of strings. Instead of
 validating rows one by one, every property is translated into a Polars
@@ -10,6 +10,7 @@ keywords the source schemas use are supported; any other keyword raises
 
 import json
 from collections.abc import Mapping
+from importlib import resources
 from pathlib import Path
 from typing import Any, Final
 
@@ -17,8 +18,8 @@ import polars as pl
 
 from epc_connector.errors import EpcConnectorError
 
-DEFAULT_SCHEMAS_DIR: Final = Path(__file__).resolve().parents[2] / "schemas"
-"""Repository ``schemas/`` directory."""
+DEFAULT_SCHEMAS_DIR: Final = Path(str(resources.files("epc_connector") / "schemas"))
+"""The ``schemas/`` directory shipped inside the package."""
 
 # Keywords that describe a property without constraining its value.
 _ANNOTATIONS = frozenset({"title", "description", "format"})
