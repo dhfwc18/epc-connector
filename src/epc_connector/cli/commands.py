@@ -53,7 +53,7 @@ from epc_connector.credentials import (
 )
 from epc_connector.datasets import Origin, Segment, parse_origins
 from epc_connector.errors import EpcConnectorError
-from epc_connector.locations import DATA_DIR_ENV_VAR, resolve_data_dir
+from epc_connector.locations import DATA_DIR_ENV_VAR, lock_data_dir, resolve_data_dir
 from epc_connector.pipeline import plan, run, status
 from epc_connector.sources.england_and_wales import verify_api_token
 
@@ -212,30 +212,32 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _setup(args: argparse.Namespace) -> int:
     workspace = _workspace(args)
-    work = plan.plan_setup(
-        parse_origins(args.origin),
-        args.segment,
-        workspace=workspace,
-        strict=not args.lenient,
-        force=args.force,
-    )
-    _ensure_api_token(work)
-    run.run_plan(work, workspace, run_step=_fresh_process_runner(args))
+    with lock_data_dir(workspace.data_dir):
+        work = plan.plan_setup(
+            parse_origins(args.origin),
+            args.segment,
+            workspace=workspace,
+            strict=not args.lenient,
+            force=args.force,
+        )
+        _ensure_api_token(work)
+        run.run_plan(work, workspace, run_step=_fresh_process_runner(args))
     return 0
 
 
 def _update(args: argparse.Namespace) -> int:
     workspace = _workspace(args)
-    work = plan.plan_update(
-        parse_origins(args.origin),
-        args.segment,
-        date_from=args.date_from,
-        date_to=args.date_to,
-        workspace=workspace,
-        strict=not args.lenient,
-    )
-    _ensure_api_token(work)
-    run.run_plan(work, workspace, run_step=_fresh_process_runner(args))
+    with lock_data_dir(workspace.data_dir):
+        work = plan.plan_update(
+            parse_origins(args.origin),
+            args.segment,
+            date_from=args.date_from,
+            date_to=args.date_to,
+            workspace=workspace,
+            strict=not args.lenient,
+        )
+        _ensure_api_token(work)
+        run.run_plan(work, workspace, run_step=_fresh_process_runner(args))
     return 0
 
 

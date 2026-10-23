@@ -62,8 +62,9 @@ without any change to your project. Running `setup` again only downloads what is
 again); `update` refreshes what is there.
 
 To share one copy between projects, set `EPC_CONNECTOR_DATA_DIR` to a directory, for example in your shell profile.
-`--data-dir` (or `data_dir=` in Python) overrides both. Downloads are staged in `.staging/` inside the data directory,
-which is removed when each step ends; `--staging-dir` puts it elsewhere.
+`--data-dir` (or `data_dir=` in Python) overrides both. Only one run at a time downloads or rebuilds files in a data
+directory; a second run waits, then uses what the first left, so nothing is downloaded twice. Downloads are staged in
+`.staging/` inside the data directory, which is removed when each step ends; `--staging-dir` puts it elsewhere.
 
 ## Python
 
@@ -91,9 +92,9 @@ every certificate needs far more memory than the file on disk, so pass `columns`
 collecting. Only what the call needs is set up: the raw domestic file of each origin asked for and its rows in the GB
 file; non-domestic and display data are never downloaded by it. A first download (several GB, which can take an hour or
 more) is announced with a warning; pass `download_if_missing=False` to get a `NotSetUpError` instead, for example in CI.
-It warns when an origin's data is more than three months old, and when GB data holds one origin only (for example
-without an [England and Wales API token](#england-and-wales-api-token)). Every error the package raises on purpose is an
-`EpcConnectorError`.
+`force_download=True` downloads the data again. It warns when an origin's data is more than three months old, and when
+GB data holds one origin only (for example without an [England and Wales API token](#england-and-wales-api-token)).
+Every error the package raises on purpose is an `EpcConnectorError`.
 
 Only the names exported from `epc_connector` (`load_domestic_certificates`, `update`, `status`, `DatasetStatus`,
 `Origin`, `Segment` and the errors) are the public API. Submodules such as `epc_connector.sources` or

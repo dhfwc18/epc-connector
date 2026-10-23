@@ -2,6 +2,8 @@
 Tests for ``epc_connector.locations``.
 """
 
+import logging
+import threading
 from pathlib import Path
 
 import pytest
@@ -61,3 +63,42 @@ class TestPrepareDataDir:
     def test_markers_are_ascii(self) -> None:
         assert locations.GITIGNORE_TEXT.isascii()
         assert locations.CACHEDIR_TAG_TEXT.isascii()
+
+
+class TestLockDataDir:
+    def test_directory_is_created_and_marked(self, tmp_path: Path) -> None:
+        data_dir = tmp_path / ".epc_data"
+
+        with locations.lock_data_dir(data_dir):
+            assert (data_dir / ".gitignore").is_file()
+
+    def test_second_run_waits_for_the_first(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        holding, release = threading.Event(), threading.Event()
+        order: list[str] = []
+
+        def first_run() -> None:
+            with locations.lock_data_dir(tmp_path):
+                holding.set()
+                release.wait(timeout=5)
+                order.append("first done")
+
+        thread = threading.Thread(target=first_run)
+        thread.start()
+        holding.wait(timeout=5)
+        threading.Timer(0.2, release.set).start()
+
+        with caplog.at_level(logging.WARNING), locations.lock_data_dir(tmp_path):
+            order.append("second runs")
+        thread.join(timeout=5)
+
+        assert order == ["first done", "second runs"]
+        assert "waiting for it to finish" in caplog.text
+
+    def test_lock_is_released_after_an_error(self, tmp_path: Path) -> None:
+        with pytest.raises(RuntimeError), locations.lock_data_dir(tmp_path):
+            raise RuntimeError("step failed")
+
+        with locations.lock_data_dir(tmp_path):
+            pass  # would wait forever if the lock were still held

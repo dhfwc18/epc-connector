@@ -282,3 +282,12 @@ class TestDownloads:
         )
 
         assert [d.name for d in work.downloads] == ["scotland/domestic"]
+
+    def test_force_downloads_a_raw_file_already_there(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+
+        work = plan.plan_domestic(
+            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path), force=True
+        )
+
+        assert [d.name for d in work.downloads] == ["scotland/domestic"]

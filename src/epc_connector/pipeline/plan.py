@@ -249,11 +249,13 @@ def plan_domestic(
     workspace: Workspace | None = None,
     strict: bool = True,
     api_token: str | None = None,
+    force: bool = False,
 ) -> Plan:
     """
     Plan what loading one origin's domestic certificates needs, and no more.
 
-    The origin's raw domestic file is downloaded if missing. Its rows in the
+    The origin's raw domestic file is downloaded if missing (or always, with
+    ``force``). Its rows in the
     GB file are rebuilt if they are missing or were built from another
     version of the raw file (compared through the files' metadata). Other
     origins and segments are not downloaded.
@@ -264,11 +266,13 @@ def plan_domestic(
         Origin to load.
     workspace, strict, api_token
         As for ``plan_setup``.
+    force
+        Download the raw file even if it is already there.
     """
     workspace = workspace or Workspace.resolve()
     dataset = get_dataset(origin, Segment.DOMESTIC)
     raw_path = dataset.path(workspace.data_dir)
-    datasets = [] if raw_path.is_file() else [dataset]
+    datasets = [dataset] if force or not raw_path.is_file() else []
     steps = [
         Step(
             f"download {dataset.name}",

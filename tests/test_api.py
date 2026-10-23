@@ -2,8 +2,10 @@
 Tests for ``epc_connector.api``.
 """
 
+import contextlib
 import datetime as dt
 import logging
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -203,7 +205,7 @@ class TestLoadDomesticCertificates:
             api.load_domestic_certificates("scotland", data_dir=tmp_path)
             api.load_domestic_certificates("scotland", data_dir=tmp_path)
 
-        notices = [r for r in caplog.records if "for the first time" in r.message]
+        notices = [r for r in caplog.records if "Downloading" in r.message]
         assert len(notices) == 1
         assert "scotland/domestic" in notices[0].message
 
@@ -233,6 +235,54 @@ class TestLoadDomesticCertificates:
         assert downloads.calls == []
         assert homes["source_dataset"].to_list() == ["scotland/domestic"]
         assert "england-and-wales/domestic is not downloaded" in caplog.text
+
+    def test_force_download_downloads_again(
+        self, downloads: FakeDownloads, tmp_path: Path
+    ) -> None:
+        api.load_domestic_certificates("scotland", data_dir=tmp_path)
+
+        api.load_domestic_certificates(
+            "scotland", data_dir=tmp_path, force_download=True
+        )
+
+        assert downloads.calls == [(Origin.SCOTLAND, Segment.DOMESTIC)] * 2
+
+    def test_force_download_overrides_download_if_missing(
+        self, downloads: FakeDownloads, tmp_path: Path
+    ) -> None:
+        api.load_domestic_certificates(
+            "scotland",
+            data_dir=tmp_path,
+            download_if_missing=False,
+            force_download=True,
+        )
+
+        assert downloads.calls == [(Origin.SCOTLAND, Segment.DOMESTIC)]
+
+    def test_setup_happens_under_the_data_directory_lock(
+        self,
+        downloads: FakeDownloads,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        held: list[bool] = []
+
+        @contextlib.contextmanager
+        def recording_lock(data_dir: Path) -> Generator[Path]:
+            held.append(True)
+            yield data_dir
+            held.append(False)
+
+        def download_while_held(*args: Any, **kwargs: Any) -> Path:
+            assert held == [True]
+            return downloads(*args, **kwargs)
+
+        monkeypatch.setattr(api, "lock_data_dir", recording_lock)
+        monkeypatch.setattr(sources, "download", download_while_held)
+
+        api.load_domestic_certificates("scotland", data_dir=tmp_path)
+
+        assert held == [True, False]
 
     def test_columns_loads_only_those(
         self, downloads: FakeDownloads, tmp_path: Path

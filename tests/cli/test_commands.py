@@ -2,8 +2,9 @@
 Tests for ``epc_connector.cli.commands`` (the command line).
 """
 
+import contextlib
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -252,6 +253,22 @@ class TestMain:
             (gb.replace_origin_in_gb, (Origin.SCOTLAND,)),
         ]
         assert "england-and-wales/domestic is not downloaded" in caplog.text
+
+    def test_setup_plans_and_runs_under_the_data_directory_lock(
+        self, calls: list, monkeypatch: pytest.MonkeyPatch, default_data_dir: Path
+    ) -> None:
+        locked: list[Path] = []
+
+        @contextlib.contextmanager
+        def recording_lock(data_dir: Path) -> Generator[Path]:
+            locked.append(data_dir)
+            yield data_dir
+
+        monkeypatch.setattr(commands, "lock_data_dir", recording_lock)
+
+        commands.main(["setup", "--origin", "scotland", "--segment", "domestic"])
+
+        assert locked == [default_data_dir]
 
     def test_unknown_segment_is_rejected(self) -> None:
         with pytest.raises(SystemExit):

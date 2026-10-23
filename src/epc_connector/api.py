@@ -30,7 +30,7 @@ from epc_connector.datasets import (
     parse_origins,
 )
 from epc_connector.errors import EpcConnectorError
-from epc_connector.locations import resolve_data_dir
+from epc_connector.locations import lock_data_dir, resolve_data_dir
 from epc_connector.pipeline.plan import Workspace, plan_domestic, plan_update
 from epc_connector.pipeline.run import run_plan
 from epc_connector.pipeline.status import DatasetStatus, dataset_statuses
@@ -67,6 +67,7 @@ def load_domestic_certificates(
     data_dir: Path | str | None = None,
     strict: bool = True,
     download_if_missing: bool = True,
+    force_download: bool = False,
     api_token: str | None = None,
 ) -> pl.DataFrame: ...
 
@@ -80,6 +81,7 @@ def load_domestic_certificates(
     data_dir: Path | str | None = None,
     strict: bool = True,
     download_if_missing: bool = True,
+    force_download: bool = False,
     api_token: str | None = None,
 ) -> pl.LazyFrame: ...
 
@@ -92,6 +94,7 @@ def load_domestic_certificates(
     data_dir: Path | str | None = None,
     strict: bool = True,
     download_if_missing: bool = True,
+    force_download: bool = False,
     api_token: str | None = None,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
@@ -127,6 +130,9 @@ def load_domestic_certificates(
         missing origin raises ``NotSetUpError`` instead (or, for GB data, is
         left out with a warning); GB rows are still rebuilt from raw files
         already present.
+    force_download
+        Download the raw data of the origins asked for again, even if it is
+        there, then rebuild their GB rows; overrides ``download_if_missing``.
     api_token
         England and Wales API token, needed only to download or update its
         data. If ``None``: ``EPB_API_TOKEN``, then the token saved by the
@@ -148,20 +154,27 @@ def load_domestic_certificates(
     workspace = Workspace.resolve(data_dir)
     origins = parse_origins(origin)
     whole_gb = len(origins) > 1
-    for each in origins:
-        try:
-            work = plan_domestic(
-                each, workspace=workspace, strict=strict, api_token=api_token
-            )
-            if work.downloads:
-                _announce_or_refuse(work.downloads, download_if_missing)
-            if work.steps:
-                run_plan(work, workspace, api_token=api_token)
-        except _SETUP_ERRORS as error:
-            if not whole_gb:
-                raise
-            logger.warning("%s domestic data could not be set up: %s", each, error)
-            logger.debug("Details of the error", exc_info=True)
+    with lock_data_dir(workspace.data_dir):
+        for each in origins:
+            try:
+                work = plan_domestic(
+                    each,
+                    workspace=workspace,
+                    strict=strict,
+                    api_token=api_token,
+                    force=force_download,
+                )
+                if work.downloads:
+                    _announce_or_refuse(
+                        work.downloads, download_if_missing or force_download
+                    )
+                if work.steps:
+                    run_plan(work, workspace, api_token=api_token)
+            except _SETUP_ERRORS as error:
+                if not whole_gb:
+                    raise
+                logger.warning("%s domestic data could not be set up: %s", each, error)
+                logger.debug("Details of the error", exc_info=True)
 
     versions = {o: v for o, v in gb_origins(workspace.data_dir).items() if o in origins}
     if not versions:
@@ -214,16 +227,17 @@ def update(
         As for ``load_domestic_certificates``.
     """
     workspace = Workspace.resolve(data_dir, staging_dir)
-    work = plan_update(
-        parse_origins(origin),
-        None if segments is None else [Segment(segment) for segment in segments],
-        date_from=date_from,
-        date_to=date_to,
-        workspace=workspace,
-        strict=strict,
-        api_token=api_token,
-    )
-    run_plan(work, workspace, api_token=api_token)
+    with lock_data_dir(workspace.data_dir):
+        work = plan_update(
+            parse_origins(origin),
+            None if segments is None else [Segment(segment) for segment in segments],
+            date_from=date_from,
+            date_to=date_to,
+            workspace=workspace,
+            strict=strict,
+            api_token=api_token,
+        )
+        run_plan(work, workspace, api_token=api_token)
 
 
 def status(data_dir: Path | str | None = None) -> list[DatasetStatus]:
@@ -246,8 +260,8 @@ def _announce_or_refuse(
             "epc-connector setup"
         )
     logger.warning(
-        "Downloading %s for the first time: several GB, which can take an "
-        "hour or more. Later loads use the local copy.",
+        "Downloading %s: several GB, which can take an hour or more. Later "
+        "loads use the local copy.",
         names,
     )
 

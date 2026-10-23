@@ -8,17 +8,27 @@ there. Set ``EPC_CONNECTOR_DATA_DIR`` to share one copy between projects.
 When the package creates a data directory it adds a ``.gitignore`` holding
 ``*`` and a ``CACHEDIR.TAG``, so version control and backup tools skip it,
 as with ``.pytest_cache``. Existing directories and files are left as they
-are.
+are. Runs that download or rebuild files hold the directory's lock
+(``lock_data_dir``), so two runs never fetch the same data at once.
 """
 
+import contextlib
+import logging
 import os
+from collections.abc import Generator
 from pathlib import Path
 from typing import Final
+
+from filelock import FileLock, Timeout
+
+logger = logging.getLogger(__name__)
 
 DATA_DIR_ENV_VAR: Final = "EPC_CONNECTOR_DATA_DIR"
 """Environment variable naming the data directory."""
 DEFAULT_DATA_DIR: Final = Path(".epc_data")
 """Data directory, relative to the working directory, if none is given."""
+LOCK_FILE_NAME: Final = ".lock"
+"""Lock file inside the data directory; see ``lock_data_dir``."""
 STAGING_DIR_NAME: Final = ".staging"
 """Default staging directory, inside the data directory."""
 GITIGNORE_TEXT: Final = "# Created by epc-connector: downloaded data.\n*\n"
@@ -74,3 +84,30 @@ def prepare_data_dir(data_dir: Path) -> Path:
         with (data_dir / name).open("x", encoding="ascii") as marker:
             marker.write(text)
     return data_dir
+
+
+@contextlib.contextmanager
+def lock_data_dir(data_dir: Path) -> Generator[Path]:
+    """
+    Hold the data directory's lock while setting it up or updating it.
+
+    Take the lock before planning, not just before running: a second run
+    then waits for the first, plans from the files it left and downloads
+    nothing twice. The operating system releases the lock if a process
+    dies, so it never goes stale. The directory is created if missing (see
+    ``prepare_data_dir``).
+    """
+    prepare_data_dir(data_dir)
+    lock = FileLock(data_dir / LOCK_FILE_NAME)
+    try:
+        lock.acquire(blocking=False)
+    except Timeout:
+        logger.warning(
+            "Another epc-connector run is using %s; waiting for it to finish",
+            data_dir,
+        )
+        lock.acquire()
+    try:
+        yield data_dir
+    finally:
+        lock.release()
