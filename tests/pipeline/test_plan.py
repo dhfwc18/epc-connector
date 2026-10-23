@@ -255,3 +255,30 @@ class TestApiToken:
 
         assert "secret-token" in str(work.steps[0].kwargs)
         assert "secret-token" not in repr(work)
+
+
+class TestDownloads:
+    def test_setup_lists_the_datasets_it_downloads(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+
+        work = plan.plan_setup(
+            list(Origin), [Segment.DOMESTIC], workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert [d.name for d in work.downloads] == ["england-and-wales/domestic"]
+
+    def test_update_downloads_nothing_in_full(self, tmp_path: Path) -> None:
+        touch_datasets(tmp_path, "scotland/domestic")
+
+        work = plan.plan_update(
+            [Origin.SCOTLAND], workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert work.downloads == []
+
+    def test_domestic_lists_a_missing_raw_file(self, tmp_path: Path) -> None:
+        work = plan.plan_domestic(
+            Origin.SCOTLAND, workspace=plan.Workspace.resolve(tmp_path)
+        )
+
+        assert [d.name for d in work.downloads] == ["scotland/domestic"]

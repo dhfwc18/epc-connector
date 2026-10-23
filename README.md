@@ -89,9 +89,10 @@ epc.status()  # same as epc-connector status, as data
 `load_domestic_certificates` returns a Polars `DataFrame`, or a `LazyFrame` with `lazy=True`. Loading every column of
 every certificate needs far more memory than the file on disk, so pass `columns` or filter a lazy frame before
 collecting. Only what the call needs is set up: the raw domestic file of each origin asked for and its rows in the GB
-file; non-domestic and display data are never downloaded by it. It warns when an origin's data is more than three months
-old, and when GB data holds one origin only (for example without an
-[England and Wales API token](#england-and-wales-api-token)). Every error the package raises on purpose is an
+file; non-domestic and display data are never downloaded by it. A first download (several GB, which can take an hour or
+more) is announced with a warning; pass `download_if_missing=False` to get a `NotSetUpError` instead, for example in CI.
+It warns when an origin's data is more than three months old, and when GB data holds one origin only (for example
+without an [England and Wales API token](#england-and-wales-api-token)). Every error the package raises on purpose is an
 `EpcConnectorError`.
 
 Only the names exported from `epc_connector` (`load_domestic_certificates`, `update`, `status`, `DatasetStatus`,

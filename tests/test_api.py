@@ -185,10 +185,54 @@ class TestLoadDomesticCertificates:
         tmp_path: Path,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
+        write_raw(tmp_path, Origin.SCOTLAND)
+        write_raw(tmp_path, Origin.ENGLAND_AND_WALES)
+
         with caplog.at_level(logging.WARNING):
             api.load_domestic_certificates(data_dir=tmp_path)
 
         assert caplog.text == ""
+
+    def test_first_download_is_announced_once(
+        self,
+        downloads: FakeDownloads,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        with caplog.at_level(logging.WARNING):
+            api.load_domestic_certificates("scotland", data_dir=tmp_path)
+            api.load_domestic_certificates("scotland", data_dir=tmp_path)
+
+        notices = [r for r in caplog.records if "for the first time" in r.message]
+        assert len(notices) == 1
+        assert "scotland/domestic" in notices[0].message
+
+    def test_without_download_if_missing_a_missing_origin_raises(
+        self, downloads: FakeDownloads, tmp_path: Path
+    ) -> None:
+        with pytest.raises(api.NotSetUpError, match="download_if_missing"):
+            api.load_domestic_certificates(
+                "scotland", data_dir=tmp_path, download_if_missing=False
+            )
+
+        assert downloads.calls == []
+
+    def test_without_download_if_missing_gb_data_uses_what_is_there(
+        self,
+        downloads: FakeDownloads,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        write_raw(tmp_path, Origin.SCOTLAND)
+
+        with caplog.at_level(logging.WARNING):
+            homes = api.load_domestic_certificates(
+                data_dir=tmp_path, download_if_missing=False
+            )
+
+        assert downloads.calls == []
+        assert homes["source_dataset"].to_list() == ["scotland/domestic"]
+        assert "england-and-wales/domestic is not downloaded" in caplog.text
 
     def test_columns_loads_only_those(
         self, downloads: FakeDownloads, tmp_path: Path

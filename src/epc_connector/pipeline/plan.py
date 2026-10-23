@@ -127,6 +127,8 @@ class Plan:
         Selected datasets already downloaded, which ``setup`` leaves alone.
     not_downloaded
         Selected datasets never downloaded, which ``update`` leaves alone.
+    downloads
+        Datasets the plan downloads in full (not updates), in order.
     """
 
     datasets: list[Dataset]
@@ -134,6 +136,7 @@ class Plan:
     not_set_up: list[Segment]
     skipped: list[Dataset] = field(default_factory=list)
     not_downloaded: list[Dataset] = field(default_factory=list)
+    downloads: list[Dataset] = field(default_factory=list)
 
 
 def plan_setup(
@@ -189,7 +192,7 @@ def plan_setup(
         for dataset in datasets
     ]
     plan = _with_gb_steps(datasets, steps, workspace, strict, rebuild=rebuild)
-    return replace(plan, skipped=skipped)
+    return replace(plan, skipped=skipped, downloads=datasets)
 
 
 def plan_update(
@@ -285,7 +288,7 @@ def plan_domestic(
         options = workspace.options() | {"strict": strict}
         name = f"replace {dataset.origin} in GB domestic"
         steps.append(Step(name, gb.replace_origin_in_gb, (dataset.origin,), options))
-    return Plan(datasets=datasets, steps=steps, not_set_up=[])
+    return Plan(datasets=datasets, steps=steps, not_set_up=[], downloads=datasets)
 
 
 def _source_options(

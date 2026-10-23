@@ -22,7 +22,13 @@ import httpx
 import polars as pl
 
 from epc_connector.canonical import GB_PARQUET_NAME, gb_origins
-from epc_connector.datasets import Origin, Segment, get_dataset, parse_origins
+from epc_connector.datasets import (
+    Dataset,
+    Origin,
+    Segment,
+    get_dataset,
+    parse_origins,
+)
 from epc_connector.errors import EpcConnectorError
 from epc_connector.locations import resolve_data_dir
 from epc_connector.pipeline.plan import Workspace, plan_domestic, plan_update
@@ -60,6 +66,7 @@ def load_domestic_certificates(
     lazy: Literal[False] = False,
     data_dir: Path | str | None = None,
     strict: bool = True,
+    download_if_missing: bool = True,
     api_token: str | None = None,
 ) -> pl.DataFrame: ...
 
@@ -72,6 +79,7 @@ def load_domestic_certificates(
     lazy: Literal[True],
     data_dir: Path | str | None = None,
     strict: bool = True,
+    download_if_missing: bool = True,
     api_token: str | None = None,
 ) -> pl.LazyFrame: ...
 
@@ -83,13 +91,15 @@ def load_domestic_certificates(
     lazy: bool = False,
     data_dir: Path | str | None = None,
     strict: bool = True,
+    download_if_missing: bool = True,
     api_token: str | None = None,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Load domestic EPCs as canonical GB records, setting them up if needed.
 
     Missing data is downloaded and built first, for the origins asked for
-    only. Each origin's version is then checked from the GB file's metadata
+    only; a first download is several GB and announced with a warning.
+    Each origin's version is then checked from the GB file's metadata
     (nothing else is read): data more than ``STALE_AFTER_MONTHS`` old comes
     with a warning suggesting ``update``.
 
@@ -112,6 +122,11 @@ def load_domestic_certificates(
     strict
         When building GB rows, raise if a description is not covered by the
         vocabularies instead of marking it.
+    download_if_missing
+        Download an origin's raw data if it is not there. If false, a
+        missing origin raises ``NotSetUpError`` instead (or, for GB data, is
+        left out with a warning); GB rows are still rebuilt from raw files
+        already present.
     api_token
         England and Wales API token, needed only to download or update its
         data. If ``None``: ``EPB_API_TOKEN``, then the token saved by the
@@ -127,7 +142,8 @@ def load_domestic_certificates(
     UnknownColumnError
         If a column in ``columns`` does not exist.
     NotSetUpError
-        If no origin asked for could be set up.
+        If no origin asked for could be set up, or one is missing and
+        ``download_if_missing`` is false.
     """
     workspace = Workspace.resolve(data_dir)
     origins = parse_origins(origin)
@@ -137,6 +153,8 @@ def load_domestic_certificates(
             work = plan_domestic(
                 each, workspace=workspace, strict=strict, api_token=api_token
             )
+            if work.downloads:
+                _announce_or_refuse(work.downloads, download_if_missing)
             if work.steps:
                 run_plan(work, workspace, api_token=api_token)
         except _SETUP_ERRORS as error:
@@ -215,6 +233,23 @@ def status(data_dir: Path | str | None = None) -> list[DatasetStatus]:
     The same as ``epc-connector status``.
     """
     return dataset_statuses(resolve_data_dir(data_dir))
+
+
+def _announce_or_refuse(
+    downloads: Sequence[Dataset], download_if_missing: bool
+) -> None:
+    """Warn before a first download, or refuse it if not allowed."""
+    names = ", ".join(dataset.name for dataset in downloads)
+    if not download_if_missing:
+        raise NotSetUpError(
+            f"{names} is not downloaded; pass download_if_missing=True or run "
+            "epc-connector setup"
+        )
+    logger.warning(
+        "Downloading %s for the first time: several GB, which can take an "
+        "hour or more. Later loads use the local copy.",
+        names,
+    )
 
 
 def _checked_columns(frame: pl.LazyFrame, columns: Sequence[str]) -> list[str]:
