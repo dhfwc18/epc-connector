@@ -6,14 +6,15 @@ readme = "README.md"
 requires-python = ">=3.14"
 authors = [{ name = "David Huang", email = "dh.fwc18@gmail.com" }]
 dependencies = [
+  "filelock>=4.2.4",
   "httpx>=0.28.1",
+  "platformdirs>=4.13.2",
   "polars>=2.0.0",
   "py7zr>=1.1.4",
-  "python-dotenv>=1.2.4",
 ]
 
 [project.scripts]
-epc-connector = "epc_connector.pipeline.cli:main"
+epc-connector = "epc_connector._cli:main"
 
 [dependency-groups]
 dev = [

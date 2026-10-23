@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.datasets``.
+Tests for ``epc_connector._datasets``.
 """
 
 import logging
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from epc_connector.datasets import (
+from epc_connector._datasets import (
     DATASETS,
     LAST_UPDATED_METADATA_KEY,
     RELEASE_METADATA_KEY,

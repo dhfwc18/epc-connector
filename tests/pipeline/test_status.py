@@ -1,14 +1,14 @@
 """
-Tests for ``epc_connector.pipeline.status``.
+Tests for ``epc_connector._pipeline.status``.
 """
 
 from pathlib import Path
 
 import polars as pl
 
-from epc_connector.canonical import GB_PARQUET_NAME
-from epc_connector.datasets import RELEASE_METADATA_KEY, Origin
-from epc_connector.pipeline import status
+from epc_connector._canonical import GB_PARQUET_NAME
+from epc_connector._datasets import RELEASE_METADATA_KEY, Origin
+from epc_connector._pipeline import status
 from tests.fakes import write_raw_domestic
 
 

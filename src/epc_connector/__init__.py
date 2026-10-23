@@ -1,36 +1,55 @@
 """
-Download, update, clean and merge UK domestic Energy Performance Certificates.
+Load UK domestic Energy Performance Certificates as one Great Britain dataset.
 
-Typical use, writing Parquet files to ``.epc_data/`` (see ``locations``)::
+Typical use::
 
-    from epc_connector import build_gb, download, replace_origin_in_gb, update
+    import os
 
-    download("scotland", "domestic")
-    download("england-and-wales", "domestic")  # token in EPB_API_TOKEN
-    build_gb()  # .epc_data/domestic_epc_certificate_gb.parquet
+    import epc_connector as epc
 
-    update("scotland", "domestic", date_from="2026-07-01")
-    replace_origin_in_gb("scotland")  # the England and Wales rows are kept
+    homes = epc.load_domestic_certificates(
+        "scotland", columns=["uprn", "current_energy_rating"]
+    )
+    # Keeping the token in a .env file? Load it first (python-dotenv):
+    # from dotenv import load_dotenv; load_dotenv()
+    token = os.environ["EPC_CONNECTOR_API_TOKEN"]
+    homes = epc.load_domestic_certificates(api_token=token)
+    epc.update(api_token=token)  # fetch newer data
+    epc.status()  # what is set up
 
-``clean_domestic_epc`` returns one origin's raw file with its descriptions
-cleaned, as a lazy frame. Every error the package raises on purpose is an
-``EpcConnectorError``. The ``epc-connector`` command line wraps these
-functions; see ``epc_connector.pipeline``.
+The first load downloads and builds what it needs (several GB, into the
+per-user data directory; see ``_workspace``). Only England and Wales data needs
+the API token; without ``api_token`` it is found as ``_credentials`` describes.
+The ``epc-connector`` command does the same from a shell. Every error the
+package raises on purpose is an ``EpcConnectorError``.
+
+Only the names in ``__all__`` below are the public API. Everything else
+lives in underscore-prefixed modules (``_sources``, ``_io``, ``_cli`` and
+so on), which are internal, as PEP 8 recommends, and may change in any
+release.
 """
 
-from epc_connector.canonical import build_gb, replace_origin_in_gb
-from epc_connector.cleaning import clean_domestic_epc
-from epc_connector.datasets import Origin, Segment
-from epc_connector.errors import EpcConnectorError
-from epc_connector.sources import download, update
+from epc_connector._api import (
+    NotSetUpError,
+    UnknownColumnError,
+    load_domestic_certificates,
+    status,
+    update,
+)
+from epc_connector._credentials import ApiTokenError
+from epc_connector._datasets import Origin, Segment
+from epc_connector._errors import EpcConnectorError
+from epc_connector._pipeline.status import DatasetStatus
 
 __all__ = [
+    "ApiTokenError",
+    "DatasetStatus",
     "EpcConnectorError",
+    "NotSetUpError",
     "Origin",
     "Segment",
-    "build_gb",
-    "clean_domestic_epc",
-    "download",
-    "replace_origin_in_gb",
+    "UnknownColumnError",
+    "load_domestic_certificates",
+    "status",
     "update",
 ]

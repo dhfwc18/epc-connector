@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.validation``.
+Tests for ``epc_connector._validation``.
 """
 
 from pathlib import Path
@@ -7,11 +7,12 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from epc_connector import validation
-from epc_connector.validation import UnsupportedSchemaError
+import epc_connector
+from epc_connector import _validation as validation
+from epc_connector._validation import DEFAULT_SCHEMAS_DIR, UnsupportedSchemaError
 from tests.fakes import abc_schema
 
-SOURCE_SCHEMAS = sorted((Path(__file__).parents[1] / "schemas/source").rglob("*.json"))
+SOURCE_SCHEMAS = sorted((DEFAULT_SCHEMAS_DIR / "source").rglob("*.json"))
 
 
 class TestCheckHeader:
@@ -84,3 +85,23 @@ class TestFormatViolations:
         text = validation.format_violations({"A": (3, ["one"]), "C": (1, ["w"])})
 
         assert text == "A: 3 invalid, e.g. ['one']\nC: 1 invalid, e.g. ['w']"
+
+
+class TestDefaultSchemasDir:
+    def test_schemas_ship_inside_the_package(self) -> None:
+        package_dir = Path(epc_connector.__file__).resolve().parent
+
+        assert DEFAULT_SCHEMAS_DIR.is_relative_to(package_dir)
+
+    @pytest.mark.parametrize(
+        "relative",
+        [
+            "canonical/gb-domestic.schema.json",
+            "mappings/mapping.schema.json",
+            "vocabularies/vocabulary.schema.json",
+            "source/scotland/domestic.schema.json",
+            "source/england-and-wales/domestic.schema.json",
+        ],
+    )
+    def test_every_kind_of_schema_is_there(self, relative: str) -> None:
+        assert (DEFAULT_SCHEMAS_DIR / relative).is_file()

@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.sources.scotland``.
+Tests for ``epc_connector._sources.scotland``.
 """
 
 import datetime as dt
@@ -11,11 +11,11 @@ from typing import Any
 import polars as pl
 import pytest
 
-from epc_connector import validation
-from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
-from epc_connector.sources import scotland
-from epc_connector.storage import StorageError
-from epc_connector.storage.archives import extract_files
+from epc_connector import _validation as validation
+from epc_connector._datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector._io import StorageError
+from epc_connector._io.archives import extract_files
+from epc_connector._sources import scotland
 from tests.fakes import (
     SOURCE_URL,
     FakeServer,
@@ -117,6 +117,19 @@ class TestReleaseFromTitle:
     def test_title_without_quarter_raises_storage_error(self) -> None:
         with pytest.raises(StorageError, match="no release quarter"):
             scotland.release_from_title("Domestic Energy Performance Certificates")
+
+
+class TestReleaseEndDate:
+    @pytest.mark.parametrize(
+        ("release", "expected"),
+        [
+            ("2026q1", dt.date(2026, 3, 31)),
+            ("2026q2", dt.date(2026, 6, 30)),
+            ("2026q4", dt.date(2026, 12, 31)),
+        ],
+    )
+    def test_last_day_of_the_quarter(self, release: str, expected: dt.date) -> None:
+        assert scotland.release_end_date(release) == expected
 
 
 class TestLatestCreatedDate:
@@ -303,7 +316,7 @@ class TestUpdate:
             return paths
 
         monkeypatch.setattr(
-            "epc_connector.storage.archives.extract_files", recording_extract
+            "epc_connector._io.archives.extract_files", recording_extract
         )
 
         downloaded.update(self.new_release(downloaded), date_from="2026-01-01")

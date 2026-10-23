@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.sources._shared``.
+Tests for ``epc_connector._sources._shared``.
 """
 
 import datetime as dt
@@ -7,7 +7,7 @@ import datetime as dt
 import httpx
 import pytest
 
-from epc_connector.sources._shared import as_date, client_or_new
+from epc_connector._sources._shared import as_date, client_or_new
 
 
 class TestAsDate:

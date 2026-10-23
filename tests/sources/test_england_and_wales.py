@@ -1,5 +1,5 @@
 """
-Tests for ``epc_connector.sources.england_and_wales``.
+Tests for ``epc_connector._sources.england_and_wales``.
 """
 
 import datetime as dt
@@ -14,10 +14,12 @@ import httpx
 import polars as pl
 import pytest
 
-from epc_connector import validation
-from epc_connector.datasets import DatasetError, Origin, Segment, select_datasets
-from epc_connector.sources import england_and_wales
-from epc_connector.storage import StorageError
+from epc_connector import _validation as validation
+from epc_connector._credentials import ApiTokenError
+from epc_connector._datasets import DatasetError, Origin, Segment, select_datasets
+from epc_connector._environment import EnvVar
+from epc_connector._io import StorageError
+from epc_connector._sources import england_and_wales
 from tests.fakes import FakeServer, write_zip
 
 TOKEN = "test-token"
@@ -155,20 +157,6 @@ class TestSourceConstants:
         assert set(england_and_wales.SOURCE_URLS) == published
 
 
-@pytest.fixture
-def token_unset(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    """
-    Remove ``EPB_API_TOKEN`` and work in an empty directory (no ``.env``).
-
-    Setting then deleting registers the variable with monkeypatch, so a value
-    written by ``load_dotenv`` is removed again after the test.
-    """
-    monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "placeholder")
-    monkeypatch.delenv(england_and_wales.API_TOKEN_ENV_VAR)
-    monkeypatch.chdir(tmp_path)
-    return tmp_path
-
-
 class TestAuthorisedClient:
     def test_token_argument_sets_bearer_header(self) -> None:
         with england_and_wales.authorised_client("abc") as client:
@@ -177,31 +165,39 @@ class TestAuthorisedClient:
     def test_environment_variable_is_used_without_argument(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "from-env")
+        monkeypatch.setenv(EnvVar.API_TOKEN, "from-env")
 
         with england_and_wales.authorised_client() as client:
             assert client.headers["Authorization"] == "Bearer from-env"
 
-    def test_dotenv_file_is_loaded_when_variable_is_unset(
-        self, token_unset: Path
-    ) -> None:
-        (token_unset / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
-
-        with england_and_wales.authorised_client() as client:
-            assert client.headers["Authorization"] == "Bearer from-dotenv"
-
-    def test_environment_variable_takes_precedence_over_dotenv(
-        self, token_unset: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        (token_unset / ".env").write_text("EPB_API_TOKEN=from-dotenv\n")
-        monkeypatch.setenv(england_and_wales.API_TOKEN_ENV_VAR, "from-env")
-
-        with england_and_wales.authorised_client() as client:
-            assert client.headers["Authorization"] == "Bearer from-env"
-
-    def test_missing_token_raises_value_error(self, token_unset: Path) -> None:
-        with pytest.raises(ValueError, match="EPB_API_TOKEN"):
+    def test_missing_token_raises_api_token_error(self) -> None:
+        with pytest.raises(ApiTokenError, match="epc-connector login"):
             england_and_wales.authorised_client()
+
+
+def info_server(status: int) -> httpx.Client:
+    """A client whose every request gets ``status`` and an info body."""
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        body = {"data": {"lastUpdated": "2026-10-13T09:29:37+00:00"}}
+        return httpx.Response(status, json=body, request=request)
+
+    return httpx.Client(transport=httpx.MockTransport(answer))
+
+
+class TestVerifyApiToken:
+    def test_accepted_token_passes(self) -> None:
+        with info_server(200) as client:
+            england_and_wales.verify_api_token("good", client)
+
+    @pytest.mark.parametrize("status", [401, 403])
+    def test_rejected_token_raises_api_token_error(self, status: int) -> None:
+        with info_server(status) as client, pytest.raises(ApiTokenError):
+            england_and_wales.verify_api_token("bad", client)
+
+    def test_other_errors_are_raised_as_http_errors(self) -> None:
+        with info_server(500) as client, pytest.raises(httpx.HTTPStatusError):
+            england_and_wales.verify_api_token("good", client)
 
 
 class TestIsCertificatesFile:
@@ -640,3 +636,10 @@ class TestUpdate:
     def test_empty_window_raises_value_error(self, downloaded: SegmentRunner) -> None:
         with pytest.raises(ValueError, match="empty window"):
             downloaded.update(FakeServer(b""), "2024-10-31", "2024-09-01")
+
+
+class TestLastUpdatedDate:
+    def test_date_of_the_timestamp(self) -> None:
+        stamp = "2026-10-13T09:29:37.000+00:00"
+
+        assert england_and_wales.last_updated_date(stamp) == dt.date(2026, 10, 13)
