@@ -56,13 +56,21 @@ runs in its own process, so memory is released between steps.
 
 ## Where the data lives
 
-Data goes to `.epc_data/` in the directory you run from, so each project keeps its own copy next to its `.venv`. When
-the package creates the folder it puts a `.gitignore` (`*`) and a `CACHEDIR.TAG` in it, so git and backup tools skip it
-without any change to your project. Running `setup` again only downloads what is missing (`--force` downloads everything
-again); `update` refreshes what is there.
+Data goes to your per-user data directory, so one setup (about 6 GB) serves every project on the machine:
 
-To share one copy between projects, set `EPC_CONNECTOR_DATA_DIR` to a directory, for example in your shell profile.
-`--data-dir` (or `data_dir=` in Python) overrides both. Only one run at a time downloads or rebuilds files in a data
+| System  | Directory                                     |
+| ------- | --------------------------------------------- |
+| Linux   | `~/.local/share/epc-connector`                |
+| macOS   | `~/Library/Application Support/epc-connector` |
+| Windows | `C:\Users\<user>\AppData\Local\epc-connector` |
+
+It is a data directory rather than a cache one, so cache clean-ups leave it alone. Running `setup` again only downloads
+what is missing (`--force` downloads everything again); `update` refreshes what is there. `epc-connector status` shows
+the directory and what is in it.
+
+For a per-project copy, set `EPC_CONNECTOR_DATA_DIR` (for example to `.epc_data`), or pass `--data-dir` (`data_dir=` in
+Python), which overrides it. A folder the package creates gets a `.gitignore` (`*`) and a `CACHEDIR.TAG`, so git and
+backup tools skip it without any change to your project. Only one run at a time downloads or rebuilds files in a data
 directory; a second run waits, then uses what the first left, so nothing is downloaded twice. Downloads are staged in
 `.staging/` inside the data directory, which is removed when each step ends; `--staging-dir` puts it elsewhere.
 

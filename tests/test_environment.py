@@ -3,6 +3,7 @@ Tests for ``epc_connector.environment``.
 """
 
 import logging
+import sys
 from pathlib import Path
 
 import pytest
@@ -79,3 +80,28 @@ class TestUnknownVariables:
 
         assert caplog.text.count("EPC_CONNECTOR_DATADIR") == 1
         assert "EPC_CONNECTOR_DATA_DIR" in caplog.text  # lists the known ones
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="XDG paths are Linux only")
+class TestUserDirs:
+    def test_data_dir_follows_xdg_data_home(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+
+        assert environment.user_data_dir() == tmp_path / "epc-connector"
+
+    def test_config_dir_follows_xdg_config_home(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+
+        assert environment.user_config_dir() == tmp_path / "epc-connector"
+
+    def test_data_is_not_kept_in_the_cache_directory(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+        monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+
+        assert environment.user_data_dir().is_relative_to(tmp_path / "data")

@@ -15,7 +15,8 @@ Subcommands::
 same), ``scotland`` or ``gb`` (both, the default). ``setup`` downloads the
 selected datasets that are not there yet (all with ``--force``) and
 ``update`` refreshes them; both then bring the GB file up to date. Data goes
-to ``--data-dir``, else ``$EPC_CONNECTOR_DATA_DIR``, else ``./.epc_data``.
+to ``--data-dir``, else ``$EPC_CONNECTOR_DATA_DIR``, else the per-user data
+directory (``~/.local/share/epc-connector`` on Linux).
 
 England and Wales data needs an API token: ``EPC_CONNECTOR_API_TOKEN`` if set
 (for CI and scripts), else the saved token. If a command needs one and none is
@@ -52,7 +53,11 @@ from epc_connector.credentials import (
     token_path,
 )
 from epc_connector.datasets import Origin, Segment, parse_origins
-from epc_connector.environment import EnvVar, report_unknown_variables
+from epc_connector.environment import (
+    EnvVar,
+    report_unknown_variables,
+    user_data_dir,
+)
 from epc_connector.errors import EpcConnectorError
 from epc_connector.pipeline import plan, run, status
 from epc_connector.sources.england_and_wales import verify_api_token
@@ -103,7 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument(
         "--data-dir",
         type=Path,
-        help=f"data directory (default: ${EnvVar.DATA_DIR}, else ./.epc_data)",
+        help=f"data directory (default: ${EnvVar.DATA_DIR}, else {user_data_dir()})",
     )
     origin = argparse.ArgumentParser(add_help=False)
     origin.add_argument(

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from epc_connector import workspace
-from epc_connector.environment import EnvVar
+from epc_connector.environment import EnvVar, user_data_dir
 
 
 class TestResolveDataDir:
@@ -21,12 +21,12 @@ class TestResolveDataDir:
     ) -> None:
         assert workspace.resolve_data_dir() == default_data_dir
 
-    def test_without_either_it_is_epc_data_in_the_working_directory(
+    def test_without_either_it_is_the_per_user_data_directory(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.delenv(EnvVar.DATA_DIR)
 
-        assert workspace.resolve_data_dir() == Path(".epc_data")
+        assert workspace.resolve_data_dir() == user_data_dir()
 
     def test_home_is_expanded(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("HOME", "/home/someone")

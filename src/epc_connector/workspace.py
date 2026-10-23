@@ -4,9 +4,13 @@ The workspace: where data is kept, staged and locked, and memory limits.
 ``Workspace`` bundles the directories and limits a plan runs with;
 ``Workspace.resolve`` fills in the defaults below.
 
-Downloads go to ``.epc_data/`` in the working directory, so each project
-keeps its own copy next to its ``.venv`` and a second ``setup`` finds it
-there. Set ``EPC_CONNECTOR_DATA_DIR`` to share one copy between projects.
+Data goes to the per-user data directory (``environment.user_data_dir``,
+e.g. ``~/.local/share/epc-connector``), so one setup serves every project
+on the machine, as with scikit-learn's and Hugging Face's data. It is a data
+directory, not a cache one: cache directories are meant for files that are
+cheap to recreate, and these take an hour and a token. Set
+``EPC_CONNECTOR_DATA_DIR`` (or pass ``data_dir``) for a per-project copy,
+e.g. ``.epc_data`` next to a project's ``.venv``.
 
 When the package creates a data directory it adds a ``.gitignore`` holding
 ``*`` and a ``CACHEDIR.TAG``, so version control and backup tools skip it,
@@ -24,13 +28,11 @@ from typing import Any, Final, Self
 
 from filelock import FileLock, Timeout
 
-from epc_connector.environment import EnvVar, read_path
+from epc_connector.environment import EnvVar, read_path, user_data_dir
 from epc_connector.io import DEFAULT_CHUNK_ROWS, DEFAULT_ROW_GROUP_ROWS
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_DATA_DIR: Final = Path(".epc_data")
-"""Data directory, relative to the working directory, if none is given."""
 LOCK_FILE_NAME: Final = ".lock"
 """Lock file inside the data directory; see ``lock_data_dir``."""
 STAGING_DIR_NAME: Final = ".staging"
@@ -51,11 +53,12 @@ def resolve_data_dir(data_dir: Path | str | None = None) -> Path:
     Return the data directory to use.
 
     In order: ``data_dir`` if given, then ``EPC_CONNECTOR_DATA_DIR`` if set,
-    then ``.epc_data`` in the working directory. ``~`` is expanded.
+    then the per-user data directory (``environment.user_data_dir``). ``~``
+    is expanded.
     """
     if data_dir is not None:
         return Path(data_dir).expanduser()
-    return read_path(EnvVar.DATA_DIR) or DEFAULT_DATA_DIR
+    return read_path(EnvVar.DATA_DIR) or user_data_dir()
 
 
 def resolve_staging_dir(staging_dir: Path | str | None, data_dir: Path) -> Path:

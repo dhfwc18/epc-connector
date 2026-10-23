@@ -1,12 +1,17 @@
 """
-Every environment variable the package reads, in one place.
+How the package meets the machine: its environment variables and per-user
+directories.
 
-All share the ``EPC_CONNECTOR_`` prefix (see ``EnvVar``). Values are read
-when needed, never at import, so a variable set while a program runs takes
-effect. They are read the same way everywhere: surrounding whitespace is
-removed, an empty value counts as unset, and paths have ``~`` expanded.
-Variables with the prefix that the package does not know (usually typos)
-are reported once with a warning.
+The per-user directories come from ``platformdirs``: data in
+``user_data_dir()`` (e.g. ``~/.local/share/epc-connector``) and settings in
+``user_config_dir()`` (e.g. ``~/.config/epc-connector``).
+
+Every environment variable shares the ``EPC_CONNECTOR_`` prefix (see
+``EnvVar``). Values are read when needed, never at import, so a variable set
+while a program runs takes effect. They are read the same way everywhere:
+surrounding whitespace is removed, an empty value counts as unset, and paths
+have ``~`` expanded. Variables with the prefix that the package does not know
+(usually typos) are reported once with a warning.
 """
 
 import functools
@@ -17,10 +22,14 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Final
 
+import platformdirs
+
 logger = logging.getLogger(__name__)
 
 PREFIX: Final = "EPC_CONNECTOR_"
 """Prefix of every environment variable the package reads."""
+APP_NAME: Final = "epc-connector"
+"""Name of the package's per-user directories."""
 
 
 class EnvVar(StrEnum):
@@ -41,6 +50,16 @@ class EnvVar(StrEnum):
     DATA_DIR = "EPC_CONNECTOR_DATA_DIR"
     API_TOKEN = "EPC_CONNECTOR_API_TOKEN"
     TOKEN_PATH = "EPC_CONNECTOR_TOKEN_PATH"
+
+
+def user_data_dir() -> Path:
+    """Return the per-user data directory (``~/.local/share/...`` on Linux)."""
+    return platformdirs.user_data_path(APP_NAME)
+
+
+def user_config_dir() -> Path:
+    """Return the per-user settings directory (``~/.config/...`` on Linux)."""
+    return platformdirs.user_config_path(APP_NAME)
 
 
 def read_text(variable: EnvVar) -> str | None:

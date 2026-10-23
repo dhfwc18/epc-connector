@@ -15,15 +15,9 @@ an argument. No ``.env`` file is read. The token is never logged.
 
 import os
 from pathlib import Path
-from typing import Final
 
-import platformdirs
-
-from epc_connector.environment import EnvVar, read_path, read_text
+from epc_connector.environment import EnvVar, read_path, read_text, user_config_dir
 from epc_connector.errors import EpcConnectorError
-
-APP_NAME: Final = "epc-connector"
-"""Name of the user configuration directory."""
 
 
 class ApiTokenError(EpcConnectorError, ValueError):
@@ -35,11 +29,9 @@ def token_path() -> Path:
     Return the file the command line saves the token to.
 
     ``EPC_CONNECTOR_TOKEN_PATH`` if set, otherwise ``token`` in the user
-    configuration directory (``platformdirs.user_config_path``).
+    settings directory (``environment.user_config_dir``).
     """
-    return read_path(EnvVar.TOKEN_PATH) or (
-        platformdirs.user_config_path(APP_NAME) / "token"
-    )
+    return read_path(EnvVar.TOKEN_PATH) or user_config_dir() / "token"
 
 
 def resolve_api_token(api_token: str | None = None) -> str | None:

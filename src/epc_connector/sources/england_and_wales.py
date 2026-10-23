@@ -133,7 +133,7 @@ def download(
     -------
     Path
         Path of the Parquet file, e.g.
-        ``.epc_data/domestic_epc_certificate_england_wales.parquet``.
+        ``<data dir>/domestic_epc_certificate_england_wales.parquet``.
 
     Raises
     ------
